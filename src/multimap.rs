@@ -1,17 +1,15 @@
 use core::iter::FromIterator;
 use core::marker::PhantomData;
+use indexmap::Equivalent;
+use indexmap::IndexMap;
+use indexmap::IndexSet;
 use std::borrow::Borrow;
 use std::collections::hash_map::RandomState;
+use std::collections::HashMap;
 use std::collections::HashSet;
 use std::hash::BuildHasher;
 use std::hash::Hash;
 use std::iter::repeat;
-
-use hashbrown::HashMap;
-
-use crate::equivalent::Equivalent;
-use crate::IndexMap;
-use crate::IndexSet;
 
 // TODO the approach below is probably not going to work
 // let explore first IndexSetMultimap and IndexVecMultimap implementations to reduce the complexity
