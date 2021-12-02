@@ -31,6 +31,18 @@ use crate::IndexSet;
 // IndexSetMultimap | IndexMap  | IndexSet
 // IndexVecMultimap | IndexMap  | Vec
 
+// SortedSetMultimap    | BTreeMap  | BTreeSet
+// SortedVecMultimap    | BTreeMap  | Vec
+// EnumHashSetMultimap  | EnumMap   | HashSet
+// EnumIndexSetMultimap | EnumMap   | IndexSet
+// EnumVecMultimap      | EnumMap   | Vec
+
+// IndexMultiset    | IndexMap
+// HashMultiset     | HashMap
+// EnumMultiset     | EnumMap
+
+// UsizeMap     | Vec 
+
 // TODO the approach below is probably not going to work
 // let explore first IndexSetMultimap and IndexVecMultimap implementations to reduce the complexity
 
