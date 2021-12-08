@@ -1,4 +1,6 @@
 use std::borrow::Borrow;
+use std::collections::HashMap;
+use std::collections::HashSet;
 use std::hash::BuildHasher;
 use std::marker::PhantomData;
 
@@ -9,8 +11,13 @@ use std::hash::Hash;
 use crate::keys::InnerKeys;
 use crate::values::InnerValues;
 
-pub type IndexSetMultimap<K, V, S> = ConcreteIndexMultimap<K, V, S, IndexSet<V>>;
-pub type IndexVecMultimap<K, V, S> = ConcreteIndexMultimap<K, V, S, Vec<V>>;
+// TODO hasher needs to be configurable (but there are also multimaps without hashers)
+
+pub type IndexSetMultimap<K, V, S> =
+    GenericMultimap<K, V, IndexMap<K, IndexSet<V, S>, S>, IndexSet<V, S>>;
+pub type IndexVecMultimap<K, V> = GenericMultimap<K, V, IndexMap<K, Vec<V>>, Vec<V>>;
+pub type HashSetMultimap<K, V> = GenericMultimap<K, V, HashMap<K, HashSet<V>>, HashSet<V>>;
+pub type HashVecMultimap<K, V> = GenericMultimap<K, V, HashMap<K, Vec<V>>, Vec<V>>;
 
 // struct HashMultimap
 
@@ -46,7 +53,7 @@ trait IndexMultimap<K, V>: Multimap<K, V> {
 
 // TODO index
 // fn get_index(&self, index: usize) -> Option<(&K, &IndexSet<V, S>)>
-
+#[derive(Default)]
 struct GenericMultimap<K, V, IK, IV> {
     inner: IK,
     len: usize,
@@ -115,41 +122,65 @@ where
     }
 }
 
-struct ConcreteIndexMultimap<K, V, S, VS> {
-    inner: IndexMap<K, VS, S>,
-    len: usize,
-    _marker_v: PhantomData<V>,
-}
-
-impl<K, V, S, VS> ConcreteIndexMultimap<K, V, S, VS>
+impl<K, V, S> IndexSetMultimap<K, V, S>
 where
-    K: Hash + Eq,
-    VS: InnerValues<V>,
     S: BuildHasher + Default,
 {
-    pub fn new() -> Self {
-        Self {
-            inner: IndexMap::with_hasher(S::default()),
-            len: 0,
+    pub fn with_capacity_and_hasher(len: usize, hash_builder: S) -> Self {
+        IndexSetMultimap {
+            inner: IndexMap::with_capacity_and_hasher(len, hash_builder),
+            len,
+            _marker_k: PhantomData,
             _marker_v: PhantomData,
+            _marker_iv: PhantomData,
         }
     }
 
-    pub fn insert(&mut self, key: K, value: V) -> bool {
-        if self
-            .inner
-            .entry(key)
-            .or_insert_with(|| VS::with_hasher(S::default()))
-            .insert(value)
-        {
-            self.len += 1;
-            true
-        } else {
-            false
-        }
+    pub fn with_hasher(hash_builder: S) -> Self {
+        Self::with_capacity_and_hasher(0, hash_builder)
+    }
+
+    // TODO how to call this in insert() ?
+    fn new_values() -> IndexSet<V, S> {
+        IndexSet::with_hasher(S::default())
     }
 }
 
-impl<K, V, S> IndexVecMultimap<K, V, S> {
-    fn extra() {}
-}
+// struct ConcreteIndexMultimap<K, V, S, VS> {
+//     inner: IndexMap<K, VS, S>,
+//     len: usize,
+//     _marker_v: PhantomData<V>,
+// }
+
+// impl<K, V, S, VS> ConcreteIndexMultimap<K, V, S, VS>
+// where
+//     K: Hash + Eq,
+//     VS: InnerValues<V>,
+//     S: BuildHasher + Default,
+// {
+//     pub fn new() -> Self {
+//         Self {
+//             inner: IndexMap::with_hasher(S::default()),
+//             len: 0,
+//             _marker_v: PhantomData,
+//         }
+//     }
+
+//     pub fn insert(&mut self, key: K, value: V) -> bool {
+//         if self
+//             .inner
+//             .entry(key)
+//             .or_insert_with(|| VS::with_hasher(S::default()))
+//             .insert(value)
+//         {
+//             self.len += 1;
+//             true
+//         } else {
+//             false
+//         }
+//     }
+// }
+
+// impl<K, V, S> IndexVecMultimap<K, V, S> {
+//     fn extra() {}
+// }
