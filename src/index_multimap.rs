@@ -23,7 +23,7 @@ trait Multimap<K, V> {
         K: Borrow<Q>,
         Q: Hash + Eq;
 
-    fn contains<Q: ?Sized, R: ?Sized>(&self, key: &Q, value: &R) -> bool
+    fn contains<Q: ?Sized>(&self, key: &Q, value: &V) -> bool
     where
         K: Borrow<Q>,
         Q: Hash + Eq;
@@ -51,7 +51,10 @@ trait InnerKeys<K, V, IV> {
     where
         F: FnOnce() -> IV;
 
-    fn get(&self, key: &K) -> Option<&IV>;
+    fn get<Q: ?Sized>(&self, key: &Q) -> Option<&IV>
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq;
 
     fn get_mut(&mut self, key: &K) -> Option<&mut IV>;
 
@@ -61,6 +64,12 @@ trait InnerKeys<K, V, IV> {
     where
         K: Borrow<Q>,
         Q: Hash + Eq;
+
+    fn reserve(&mut self, additional: usize);
+
+    fn len(&self) -> usize;
+
+    fn is_empty(&self) -> bool;
 }
 
 impl<K, V, IV, S> InnerKeys<K, V, IV> for HashMap<K, IV, S>
@@ -76,7 +85,11 @@ where
         self.entry(key).or_insert_with(constructor).insert(value)
     }
 
-    fn get(&self, key: &K) -> Option<&IV> {
+    fn get<Q: ?Sized>(&self, key: &Q) -> Option<&IV>
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq,
+    {
         HashMap::get(self, key)
     }
 
@@ -95,6 +108,18 @@ where
     {
         HashMap::contains_key(&self, key)
     }
+
+    fn reserve(&mut self, additional: usize) {
+        HashMap::reserve(&mut self, additional)
+    }
+
+    fn len(&self) -> usize {
+        HashMap::len(&self)
+    }
+
+    fn is_empty(&self) -> bool {
+        HashMap::is_empty(&self)
+    }
 }
 
 impl<K, V, IV, S> InnerKeys<K, V, IV> for IndexMap<K, IV, S>
@@ -110,7 +135,11 @@ where
         self.entry(key).or_insert_with(constructor).insert(value)
     }
 
-    fn get(&self, key: &K) -> Option<&IV> {
+    fn get<Q: ?Sized>(&self, key: &Q) -> Option<&IV>
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq,
+    {
         IndexMap::get(self, key)
     }
 
@@ -128,6 +157,18 @@ where
         Q: Hash + Eq,
     {
         IndexMap::contains_key(&self, key)
+    }
+
+    fn reserve(&mut self, additional: usize) {
+        IndexMap::reserve(&mut self, additional)
+    }
+
+    fn len(&self) -> usize {
+        IndexMap::len(&self)
+    }
+
+    fn is_empty(&self) -> bool {
+        IndexMap::is_empty(&self)
     }
 }
 
@@ -174,24 +215,28 @@ where
         self.inner.contains_key(key)
     }
 
-    fn contains<Q: ?Sized, R: ?Sized>(&self, key: &Q, value: &R) -> bool
+    fn contains<Q: ?Sized>(&self, key: &Q, value: &V) -> bool
     where
         K: Borrow<Q>,
         Q: Hash + Eq,
     {
-        self.inner.get(key).contains(value)
+        if let Some(values) = self.inner.get(key) {
+            values.contains(value)
+        } else {
+            false
+        }
     }
 
     fn reserve(&mut self, additional: usize) {
-        todo!()
+        self.inner.reserve(additional)
     }
 
     fn len(&self) -> usize {
-        todo!()
+        self.len
     }
 
     fn keys_len(&self) -> usize {
-        todo!()
+        self.inner.len()
     }
 }
 
