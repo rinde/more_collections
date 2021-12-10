@@ -115,9 +115,79 @@ use crate::values::InnerValues;
 //     }
 // }
 
+struct IndexVecMultimap<K, V, S = RandomState> {
+    inner: IndexMap<K, Vec<V>, S>,
+    len: usize,
+}
+
+impl<K, V> IndexVecMultimap<K, V> {
+    pub fn new() -> Self {
+        Self {
+            inner: IndexMap::new(),
+            len: 0,
+        }
+    }
+}
+
+impl<'a, K, V, S> Multimap<'a, K, V> for IndexVecMultimap<K, V, S>
+where
+    K: Hash + Eq,
+    V: Hash + Eq,
+    S: BuildHasher + Default,
+{
+    type IV = Vec<V>;
+    type IK = IndexMap<K, Vec<V>, S>;
+
+    fn len(&self) -> usize {
+        self.len
+    }
+
+    fn new_values() -> Self::IV {
+        vec![]
+    }
+
+    fn inner_map_mut(&mut self) -> &mut Self::IK {
+        &mut self.inner
+    }
+
+    fn inner_map(&self) -> &Self::IK {
+        &self.inner
+    }
+
+    fn increment_len(&mut self, amount: usize) {
+        self.len += amount
+    }
+
+    fn decrement_len(&mut self, amount: usize) {
+        self.len -= amount
+    }
+}
+
 struct IndexSetMultimap<K, V, S = RandomState> {
     inner: IndexMap<K, IndexSet<V, S>, S>,
     len: usize,
+}
+
+impl<K, V> IndexSetMultimap<K, V> {
+    pub fn new() -> Self {
+        Self {
+            inner: IndexMap::new(),
+            len: 0,
+        }
+    }
+}
+
+impl<K, V, S> IndexSetMultimap<K, V, S> {
+    pub fn with_capacity_and_hasher(n: usize, hash_builder: S) -> Self {
+        IndexSetMultimap {
+            inner: IndexMap::with_capacity_and_hasher(n, hash_builder),
+            len: 0,
+        }
+    }
+
+    pub fn with_hasher(hash_builder: S) -> Self {
+        Self::with_capacity_and_hasher(0, hash_builder)
+    }
 }
 
 impl<'a, K, V, S> Multimap<'a, K, V> for IndexSetMultimap<K, V, S>
@@ -254,6 +324,42 @@ trait Multimap<'a, K, V> {
 
     fn decrement_len(&mut self, amount: usize);
 }
+
+// TODO implement extend
+// impl<'a, K, V, IK, IV> Extend<(K, V)> for dyn Multimap<'a, K, V, IK = IK, IV = IV>
+// where
+//     K: Hash + Eq,
+//     V: Hash + Eq,
+// {
+//     fn extend<I: IntoIterator<Item = (K, V)>>(&mut self, iterable: I) {
+//         // Using the  same reservation logic as in IndexMap
+//         let iter = iterable.into_iter();
+//         let reserve = if self.is_empty() {
+//             iter.size_hint().0
+//         } else {
+//             (iter.size_hint().0 + 1) / 2
+//         };
+//         self.reserve(reserve);
+//         iter.for_each(move |(k, v)| {
+//             self.insert(k, v);
+//         });
+//     }
+// }
+
+// impl<K, V, S> FromIterator<(K, V)> for IndexSetMultimap<K, V, S>
+// where
+//     K: Hash + Eq,
+//     V: Hash + Eq,
+//     S: BuildHasher + Default,
+// {
+//     fn from_iter<I: IntoIterator<Item = (K, V)>>(iterable: I) -> Self {
+//         let iter = iterable.into_iter();
+//         let (low, _) = iter.size_hint();
+//         let mut map = Self::with_capacity_and_hasher(low, <_>::default());
+//         map.extend(iter);
+//         map
+//     }
+// }
 
 /// Index map with multiple (unique) values per key.
 ///
@@ -522,7 +628,7 @@ mod tests {
 
     #[test]
     fn insert_ignores_duplicates() {
-        let mut map = IndexMultimap::new();
+        let mut map = IndexSetMultimap::new();
         assert_eq!(0, map.len());
 
         assert!(map.insert(0, "A".to_string()));
