@@ -1,103 +1,189 @@
 use core::iter::FromIterator;
-use core::marker::PhantomData;
 use indexmap::Equivalent;
 use indexmap::IndexMap;
 use indexmap::IndexSet;
 use std::borrow::Borrow;
 use std::collections::hash_map::RandomState;
-use std::collections::HashMap;
-use std::collections::HashSet;
 use std::hash::BuildHasher;
 use std::hash::Hash;
 use std::iter::repeat;
 
+use crate::keys::InnerKeys;
+use crate::values::InnerValues;
+
 // TODO the approach below is probably not going to work
 // let explore first IndexSetMultimap and IndexVecMultimap implementations to reduce the complexity
 
-type HashSetMultimap<K, V, S> = MultimapImpl<K, V, HashMap<K, HashSet<V, S>, S>, HashSet<V, S>>;
+// type HashSetMultimap<K, V, S> = MultimapImpl<K, V, HashMap<K, HashSet<V, S>, S>, HashSet<V, S>>;
 
-trait InnerMap<K, V, S = RandomState> {
-    fn get<Q: ?Sized>(&self, key: &Q) -> Option<&V>
-    where
-        Q: Hash + Equivalent<K>;
+// trait InnerMap<K, V, S = RandomState> {
+//     fn get<Q: ?Sized>(&self, key: &Q) -> Option<&V>
+//     where
+//         Q: Hash + Equivalent<K>;
 
-    fn get_mut<Q: ?Sized>(&mut self, key: &Q) -> Option<&mut V>
-    where
-        Q: Hash + Equivalent<K>;
+//     fn get_mut<Q: ?Sized>(&mut self, key: &Q) -> Option<&mut V>
+//     where
+//         Q: Hash + Equivalent<K>;
 
-    fn remove<Q: ?Sized>(&mut self, key: &Q) -> Option<V>
-    where
-        Q: Hash + Equivalent<K>;
-}
+//     fn remove<Q: ?Sized>(&mut self, key: &Q) -> Option<V>
+//     where
+//         Q: Hash + Equivalent<K>;
 
-trait InnerValues<V> {
-    fn remove(&mut self, value: &V) -> bool;
+//     fn len(&self) -> usize;
 
-    fn len(&self) -> usize;
+//     fn is_empty(&self) -> bool;
 
-    fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
+//     fn capacity(&self) -> usize;
 
-    fn new() -> Self;
-}
+// }
 
-struct MultimapImpl<K, V, M, VS, S = RandomState>
-where
-    M: InnerMap<K, VS, S>,
-{
-    inner: M,
+// trait InnerValues<V> {
+//     fn remove(&mut self, value: &V) -> bool;
+
+//     fn len(&self) -> usize;
+
+//     fn is_empty(&self) -> bool {
+//         self.len() == 0
+//     }
+
+//     fn new() -> Self;
+// }
+
+// struct MultimapImpl<K, V, M, VS, S = RandomState>
+// where
+//     M: InnerMap<K, VS, S>,
+// {
+//     inner: M,
+//     len: usize,
+//     _marker_k: PhantomData<K>,
+//     _marker_v: PhantomData<V>,
+//     _marker_vs: PhantomData<VS>,
+//     _marker_s: PhantomData<S>,
+// }
+
+// impl<K, V, M, VS, S> MultimapImpl<K, V, M, VS, S>
+// where
+//     K: Hash,
+//     M: InnerMap<K, VS, S>,
+//     VS: InnerValues<V>,
+//     S: BuildHasher + Default,
+// {
+//     // TODO: Needs to be defined per type
+//     // pub fn insert(&mut self, key: K, value: V) -> bool {
+//     //     if self
+//     //         .inner
+//     //         .entry(key)
+//     //         .or_insert_with(|| IndexSet::with_hasher(S::default()))
+//     //         .insert(value)
+//     //     {
+//     //         self.len += 1;
+//     //         true
+//     //     } else {
+//     //         false
+//     //     }
+//     // }
+
+//     pub fn remove_key<Q>(&mut self, key: &Q) -> Option<VS>
+//     where
+//         Q: Hash + Equivalent<K>,
+//     {
+//         if let Some(values) = self.inner.remove(key) {
+//             self.len -= values.len();
+//             Some(values)
+//         } else {
+//             None
+//         }
+//     }
+
+//     pub fn remove<Q>(&mut self, key: &Q, value: &V) -> bool
+//     where
+//         Q: Hash + Equivalent<K>,
+//     {
+//         if let Some(set) = self.inner.get_mut(key) {
+//             if set.remove(value) {
+//                 if set.is_empty() {
+//                     self.inner.remove(key);
+//                 }
+//                 self.len -= 1;
+//                 true
+//             } else {
+//                 false
+//             }
+//         } else {
+//             false
+//         }
+//     }
+// }
+
+struct IndexSetMultimap<K, V, S = RandomState> {
+    inner: IndexMap<K, IndexSet<V, S>, S>,
     len: usize,
-    _marker_k: PhantomData<K>,
-    _marker_v: PhantomData<V>,
-    _marker_vs: PhantomData<VS>,
-    _marker_s: PhantomData<S>,
 }
 
-impl<K, V, M, VS, S> MultimapImpl<K, V, M, VS, S>
+impl<'a, K, V, S> Multimap<'a, K, V> for IndexSetMultimap<K, V, S>
 where
-    K: Hash,
-    M: InnerMap<K, VS, S>,
-    VS: InnerValues<V>,
+    K: Hash + Eq,
+    V: Hash + Eq,
     S: BuildHasher + Default,
 {
-    // TODO: Needs to be defined per type
-    // pub fn insert(&mut self, key: K, value: V) -> bool {
-    //     if self
-    //         .inner
-    //         .entry(key)
-    //         .or_insert_with(|| IndexSet::with_hasher(S::default()))
-    //         .insert(value)
-    //     {
-    //         self.len += 1;
-    //         true
-    //     } else {
-    //         false
-    //     }
-    // }
+    type IV = IndexSet<V, S>;
+    type IK = IndexMap<K, IndexSet<V, S>, S>;
 
-    pub fn remove_key<Q>(&mut self, key: &Q) -> Option<VS>
-    where
-        Q: Hash + Equivalent<K>,
-    {
-        if let Some(values) = self.inner.remove(key) {
-            self.len -= values.len();
-            Some(values)
+    fn len(&self) -> usize {
+        self.len
+    }
+
+    fn new_values() -> Self::IV {
+        IndexSet::with_hasher(S::default())
+    }
+
+    fn inner_map_mut(&mut self) -> &mut Self::IK {
+        &mut self.inner
+    }
+
+    fn inner_map(&self) -> &Self::IK {
+        &self.inner
+    }
+
+    fn increment_len(&mut self, len: usize) {
+        self.len = len;
+    }
+
+    fn decrement_len(&mut self, len: usize) {
+        self.len -= len;
+    }
+}
+
+trait Multimap<'a, K, V> {
+    type IV: InnerValues<V>;
+    type IK: InnerKeys<K, V, Self::IV>;
+
+    fn insert(&mut self, key: K, value: V) -> bool {
+        let success = self
+            .inner_map_mut()
+            .insert_with(key, value, Self::new_values);
+        if success {
+            self.increment_len(1);
+        }
+        success
+    }
+
+    fn remove_key<Q>(&mut self, key: &K) -> Option<Self::IV> {
+        if let Some(inner_set) = self.inner_map_mut().remove(key) {
+            self.decrement_len(inner_set.len());
+            Some(inner_set)
         } else {
             None
         }
     }
 
-    pub fn remove<Q>(&mut self, key: &Q, value: &V) -> bool
-    where
-        Q: Hash + Equivalent<K>,
-    {
-        if let Some(set) = self.inner.get_mut(key) {
-            if set.remove(value) {
-                if set.is_empty() {
-                    self.inner.remove(key);
+    fn remove(&mut self, key: &K, value: &V) -> bool {
+        if let Some(values) = self.inner_map_mut().get_mut(key) {
+            if values.remove(value) {
+                if values.is_empty() {
+                    self.inner_map_mut().remove(key);
                 }
-                self.len -= 1;
+                self.decrement_len(1);
                 true
             } else {
                 false
@@ -106,66 +192,67 @@ where
             false
         }
     }
-}
 
-trait Multimap<'a, K, V, KS: 'a, VS, S = RandomState>
-where
-    K: Hash,
-    KS: InnerMap<K, VS>,
-    VS: InnerValues<V>,
-{
-    fn insert(&mut self, key: K, value: V) -> bool;
-
-    // fn remove_key<Q>(&'a mut self, key: &Q) -> Option<VS>
-    // where
-    //     Q: Hash + Equivalent<K>,
-    // {
-    //     if let Some(inner_set) = self.inner_map_mut().remove(key) {
-    //         self.reduce_len(inner_set.len());
-    //         Some(inner_set)
-    //     } else {
-    //         None
-    //     }
-    // }
-
-    fn remove(&mut self, key: &K, value: &V) -> bool;
-
-    fn get<Q: ?Sized>(&'a self, key: &Q) -> Option<&'a VS>
+    fn get<Q: ?Sized>(&'a self, key: &Q) -> Option<&'a Self::IV>
     where
-        Q: Hash + Equivalent<K>,
+        K: Borrow<Q>,
+        Q: Equivalent<K> + Hash + Eq,
+        Self::IK: 'a,
     {
         self.inner_map().get(key)
     }
 
     fn contains_key<Q: ?Sized>(&self, key: &Q) -> bool
     where
-        Q: Hash + Equivalent<K>;
+        K: Borrow<Q>,
+        Q: Equivalent<K> + Hash + Eq,
+    {
+        self.inner_map().contains_key(key)
+    }
 
-    fn contains<Q: ?Sized, R: ?Sized>(&self, key: &Q, value: &R) -> bool
+    // TODO how to check for equivalent of V without requiring Hash etc?
+    fn contains<Q: ?Sized>(&self, key: &Q, value: &V) -> bool
     where
-        Q: Hash + Equivalent<K>,
-        R: Hash + Equivalent<V>;
+        K: Borrow<Q>,
+        Q: Equivalent<K> + Hash + Eq,
+    {
+        if let Some(values) = self.inner_map().get(key) {
+            values.contains(value)
+        } else {
+            false
+        }
+    }
 
-    fn reserve(&mut self, additional: usize);
+    fn reserve(&mut self, additional: usize) {
+        self.inner_map_mut().reserve(additional);
+    }
 
-    fn capacity(&self) -> usize;
+    fn key_capacity(&self) -> usize {
+        self.inner_map().capacity()
+    }
 
-    fn is_empty(&self) -> bool;
+    fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    fn keys_len(&self) -> usize {
+        self.inner_map().len()
+    }
 
     fn len(&self) -> usize;
 
-    fn keys_len(&self) -> usize;
+    fn new_values() -> Self::IV;
 
     // TODO consider making private by using one of suggestions here https://jack.wrenn.fyi/blog/private-trait-methods/
     #[doc(hidden)]
-    fn inner_map_mut(&'a mut self) -> &'a mut KS;
+    fn inner_map_mut(&mut self) -> &mut Self::IK;
     #[doc(hidden)]
-    fn inner_map(&'a self) -> &'a KS;
+    fn inner_map(&self) -> &Self::IK;
 
     #[doc(hidden)]
-    fn set_len(&mut self, len: usize);
+    fn increment_len(&mut self, amount: usize);
 
-    fn reduce_len(&mut self, len: usize);
+    fn decrement_len(&mut self, amount: usize);
 }
 
 /// Index map with multiple (unique) values per key.
@@ -420,12 +507,10 @@ where
 
 #[cfg(test)]
 mod tests {
-    use alloc::string::ToString;
-    use alloc::vec::Vec;
+    use indexmap::indexmap;
+    use indexmap::indexset;
 
     use super::*;
-    use crate::indexmap;
-    use crate::indexset;
 
     #[test]
     fn with_capacity_constructs_instance_with_correct_capacity() {

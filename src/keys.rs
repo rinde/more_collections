@@ -30,6 +30,8 @@ pub trait InnerKeys<K, V, IV> {
     fn len(&self) -> usize;
 
     fn is_empty(&self) -> bool;
+
+    fn capacity(&self) -> usize;
 }
 
 impl<K, V, IV, S> InnerKeys<K, V, IV> for HashMap<K, IV, S>
@@ -54,11 +56,11 @@ where
     }
 
     fn get_mut(&mut self, key: &K) -> Option<&mut IV> {
-        HashMap::get_mut(&mut self, key)
+        HashMap::get_mut(self, key)
     }
 
     fn remove(&mut self, key: &K) -> Option<IV> {
-        HashMap::remove(&mut self, key)
+        HashMap::remove(self, key)
     }
 
     fn contains_key<Q: ?Sized>(&self, key: &Q) -> bool
@@ -70,7 +72,7 @@ where
     }
 
     fn reserve(&mut self, additional: usize) {
-        HashMap::reserve(&mut self, additional)
+        HashMap::reserve(self, additional)
     }
 
     fn len(&self) -> usize {
@@ -79,6 +81,10 @@ where
 
     fn is_empty(&self) -> bool {
         HashMap::is_empty(&self)
+    }
+
+    fn capacity(&self) -> usize {
+        HashMap::capacity(&self)
     }
 }
 
@@ -108,7 +114,7 @@ where
     }
 
     fn remove(&mut self, key: &K) -> Option<IV> {
-        IndexMap::remove(&mut self, key)
+        IndexMap::remove(self, key)
     }
 
     fn contains_key<Q: ?Sized>(&self, key: &Q) -> bool
@@ -120,7 +126,7 @@ where
     }
 
     fn reserve(&mut self, additional: usize) {
-        IndexMap::reserve(&mut self, additional)
+        IndexMap::reserve(self, additional)
     }
 
     fn len(&self) -> usize {
@@ -129,5 +135,9 @@ where
 
     fn is_empty(&self) -> bool {
         IndexMap::is_empty(&self)
+    }
+
+    fn capacity(&self) -> usize {
+        IndexMap::capacity(&self)
     }
 }
