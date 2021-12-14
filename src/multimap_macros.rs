@@ -1,5 +1,5 @@
 #[macro_export]
-macro_rules! multimap_impl {
+macro_rules! multimap_base_impl {
     ($keys:ty, $values:ty ) => {
         pub fn new() -> Self {
             Self {
@@ -27,18 +27,19 @@ macro_rules! multimap_impl {
 }
 
 #[macro_export]
-macro_rules! multimap_modifiers_impl {
-    ($keys:ty, $values:ty ) => {
+macro_rules! multimap_mutators_impl {
+    ($keys:ty, $values:ty, $values_ctx:expr) => {
         /// Insert the value into the multimap.
         ///
         /// If an equivalent entry already exists in the multimap, it returns
         /// `false` leaving the original value in the set and without altering its
         /// insertion order. Otherwise, it inserts the new entry and returns `true`.
         pub fn insert(&mut self, key: K, value: V) -> bool {
+            // TODO write procedural macro to handle different case of Vec / HashSet
             if self
                 .inner
                 .entry(key)
-                .or_insert_with(|| IndexSet::with_hasher(S::default()))
+                .or_insert_with(|| $values_ctx)
                 .insert(value)
             {
                 self.len += 1;
@@ -47,5 +48,16 @@ macro_rules! multimap_modifiers_impl {
                 false
             }
         }
+
+        // pub fn remove_key<Q: ?Sized>(&mut self, key: &Q) -> Option<$values>
+        // where $keys_ref
+        // {
+        //     if let Some(inner_set) = self.inner.remove(key) {
+        //         self.decrement_len(inner_set.len());
+        //         Some(inner_set)
+        //     } else {
+        //         None
+        //     }
+        // }
     };
 }
