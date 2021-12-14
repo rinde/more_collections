@@ -9,7 +9,12 @@ use std::hash::Hash;
 use std::iter::repeat;
 
 use crate::keys::InnerKeys;
+use crate::multimap_modifiers_impl;
 use crate::values::InnerValues;
+
+use crate::multimap_impl;
+
+// use crate::multimap_macros::multimap_impl;
 
 // TODO the approach below is probably not going to work
 // let explore first IndexSetMultimap and IndexVecMultimap implementations to reduce the complexity
@@ -121,47 +126,42 @@ struct IndexVecMultimap<K, V, S = RandomState> {
 }
 
 impl<K, V> IndexVecMultimap<K, V> {
-    pub fn new() -> Self {
-        Self {
-            inner: IndexMap::new(),
-            len: 0,
-        }
-    }
+    multimap_impl! { IndexMap<K,Vec<V>>, Vec<V> }
 }
 
-impl<'a, K, V, S> Multimap<'a, K, V> for IndexVecMultimap<K, V, S>
-where
-    K: Hash + Eq,
-    V: Hash + Eq,
-    S: BuildHasher + Default,
-{
-    type IV = Vec<V>;
-    type IK = IndexMap<K, Vec<V>, S>;
+// impl<'a, K, V, S> Multimap<'a, K, V> for IndexVecMultimap<K, V, S>
+// where
+//     K: Hash + Eq,
+//     V: Hash + Eq,
+//     S: BuildHasher + Default,
+// {
+//     type IV = Vec<V>;
+//     type IK = IndexMap<K, Vec<V>, S>;
 
-    fn len(&self) -> usize {
-        self.len
-    }
+//     fn len(&self) -> usize {
+//         self.len
+//     }
 
-    fn new_values() -> Self::IV {
-        vec![]
-    }
+//     fn new_values() -> Self::IV {
+//         vec![]
+//     }
 
-    fn inner_map_mut(&mut self) -> &mut Self::IK {
-        &mut self.inner
-    }
+//     fn inner_map_mut(&mut self) -> &mut Self::IK {
+//         &mut self.inner
+//     }
 
-    fn inner_map(&self) -> &Self::IK {
-        &self.inner
-    }
+//     fn inner_map(&self) -> &Self::IK {
+//         &self.inner
+//     }
 
-    fn increment_len(&mut self, amount: usize) {
-        self.len += amount
-    }
+//     fn increment_len(&mut self, amount: usize) {
+//         self.len += amount
+//     }
 
-    fn decrement_len(&mut self, amount: usize) {
-        self.len -= amount
-    }
-}
+//     fn decrement_len(&mut self, amount: usize) {
+//         self.len -= amount
+//     }
+// }
 
 struct IndexSetMultimap<K, V, S = RandomState> {
     inner: IndexMap<K, IndexSet<V, S>, S>,
@@ -169,15 +169,17 @@ struct IndexSetMultimap<K, V, S = RandomState> {
 }
 
 impl<K, V> IndexSetMultimap<K, V> {
-    pub fn new() -> Self {
-        Self {
-            inner: IndexMap::new(),
-            len: 0,
-        }
-    }
+    multimap_impl! {IndexMap<K, IndexSet<V>>, IndexSet<V>}
 }
 
-impl<K, V, S> IndexSetMultimap<K, V, S> {
+impl<K, V, S> IndexSetMultimap<K, V, S>
+where
+    K: Hash + Eq,
+    V: Hash + Eq,
+    S: BuildHasher + Default,
+{
+    multimap_modifiers_impl! {IndexMap<K, IndexSet<V,S>, S>, IndexSet<V,S>}
+
     pub fn with_capacity_and_hasher(n: usize, hash_builder: S) -> Self {
         IndexSetMultimap {
             inner: IndexMap::with_capacity_and_hasher(n, hash_builder),
@@ -190,39 +192,39 @@ impl<K, V, S> IndexSetMultimap<K, V, S> {
     }
 }
 
-impl<'a, K, V, S> Multimap<'a, K, V> for IndexSetMultimap<K, V, S>
-where
-    K: Hash + Eq,
-    V: Hash + Eq,
-    S: BuildHasher + Default,
-{
-    type IV = IndexSet<V, S>;
-    type IK = IndexMap<K, IndexSet<V, S>, S>;
+// impl<'a, K, V, S> Multimap<'a, K, V> for IndexSetMultimap<K, V, S>
+// where
+//     K: Hash + Eq,
+//     V: Hash + Eq,
+//     S: BuildHasher + Default,
+// {
+//     type IV = IndexSet<V, S>;
+//     type IK = IndexMap<K, IndexSet<V, S>, S>;
 
-    fn len(&self) -> usize {
-        self.len
-    }
+//     fn len(&self) -> usize {
+//         self.len
+//     }
 
-    fn new_values() -> Self::IV {
-        IndexSet::with_hasher(S::default())
-    }
+//     fn new_values() -> Self::IV {
+//         IndexSet::with_hasher(S::default())
+//     }
 
-    fn inner_map_mut(&mut self) -> &mut Self::IK {
-        &mut self.inner
-    }
+//     fn inner_map_mut(&mut self) -> &mut Self::IK {
+//         &mut self.inner
+//     }
 
-    fn inner_map(&self) -> &Self::IK {
-        &self.inner
-    }
+//     fn inner_map(&self) -> &Self::IK {
+//         &self.inner
+//     }
 
-    fn increment_len(&mut self, len: usize) {
-        self.len = len;
-    }
+//     fn increment_len(&mut self, len: usize) {
+//         self.len = len;
+//     }
 
-    fn decrement_len(&mut self, len: usize) {
-        self.len -= len;
-    }
-}
+//     fn decrement_len(&mut self, len: usize) {
+//         self.len -= len;
+//     }
+// }
 
 trait Multimap<'a, K, V> {
     type IV: InnerValues<V>;
