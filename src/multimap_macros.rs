@@ -23,7 +23,7 @@ macro_rules! multimap_base_impl {
 
 #[macro_export]
 macro_rules! multimap_mutators_impl {
-    ($keys:ty, $values:ty, $values_ctx:expr, ($($keys_ref:tt)*), ($($values_ref:tt)*)) => {
+    ($keys:ty, $values:ty, $values_ctx:expr, $values_class:tt, ($($keys_ref:tt)*), ($($values_ref:tt)*)) => {
 
         pub fn len(&self) -> usize {
             self.len
@@ -52,25 +52,27 @@ macro_rules! multimap_mutators_impl {
             Self::with_capacity_and_hasher(0, hash_builder)
         }
 
+        crate::insert!($values_class $values_ctx);
+
         /// Insert the value into the multimap.
         ///
         /// If an equivalent entry already exists in the multimap, it returns
         /// `false` leaving the original value in the set and without altering its
         /// insertion order. Otherwise, it inserts the new entry and returns `true`.
-        pub fn insert(&mut self, key: K, value: V) -> bool {
-            // TODO write procedural macro to handle different case of Vec / HashSet
-            if self
-                .inner
-                .entry(key)
-                .or_insert_with(|| $values_ctx)
-                .insert(value)
-            {
-                self.len += 1;
-                true
-            } else {
-                false
-            }
-        }
+        // pub fn insert(&mut self, key: K, value: V) -> bool {
+        //     // TODO write procedural macro to handle different case of Vec / HashSet
+        //     if self
+        //         .inner
+        //         .entry(key)
+        //         .or_insert_with(|| $values_ctx)
+        //         .insert(value)
+        //     {
+        //         self.len += 1;
+        //         true
+        //     } else {
+        //         false
+        //     }
+        // }
 
         /// Remove the key and all associated values from the multimap.
         ///
@@ -95,7 +97,7 @@ macro_rules! multimap_mutators_impl {
             $($values_ref)*,
         {
             if let Some(values) = self.inner.get_mut(key) {
-                if values.remove(value) {
+                if crate::values_remove!($values_class, values, value) {
                     if values.is_empty() {
                         self.inner.remove(key);
                     }
@@ -134,7 +136,7 @@ macro_rules! multimap_mutators_impl {
             $($values_ref)*,
         {
             if let Some(values) = self.inner.get(key) {
-                values.contains(value)
+                crate::values_contains!($values_class, values, value)
             } else {
                 false
             }
@@ -144,6 +146,68 @@ macro_rules! multimap_mutators_impl {
         /// Reserve capacity for `additional` more keys.
         pub fn reserve(&mut self, additional: usize) {
             self.inner.reserve(additional);
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! insert {
+    (set $values_ctx:expr) => {
+        /// Insert the value into the multimap.
+        ///
+        /// If an equivalent entry already exists in the multimap, it returns
+        /// `false` leaving the original value in the set and without altering its
+        /// insertion order. Otherwise, it inserts the new entry and returns `true`.
+        pub fn insert(&mut self, key: K, value: V) -> bool {
+            if self
+                .inner
+                .entry(key)
+                .or_insert_with(|| $values_ctx)
+                .insert(value)
+            {
+                self.len += 1;
+                true
+            } else {
+                false
+            }
+        }
+    };
+
+    (vec $values_ctx:expr) => {
+        /// Insert the value into the multimap.
+        pub fn insert(&mut self, key: K, value: V) {
+            self.inner
+                .entry(key)
+                .or_insert_with(|| $values_ctx)
+                .push(value);
+            self.len += 1;
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! values_contains {
+    (set, $values:ident, $value:ident) => {
+        $values.contains($value)
+    };
+
+    (vec, $values:ident, $value:ident) => {
+        $values.iter().find(|x| $value.equivalent(x)).is_some()
+    };
+}
+
+#[macro_export]
+macro_rules! values_remove {
+    (set, $values:ident, $value:ident) => {
+        $values.remove($value)
+    };
+
+    (vec, $values:ident, $value:ident) => {
+        if let Some(index) = $values.iter().position(|x| $value.equivalent(x)) {
+            $values.remove(index);
+            true
+        } else {
+            false
         }
     };
 }
