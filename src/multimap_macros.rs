@@ -8,6 +8,23 @@ macro_rules! multimap_base_impl {
             }
         }
 
+        pub fn with_key_capacity(capacity: usize) -> Self {
+            Self {
+                inner: <$keys>::with_capacity(capacity),
+                len: 0,
+            }
+        }
+
+        pub fn key_capacity(&self) -> usize {
+            self.inner.capacity()
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! multimap_mutators_impl {
+    ($keys:ty, $values:ty, $values_ctx:expr, ($($keys_ref:tt)*), ($($values_ref:tt)*)) => {
+
         pub fn len(&self) -> usize {
             self.len
         }
@@ -23,16 +40,6 @@ macro_rules! multimap_base_impl {
         pub fn iter(&self) -> impl Iterator<Item = (&K, &V)> {
             self.inner.iter().flat_map(|(k, v)| repeat(k).zip(v.iter()))
         }
-
-        pub fn key_capacity(&self) -> usize {
-            self.inner.capacity()
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! multimap_mutators_impl {
-    ($keys:ty, $values:ty, $values_ctx:expr, ($($keys_ref:tt)*), ($($values_ref:tt)*)) => {
 
         pub fn with_capacity_and_hasher(n: usize, hash_builder: S) -> Self {
             Self {
@@ -74,7 +81,7 @@ macro_rules! multimap_mutators_impl {
             $($keys_ref)*
         {
             if let Some(values) = self.inner.remove(key) {
-                self.len -= 1;
+                self.len -= values.len();
                 Some(values)
             } else {
                 None
