@@ -162,18 +162,9 @@ where
     multimap_mutators_impl! {
         IndexMap<K, IndexSet<V,S>, S>,
         IndexSet<V,S>,
-        IndexSet::with_hasher(S::default())
-    }
-
-    pub fn with_capacity_and_hasher(n: usize, hash_builder: S) -> Self {
-        IndexSetMultimap {
-            inner: IndexMap::with_capacity_and_hasher(n, hash_builder),
-            len: 0,
-        }
-    }
-
-    pub fn with_hasher(hash_builder: S) -> Self {
-        Self::with_capacity_and_hasher(0, hash_builder)
+        IndexSet::with_hasher(S::default()),
+        (Q: Hash + Equivalent<K>),
+        (R: Hash + Equivalent<V>)
     }
 }
 
@@ -194,10 +185,10 @@ where
 {
     multimap_mutators_impl! {
         HashMap<K, HashSet<V,S>, S>,
-        IndexSet<V,S>,
+        HashSet<V,S>,
         HashSet::with_hasher(S::default()),
-        // {K: Borrow<Q>,
-        // Q: Hash + Eq,}
+        (K: Borrow<Q>, Q: Hash + Eq),
+        (V: Borrow<R>, R: Hash + Eq)
     }
 }
 
