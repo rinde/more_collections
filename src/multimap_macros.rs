@@ -54,26 +54,6 @@ macro_rules! multimap_mutators_impl {
 
         crate::insert!($values_class $values_ctx);
 
-        /// Insert the value into the multimap.
-        ///
-        /// If an equivalent entry already exists in the multimap, it returns
-        /// `false` leaving the original value in the set and without altering its
-        /// insertion order. Otherwise, it inserts the new entry and returns `true`.
-        // pub fn insert(&mut self, key: K, value: V) -> bool {
-        //     // TODO write procedural macro to handle different case of Vec / HashSet
-        //     if self
-        //         .inner
-        //         .entry(key)
-        //         .or_insert_with(|| $values_ctx)
-        //         .insert(value)
-        //     {
-        //         self.len += 1;
-        //         true
-        //     } else {
-        //         false
-        //     }
-        // }
-
         /// Remove the key and all associated values from the multimap.
         ///
         /// Returns the set of values if at least one value is associated to `key`,
@@ -175,6 +155,8 @@ macro_rules! insert {
 
     (vec $values_ctx:expr) => {
         /// Insert the value into the multimap.
+        ///
+        /// Allows duplicates.
         pub fn insert(&mut self, key: K, value: V) {
             self.inner
                 .entry(key)

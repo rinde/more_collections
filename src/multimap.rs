@@ -138,7 +138,6 @@ where
     S: BuildHasher + Default,
 {
     fn extend<I: IntoIterator<Item = (K, V)>>(&mut self, iterable: I) {
-        // Using the  same reservation logic as in IndexMap
         let iter = iterable.into_iter();
         let reserve = if self.is_empty() {
             iter.size_hint().0
