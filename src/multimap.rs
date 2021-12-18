@@ -10,6 +10,7 @@ use std::hash::Hash;
 use std::iter::repeat;
 
 use crate::multimap_base_impl;
+use crate::multimap_extend;
 use crate::multimap_mutators_impl;
 #[derive(Debug)]
 pub struct IndexVecMultimap<K, V, S = RandomState> {
@@ -24,7 +25,7 @@ impl<K, V> IndexVecMultimap<K, V> {
 impl<K, V, S> IndexVecMultimap<K, V, S>
 where
     K: Hash + Eq,
-    V: Hash + Eq,
+    V: Eq,
     S: BuildHasher + Default,
 {
     multimap_mutators_impl! {
@@ -76,7 +77,7 @@ impl<K, V> HashVecMultimap<K, V> {
 impl<K, V, S> HashVecMultimap<K, V, S>
 where
     K: Hash + Eq,
-    V: Hash + Eq,
+    V: Eq,
     S: BuildHasher + Default,
 {
     multimap_mutators_impl! {
@@ -87,6 +88,34 @@ where
         (K: Borrow<Q>, Q: Hash + Eq),
         (V: Borrow<R>, R: Equivalent<V>)
     }
+}
+
+multimap_extend! {
+    HashVecMultimap,
+    (K, V, S),
+    (K: Hash + Eq),
+    (V: Eq)
+}
+
+multimap_extend! {
+    HashSetMultimap,
+    (K, V, S),
+    (K: Hash + Eq),
+    (V: Hash + Eq)
+}
+
+multimap_extend! {
+    IndexVecMultimap,
+    (K, V, S),
+    (K: Hash + Eq),
+    (V: Eq)
+}
+
+multimap_extend! {
+    IndexSetMultimap,
+    (K, V, S),
+    (K: Hash + Eq),
+    (V: Hash + Eq)
 }
 
 #[derive(Debug)]
@@ -115,57 +144,10 @@ where
     }
 }
 
-// TODO generate with a macro
-impl<K, V, S> FromIterator<(K, V)> for IndexSetMultimap<K, V, S>
-where
-    K: Hash + Eq,
-    V: Hash + Eq,
-    S: BuildHasher + Default,
-{
-    fn from_iter<I: IntoIterator<Item = (K, V)>>(iterable: I) -> Self {
-        let iter = iterable.into_iter();
-        let (low, _) = iter.size_hint();
-        let mut map = Self::with_capacity_and_hasher(low, <_>::default());
-        map.extend(iter);
-        map
-    }
-}
-
-impl<K, V, S> Extend<(K, V)> for IndexSetMultimap<K, V, S>
-where
-    K: Hash + Eq,
-    V: Hash + Eq,
-    S: BuildHasher + Default,
-{
-    fn extend<I: IntoIterator<Item = (K, V)>>(&mut self, iterable: I) {
-        let iter = iterable.into_iter();
-        let reserve = if self.is_empty() {
-            iter.size_hint().0
-        } else {
-            (iter.size_hint().0 + 1) / 2
-        };
-        self.reserve(reserve);
-        iter.for_each(move |(k, v)| {
-            self.insert(k, v);
-        });
-    }
-}
-
-impl<'a, K, V, S> Extend<(&'a K, &'a V)> for IndexSetMultimap<K, V, S>
-where
-    K: Hash + Eq + Copy,
-    V: Hash + Eq + Copy,
-    S: BuildHasher + Default,
-{
-    fn extend<I: IntoIterator<Item = (&'a K, &'a V)>>(&mut self, iterable: I) {
-        self.extend(iterable.into_iter().map(|(&key, &value)| (key, value)));
-    }
-}
-
 impl<K, V, S> From<IndexMap<K, IndexSet<V, S>, S>> for IndexSetMultimap<K, V, S>
 where
-    K: Hash + Eq + Copy,
-    V: Hash + Eq + Copy,
+    K: Hash + Eq,
+    V: Hash + Eq,
     S: BuildHasher + Default,
 {
     fn from(mut map: IndexMap<K, IndexSet<V, S>, S>) -> Self {

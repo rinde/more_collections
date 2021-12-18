@@ -130,7 +130,7 @@ macro_rules! multimap_mutators_impl {
     };
 }
 
-#[macro_export]
+#[macro_export(local_inner_macros)]
 macro_rules! insert {
     (set $values_ctx:expr) => {
         /// Insert the value into the multimap.
@@ -167,7 +167,7 @@ macro_rules! insert {
     };
 }
 
-#[macro_export]
+#[macro_export(local_inner_macros)]
 macro_rules! values_contains {
     (set, $values:ident, $value:ident) => {
         $values.contains($value)
@@ -178,7 +178,7 @@ macro_rules! values_contains {
     };
 }
 
-#[macro_export]
+#[macro_export(local_inner_macros)]
 macro_rules! values_remove {
     (set, $values:ident, $value:ident) => {
         $values.remove($value)
@@ -190,6 +190,54 @@ macro_rules! values_remove {
             true
         } else {
             false
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! multimap_extend {
+    ($type:tt, ($($generic_ids:tt)*), ($($keys:tt)*), ($($values:tt)*) )=> {
+        impl<$($generic_ids)*> Extend<(K, V)> for $type<$($generic_ids)*>
+        where
+            $($keys)*,
+            $($values)*,
+            S: BuildHasher + Default,
+        {
+            fn extend<I: IntoIterator<Item = (K, V)>>(&mut self, iterable: I) {
+                let iter = iterable.into_iter();
+                let reserve = (iter.size_hint().0 + 1) / 2;
+                self.reserve(reserve);
+                iter.for_each(move |(k, v)| {
+                    self.insert(k, v);
+                });
+            }
+        }
+
+        impl<'a, $($generic_ids)*> Extend<(&'a K, &'a V)> for $type<$($generic_ids)*>
+        where
+            $($keys)* + Copy,
+            $($values)* + Copy,
+            S: BuildHasher + Default,
+        {
+            fn extend<I: IntoIterator<Item = (&'a K, &'a V)>>(&mut self, iterable: I) {
+                self.extend(iterable.into_iter().map(|(&key, &value)| (key, value)));
+            }
+        }
+
+        impl<$($generic_ids)*> FromIterator<(K, V)> for $type<$($generic_ids)*>
+        where
+            $($keys)*,
+            $($values)*,
+            S: BuildHasher + Default,
+        {
+            fn from_iter<I: IntoIterator<Item = (K, V)>>(iterable: I) -> Self {
+                let iter = iterable.into_iter();
+                let (low, _) = iter.size_hint();
+                // TODO this resizing has a high chance of over provisioning
+                let mut map = Self::with_capacity_and_hasher(low, <_>::default());
+                map.extend(iter);
+                map
+            }
         }
     };
 }
