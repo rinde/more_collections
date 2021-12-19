@@ -196,7 +196,7 @@ macro_rules! values_remove {
 
 #[macro_export]
 macro_rules! multimap_extend {
-    ($type:tt, ($($generic_ids:tt)*), ($($keys:tt)*), ($($values:tt)*) )=> {
+    ($type:tt, ($($generic_ids:tt)*), $inner_type:ty, ($($keys:tt)*), ($($values:tt)*) )=> {
         impl<$($generic_ids)*> Extend<(K, V)> for $type<$($generic_ids)*>
         where
             $($keys)*,
@@ -239,7 +239,36 @@ macro_rules! multimap_extend {
                 map
             }
         }
+
+        impl<$($generic_ids)*> From<$inner_type> for $type<$($generic_ids)*>
+        where
+            $($keys)*,
+            $($values)*,
+            S: BuildHasher + Default,
+        {
+            fn from(mut map: $inner_type) -> Self {
+                map.retain(|_k, v| !v.is_empty());
+                let len = map.iter().map(|(_k, v)| v.len()).sum();
+                $type { inner: map, len }
+            }
+        }
     };
+}
+
+#[macro_export]
+macro_rules! multimap_from {
+    ($type:tt, ($($generic_ids:tt)*), $keys:ty, $($where_clause:tt)*) => {
+        impl<$($generic_ids)*> From<$keys> for $type<$($generic_ids)*>
+        where
+           $($where_clause)*
+        {
+            fn from(mut map: $keys) -> Self {
+                map.retain(|_k, v| !v.is_empty());
+                let len = map.iter().map(|(_k, v)| v.len()).sum();
+                $type { inner: map, len }
+            }
+        }
+    }
 }
 
 // TODO create macro for IndexMap specific functions:
