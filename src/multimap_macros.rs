@@ -1,6 +1,11 @@
+#[doc(hidden)]
 #[macro_export]
 macro_rules! multimap_base_impl {
     ($keys:ty, $values:ty ) => {
+        /// Creates a new multimap.
+        ///
+        /// The multimap is initially created with a capacity of 0, so it will
+        /// not allocate until it is first inserted into.
         pub fn new() -> Self {
             Self {
                 inner: <$keys>::new(),
@@ -21,6 +26,7 @@ macro_rules! multimap_base_impl {
     };
 }
 
+#[doc(hidden)]
 #[macro_export]
 macro_rules! multimap_mutators_impl {
     ($keys:ty, $values:ty, $values_ctx:expr, $values_class:tt, ($($keys_ref:tt)*), ($($values_ref:tt)*)) => {
@@ -56,8 +62,7 @@ macro_rules! multimap_mutators_impl {
 
         /// Remove the key and all associated values from the multimap.
         ///
-        /// Returns the set of values if at least one value is associated to `key`,
-        /// returns `None` otherwise.
+        /// Returns values if at least one value is associated to `key`, returns `None` otherwise.
         pub fn remove_key<Q: ?Sized>(&mut self, key: &Q) -> Option<$values>
         where
             $($keys_ref)*
@@ -91,10 +96,7 @@ macro_rules! multimap_mutators_impl {
             }
         }
 
-
-        // #[doc = "Return a reference to the"+ $values_class +"stored for `key`, if it is present, else `None`."]
-
-        #[doc = concat!("Return a reference to the", stringify!($values_class), "stored for `key`, if it is present, else `None`.")]
+        #[doc = concat!("Return a reference to the ", stringify!($values_class), " stored for `key`, if it is present, else `None`.")]
         pub fn get<Q: ?Sized>(&self, key: &Q) -> Option<&$values>
         where
             $($keys_ref)*,
@@ -132,7 +134,8 @@ macro_rules! multimap_mutators_impl {
     };
 }
 
-#[macro_export(local_inner_macros)]
+#[doc(hidden)]
+#[macro_export]
 macro_rules! insert {
     (set $values_ctx:expr) => {
         /// Insert the value into the multimap.
@@ -169,7 +172,8 @@ macro_rules! insert {
     };
 }
 
-#[macro_export(local_inner_macros)]
+#[doc(hidden)]
+#[macro_export]
 macro_rules! values_contains {
     (set, $values:ident, $value:ident) => {
         $values.contains($value)
@@ -180,7 +184,8 @@ macro_rules! values_contains {
     };
 }
 
-#[macro_export(local_inner_macros)]
+#[doc(hidden)]
+#[macro_export]
 macro_rules! values_remove {
     (set, $values:ident, $value:ident) => {
         $values.remove($value)
@@ -196,6 +201,7 @@ macro_rules! values_remove {
     };
 }
 
+#[doc(hidden)]
 #[macro_export]
 macro_rules! multimap_extend {
     ($type:tt, ($($generic_ids:tt)*), $inner_type:ty, ($($keys:tt)*), ($($values:tt)*) )=> {
@@ -257,6 +263,7 @@ macro_rules! multimap_extend {
     };
 }
 
+#[doc(hidden)]
 #[macro_export]
 macro_rules! multimap_from {
     ($type:tt, ($($generic_ids:tt)*), $keys:ty, $($where_clause:tt)*) => {
@@ -273,6 +280,7 @@ macro_rules! multimap_from {
     }
 }
 
+#[doc(hidden)]
 #[macro_export]
 macro_rules! multimap_eq {
     ($type:tt, ($($values_generics:tt)*)) => {

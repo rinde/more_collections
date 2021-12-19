@@ -8,18 +8,18 @@
 | 💡      | ideation phase |
 ## Multimaps 
 
-| Status | Name                 | Keys     | Values   |
-| ------ | -------------------- | -------- | -------- |
-| 🔷      | HashSetMultimap      | HashMap  | HashSet  |
-| 🔷      | HashVecMultimap      | HashMap  | Vec      |
-| 🔷      | IndexSetMultimap     | IndexMap | IndexSet |
-| 🔷      | IndexVecMultimap     | IndexMap | Vec      |
-| 💡      | SortedSetMultimap    | BTreeMap | BTreeSet |
-| 💡      | SortedVecMultimap    | BTreeMap | Vec      |
-| 💡      | EnumHashSetMultimap  | EnumMap  | HashSet  |
-| 💡      | EnumIndexSetMultimap | EnumMap  | IndexSet |
-| 💡      | EnumVecMultimap      | EnumMap  | Vec      |
-| 💡      | EnumEnumMultimap     | EnumMap  | EnumSet  |
+| Status | Name                 | Behaves like               |
+| ------ | -------------------- | -------------------------- |
+| 🔷      | HashSetMultimap      | `HashMap<K, HashSet<V>>`   |
+| 🔷      | HashVecMultimap      | `HashMap<K, Vec<V>>`       |
+| 🔷      | IndexSetMultimap     | `IndexMap<K, IndexSet<V>>` |
+| 🔷      | IndexVecMultimap     | `IndexMap<K, Vec<V>>`      |
+| 💡      | SortedSetMultimap    | `BTreeMap<K, BTreeSet<V>>` |
+| 💡      | SortedVecMultimap    | `BTreeMap<K, Vec<V>>`      |
+| 💡      | EnumHashSetMultimap  | `EnumMap<K, HashSet<V>>`   |
+| 💡      | EnumIndexSetMultimap | `EnumMap<K, IndexSet<V>>`  |
+| 💡      | EnumVecMultimap      | `EnumMap<K, Vec<V>>     `  |
+| 💡      | EnumEnumMultimap     | `EnumMap<K, EnumSet<V>>`   |
 
 ## Multisets
 

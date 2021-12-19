@@ -14,58 +14,44 @@ use crate::multimap_base_impl;
 use crate::multimap_eq;
 use crate::multimap_extend;
 use crate::multimap_mutators_impl;
+
+/// Multimap implementation that behaves like `HashMap<K, HashSet<V>>`.
 #[derive(Debug)]
-pub struct IndexVecMultimap<K, V, S = RandomState> {
-    inner: IndexMap<K, Vec<V>, S>,
+pub struct HashSetMultimap<K, V, S = RandomState> {
+    inner: HashMap<K, HashSet<V, S>, S>,
     len: usize,
 }
 
-impl<K, V> IndexVecMultimap<K, V> {
-    multimap_base_impl! { IndexMap<K,Vec<V>>, Vec<V> }
+impl<K, V> HashSetMultimap<K, V> {
+    multimap_base_impl! {HashMap<K, HashSet<V>>, HashSet<V>}
 }
 
-impl<K, V, S> IndexVecMultimap<K, V, S>
-where
-    K: Hash + Eq,
-    V: Eq,
-    S: BuildHasher + Default,
-{
-    multimap_mutators_impl! {
-        IndexMap<K, Vec<V>, S>,
-        Vec<V>,
-        vec![],
-        vec,
-        (Q: Hash + Equivalent<K>),
-        (R: Equivalent<V>)
-    }
-}
-
-#[derive(Debug)]
-pub struct IndexSetMultimap<K, V, S = RandomState> {
-    inner: IndexMap<K, IndexSet<V, S>, S>,
-    len: usize,
-}
-
-impl<K, V> IndexSetMultimap<K, V> {
-    multimap_base_impl! {IndexMap<K, IndexSet<V>>, IndexSet<V>}
-}
-
-impl<K, V, S> IndexSetMultimap<K, V, S>
+impl<K, V, S> HashSetMultimap<K, V, S>
 where
     K: Hash + Eq,
     V: Hash + Eq,
     S: BuildHasher + Default,
 {
     multimap_mutators_impl! {
-        IndexMap<K, IndexSet<V,S>, S>,
-        IndexSet<V,S>,
-        IndexSet::with_hasher(S::default()),
+        HashMap<K, HashSet<V,S>, S>,
+        HashSet<V,S>,
+        HashSet::with_hasher(S::default()),
         set,
-        (Q: Hash + Equivalent<K>),
-        (R: Hash + Equivalent<V>)
+        (K: Borrow<Q>, Q: Hash + Eq),
+        (V: Borrow<R>, R: Hash + Eq)
     }
 }
 
+multimap_extend! {
+    HashSetMultimap,
+    (K, V, S),
+    HashMap<K, HashSet<V,S>, S>,
+    (K: Hash + Eq),
+    (V: Hash + Eq)
+}
+multimap_eq! { HashSetMultimap, (Hash + Eq)}
+
+/// Multimap implementation that behaves like `HashMap<K, Vec<V>>`.
 #[derive(Debug)]
 pub struct HashVecMultimap<K, V, S = RandomState> {
     inner: HashMap<K, Vec<V>, S>,
@@ -99,13 +85,33 @@ multimap_extend! {
     (K: Hash + Eq),
     (V: Eq)
 }
+multimap_eq! { HashVecMultimap, (Eq)}
 
-multimap_extend! {
-    HashSetMultimap,
-    (K, V, S),
-    HashMap<K, HashSet<V,S>, S>,
-    (K: Hash + Eq),
-    (V: Hash + Eq)
+/// Multimap implementation that behaves like `IndexMap<K, Vec<V>>`.
+#[derive(Debug)]
+pub struct IndexVecMultimap<K, V, S = RandomState> {
+    inner: IndexMap<K, Vec<V>, S>,
+    len: usize,
+}
+
+impl<K, V> IndexVecMultimap<K, V> {
+    multimap_base_impl! { IndexMap<K,Vec<V>>, Vec<V> }
+}
+
+impl<K, V, S> IndexVecMultimap<K, V, S>
+where
+    K: Hash + Eq,
+    V: Eq,
+    S: BuildHasher + Default,
+{
+    multimap_mutators_impl! {
+        IndexMap<K, Vec<V>, S>,
+        Vec<V>,
+        vec![],
+        vec,
+        (Q: Hash + Equivalent<K>),
+        (R: Equivalent<V>)
+    }
 }
 
 multimap_extend! {
@@ -115,6 +121,34 @@ multimap_extend! {
     (K: Hash + Eq),
     (V: Eq)
 }
+multimap_eq! { IndexVecMultimap, (Eq)}
+
+/// Multimap implementation that behaves like `IndexMap<K, IndexSet<V>>`.
+#[derive(Debug)]
+pub struct IndexSetMultimap<K, V, S = RandomState> {
+    inner: IndexMap<K, IndexSet<V, S>, S>,
+    len: usize,
+}
+
+impl<K, V> IndexSetMultimap<K, V> {
+    multimap_base_impl! {IndexMap<K, IndexSet<V>>, IndexSet<V>}
+}
+
+impl<K, V, S> IndexSetMultimap<K, V, S>
+where
+    K: Hash + Eq,
+    V: Hash + Eq,
+    S: BuildHasher + Default,
+{
+    multimap_mutators_impl! {
+        IndexMap<K, IndexSet<V,S>, S>,
+        IndexSet<V,S>,
+        IndexSet::with_hasher(S::default()),
+        set,
+        (Q: Hash + Equivalent<K>),
+        (R: Hash + Equivalent<V>)
+    }
+}
 
 multimap_extend! {
     IndexSetMultimap,
@@ -123,37 +157,7 @@ multimap_extend! {
     (K: Hash + Eq),
     (V: Hash + Eq)
 }
-
-#[derive(Debug)]
-pub struct HashSetMultimap<K, V, S = RandomState> {
-    inner: HashMap<K, HashSet<V, S>, S>,
-    len: usize,
-}
-
-impl<K, V> HashSetMultimap<K, V> {
-    multimap_base_impl! {HashMap<K, HashSet<V>>, HashSet<V>}
-}
-
-impl<K, V, S> HashSetMultimap<K, V, S>
-where
-    K: Hash + Eq,
-    V: Hash + Eq,
-    S: BuildHasher + Default,
-{
-    multimap_mutators_impl! {
-        HashMap<K, HashSet<V,S>, S>,
-        HashSet<V,S>,
-        HashSet::with_hasher(S::default()),
-        set,
-        (K: Borrow<Q>, Q: Hash + Eq),
-        (V: Borrow<R>, R: Hash + Eq)
-    }
-}
-
-multimap_eq! { HashSetMultimap, (Hash + Eq)}
-multimap_eq! { HashVecMultimap, (Eq)}
 multimap_eq! { IndexSetMultimap, (Hash + Eq)}
-multimap_eq! { IndexVecMultimap, (Eq)}
 
 #[macro_export]
 macro_rules! indexsetmultimap {
@@ -225,22 +229,4 @@ macro_rules! hashsetmultimap {
             HashSetMultimap::from(_map)
         }
     };
-}
-
-#[cfg(test)]
-mod tests {
-
-    // #[test]
-    // fn get_index_returns_correct_value() {
-    //     let map = IndexSetMultimap::from(indexmap! {
-    //         0 => indexset!{ 1, 2, 3 },
-    //         2 => indexset!{ 2, 3 },
-    //         1 => indexset!{ 3 },
-    //     });
-
-    //     assert_eq!(map.get_index(0), Some((&0, &indexset! {1,2,3})));
-    //     assert_eq!(map.get_index(1), Some((&2, &indexset! {2,3})));
-    //     assert_eq!(map.get_index(2), Some((&1, &indexset! {3})));
-    //     assert_eq!(map.get_index(3), None);
-    // }
 }

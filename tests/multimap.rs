@@ -1,5 +1,20 @@
 #![cfg(test)]
 
+// TODO fix
+// #[test]
+// fn get_index_returns_correct_value() {
+//     let map = IndexSetMultimap::from(indexmap! {
+//         0 => indexset!{ 1, 2, 3 },
+//         2 => indexset!{ 2, 3 },
+//         1 => indexset!{ 3 },
+//     });
+
+//     assert_eq!(map.get_index(0), Some((&0, &indexset! {1,2,3})));
+//     assert_eq!(map.get_index(1), Some((&2, &indexset! {2,3})));
+//     assert_eq!(map.get_index(2), Some((&1, &indexset! {3})));
+//     assert_eq!(map.get_index(3), None);
+// }
+
 macro_rules! set_multimap_tests {
     ($type:tt) => {
         #[test]
