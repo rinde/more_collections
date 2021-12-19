@@ -1,7 +1,6 @@
 use indexmap::Equivalent;
 use indexmap::IndexMap;
 use indexmap::IndexSet;
-use maplit::hashset;
 use std::borrow::Borrow;
 use std::collections::hash_map::RandomState;
 use std::collections::HashMap;
@@ -12,8 +11,6 @@ use std::iter::repeat;
 
 use crate::multimap_base_impl;
 use crate::multimap_extend;
-use crate::multimap_from;
-use crate::multimap_macros;
 use crate::multimap_mutators_impl;
 #[derive(Debug)]
 pub struct IndexVecMultimap<K, V, S = RandomState> {
@@ -180,13 +177,13 @@ macro_rules! indexsetmultimap {
     (@single $($x:tt)*) => (());
     (@count $($rest:expr),*) => (<[()]>::len(&[$(indexsetmultimap!(@single $rest)),*]));
 
-    ($($key:expr => {$($value:expr)*},)+) => { indexsetmultimap!($($key => $value),+) };
-    ($($key:expr => {$($value:expr)*}),*) => {
+    ($($key:expr => {$($value:expr),* },)+) => { indexsetmultimap!($($key => $($value,)* ),+) };
+    ($($key:expr => {$($value:expr),* }),*) => {
         {
             let _cap = indexsetmultimap!(@count $($key),*);
             let mut _map = IndexMap::with_capacity(_cap);
             $(
-                let _ = _map.insert($key, indexset!{$($value)*});
+                let _ = _map.insert($key, indexset!{$( $value, )*});
             )*
             IndexSetMultimap::from(_map)
         }
@@ -198,13 +195,13 @@ macro_rules! indexvecmultimap {
     (@single $($x:tt)*) => (());
     (@count $($rest:expr),*) => (<[()]>::len(&[$(indexvecmultimap!(@single $rest)),*]));
 
-    ($($key:expr => {$($value:expr)*},)+) => { indexvecmultimap!($($key => $value),+) };
-    ($($key:expr => {$($value:expr)*}),*) => {
+    ($($key:expr => {$($value:expr),* },)+) => { indexvecmultimap!($($key => $($value,)* ),+) };
+    ($($key:expr => {$($value:expr),* }),*) => {
         {
             let _cap = indexvecmultimap!(@count $($key),*);
             let mut _map = IndexMap::with_capacity(_cap);
             $(
-                let _ = _map.insert($key, vec!{$($value)*});
+                let _ = _map.insert($key, vec!{$( $value, )*});
             )*
             IndexVecMultimap::from(_map)
         }
@@ -216,13 +213,13 @@ macro_rules! hashvecmultimap {
     (@single $($x:tt)*) => (());
     (@count $($rest:expr),*) => (<[()]>::len(&[$(hashvecmultimap!(@single $rest)),*]));
 
-    ($($key:expr => {$($value:expr)*},)+) => { hashvecmultimap!($($key => $value),+) };
-    ($($key:expr => {$($value:expr)*}),*) => {
+    ($($key:expr => {$($value:expr),* },)+) => { hashvecmultimap!($($key => $($value,)* ),+) };
+    ($($key:expr => {$($value:expr),* }),*) => {
         {
             let _cap = hashvecmultimap!(@count $($key),*);
             let mut _map = HashMap::with_capacity(_cap);
             $(
-                let _ = _map.insert($key, vec!{$($value)*});
+                let _ = _map.insert($key, vec!{$( $value, )*});
             )*
             HashVecMultimap::from(_map)
         }
@@ -234,13 +231,13 @@ macro_rules! hashsetmultimap {
     (@single $($x:tt)*) => (());
     (@count $($rest:expr),*) => (<[()]>::len(&[$(hashsetmultimap!(@single $rest)),*]));
 
-    ($($key:expr => {$($value:expr)*},)+) => { hashsetmultimap!($($key => $value),+) };
-    ($($key:expr => {$($value:expr)*}),*) => {
+    ($($key:expr => {$($value:expr),* },)+) => { hashsetmultimap!($($key => $($value,)* ),+) };
+    ($($key:expr => {$($value:expr),* }),*) => {
         {
             let _cap = hashsetmultimap!(@count $($key),*);
             let mut _map = HashMap::with_capacity(_cap);
             $(
-                let _ = _map.insert($key, hashset!{$($value)*});
+                let _ = _map.insert($key, hashset!{$( $value, )*});
             )*
             HashSetMultimap::from(_map)
         }
@@ -249,7 +246,6 @@ macro_rules! hashsetmultimap {
 
 #[cfg(test)]
 mod tests {
-    use indexmap::indexmap;
     use indexmap::indexset;
 
     use super::*;
@@ -351,26 +347,26 @@ mod tests {
     #[test]
     fn equality_test_fails_on_different_len() {
         let a = indexsetmultimap! {0 => { 0 }};
-        let b = IndexSetMultimap::from(indexmap! {0 => indexset!{ 0 }, 1 => indexset!{ 1 }});
+        let b = indexsetmultimap! {0 => { 0 }, 1 => { 1 }};
         assert!(!a.eq(&b))
     }
 
     #[test]
     fn equality_test_fails_on_same_len_but_distinct_elem_count() {
-        let a = IndexSetMultimap::from(indexmap! {0 => indexset!{ 0 }});
-        let b = IndexSetMultimap::from(indexmap! {0 => indexset!{ 0, 1 }});
+        let a = indexsetmultimap! {0 => { 0 }};
+        let b = indexsetmultimap! {0 => { 0, 1 }};
         assert!(!a.eq(&b))
     }
     #[test]
     fn equality_test_succeeds_on_inversely_ordered_sets() {
-        let a = IndexSetMultimap::from(indexmap! {
-            0 => indexset!{ 1, 0 },
-            1 => indexset!{ 2, 3 },
-        });
-        let b = IndexSetMultimap::from(indexmap! {
-            1 => indexset!{ 3, 2 },
-            0 => indexset!{ 0, 1 },
-        });
+        let a = indexsetmultimap! {
+            0 => { 1, 0 },
+            1 => { 2, 3 }
+        };
+        let b = indexsetmultimap! {
+            1 => { 3, 2 },
+            0 => { 0, 1 }
+        };
         assert!(a.eq(&b))
     }
 
@@ -389,11 +385,11 @@ mod tests {
     // }
     #[test]
     fn contains_key_returns_correct_value() {
-        let map = IndexSetMultimap::from(indexmap! {
-            0 => indexset!{ 1, 2, 3 },
-            9 => indexset!{ 2, 3 },
-            333 => indexset!{ 3 },
-        });
+        let map = indexsetmultimap! {
+            0 => { 1, 2, 3 },
+            9 => { 2, 3 },
+            333 => { 3 }
+        };
 
         assert!(map.contains_key(&0));
         assert!(map.contains_key(&9));
@@ -406,50 +402,50 @@ mod tests {
 
     #[test]
     fn extend_works_with_empty_multimap() {
-        let mut actual = IndexSetMultimap::from(indexmap! {});
+        let mut actual = indexsetmultimap! {};
         actual.extend(vec![(0, 1), (2, 3)]);
 
-        let expected = IndexSetMultimap::from(indexmap! {
-            0 => indexset!{ 1 },
-            2 => indexset!{ 3 },
-        });
+        let expected = indexsetmultimap! {
+            0 => { 1 },
+            2 => { 3 }
+        };
         assert_eq!(expected, actual);
     }
 
     #[test]
     fn extend_works_with_non_empty_multimap() {
-        let mut actual = IndexSetMultimap::from(indexmap! {
-            0 => indexset!{ 1 },
-            2 => indexset!{ 3 },
-        });
+        let mut actual = indexsetmultimap! {
+            0 => { 1 },
+            2 => { 3 }
+        };
         actual.extend(vec![(0, 2), (2, 3), (4, 5)]);
-        let expected = IndexSetMultimap::from(indexmap! {
-            0 => indexset!{ 1, 2 },
-            2 => indexset!{ 3 },
-            4 => indexset!{ 5 },
-        });
+        let expected = indexsetmultimap! {
+            0 => { 1, 2 },
+            2 => { 3 },
+            4 => { 5 }
+        };
         assert_eq!(expected, actual);
     }
 
     #[test]
     fn extend_works_with_copy_iter() {
-        let mut actual = IndexSetMultimap::from(indexmap! {});
+        let mut actual = indexsetmultimap! {};
         // these values get copied
         actual.extend(vec![(&0, &1), (&2, &3)]);
-        let expected = IndexSetMultimap::from(indexmap! {
-            0 => indexset!{ 1 },
-            2 => indexset!{ 3 },
-        });
+        let expected = indexsetmultimap! {
+            0 => { 1 },
+            2 => { 3 }
+        };
         assert_eq!(expected, actual);
     }
 
     #[test]
     fn from_ignores_empty_sets() {
-        let map = IndexSetMultimap::from(indexmap! {
-            0 => indexset!{ 1, 2, 3 },
-            9 => indexset!{ },
-            333 => indexset!{ 3 },
-        });
+        let map = indexsetmultimap! {
+            0 => { 1, 2, 3 },
+            9 => { },
+            333 => { 3 }
+        };
 
         assert_eq!(2, map.keys_len());
         assert_eq!(4, map.len());
