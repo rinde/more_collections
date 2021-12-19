@@ -91,8 +91,10 @@ macro_rules! multimap_mutators_impl {
             }
         }
 
-        /// Return a reference to the set stored for `key`, if it is present, else
-        /// `None`.
+
+        // #[doc = "Return a reference to the"+ $values_class +"stored for `key`, if it is present, else `None`."]
+
+        #[doc = concat!("Return a reference to the", stringify!($values_class), "stored for `key`, if it is present, else `None`.")]
         pub fn get<Q: ?Sized>(&self, key: &Q) -> Option<&$values>
         where
             $($keys_ref)*,
@@ -269,6 +271,35 @@ macro_rules! multimap_from {
             }
         }
     }
+}
+
+#[macro_export]
+macro_rules! multimap_eq {
+    ($type:tt, ($($values_generics:tt)*)) => {
+        impl<K, V1, S1, V2, S2> PartialEq<$type<K, V2, S2>> for $type<K, V1, S1>
+        where
+            K: Hash + Eq,
+            V1: $($values_generics)* + PartialEq<V2> + Borrow<V2>,
+            V2: $($values_generics)* + PartialEq<V1> + Borrow<V1>,
+            S1: BuildHasher + Default,
+            S2: BuildHasher + Default,
+        {
+            fn eq(&self, other: &$type<K, V2, S2>) -> bool {
+                if self.len() != other.len() {
+                    return false;
+                }
+                self.iter().all(|(key, value)| other.contains(key, value))
+            }
+        }
+
+        impl<K, V, S> Eq for $type<K, V, S>
+        where
+            K: Eq + Hash,
+            V: $($values_generics)*,
+            S: BuildHasher + Default,
+        {
+        }
+    };
 }
 
 // TODO create macro for IndexMap specific functions:
