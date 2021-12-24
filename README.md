@@ -1,11 +1,7 @@
-# Collections
+# More collections
 
-| Symbol | Meaning        |
-| ------ | -------------- |
-| ✅      | completed      |
-| 🔷      | testing        |
-| 🟡      | in development |
-| 💡      | ideation phase |
+Rust crate with additional collections not found in [std::collections](https://doc.rust-lang.org/std/collections/).
+
 ## Multimaps 
 
 | Status | Name                 | Behaves like               |
@@ -29,3 +25,11 @@
 | 💡      | HashMultiset  | HashMap  |
 | 💡      | EnumMultiset  | EnumMap  |
 | 💡      | UsizeMap      | Vec      |
+
+## Legend
+| Symbol | Meaning        |
+| ------ | -------------- |
+| ✅      | completed      |
+| 🔷      | testing        |
+| 🟡      | in development |
+| 💡      | ideation phase |
