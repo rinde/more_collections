@@ -17,7 +17,7 @@ use crate::multimap_extend;
 use crate::multimap_mutators_impl;
 
 /// Multimap implementation that behaves like `HashMap<K, HashSet<V>>`.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HashSetMultimap<K, V, S = RandomState> {
     inner: HashMap<K, HashSet<V, S>, S>,
     len: usize,
@@ -57,7 +57,7 @@ multimap_extend! {
 multimap_eq! { HashSetMultimap, (Hash + Eq)}
 
 /// Multimap implementation that behaves like `HashMap<K, Vec<V>>`.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HashVecMultimap<K, V, S = RandomState> {
     inner: HashMap<K, Vec<V>, S>,
     len: usize,
@@ -97,7 +97,7 @@ multimap_extend! {
 multimap_eq! { HashVecMultimap, (Eq)}
 
 /// Multimap implementation that behaves like `IndexMap<K, Vec<V>>`.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct IndexVecMultimap<K, V, S = RandomState> {
     inner: IndexMap<K, Vec<V>, S>,
     len: usize,
@@ -137,7 +137,7 @@ multimap_extend! {
 multimap_eq! { IndexVecMultimap, (Eq)}
 
 /// Multimap implementation that behaves like `IndexMap<K, IndexSet<V>>`.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct IndexSetMultimap<K, V, S = RandomState> {
     inner: IndexMap<K, IndexSet<V, S>, S>,
     len: usize,

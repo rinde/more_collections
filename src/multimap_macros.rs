@@ -93,11 +93,47 @@ macro_rules! multimap_base2_impl {
 macro_rules! multimap_mutators_impl {
     ($keys:ty, $values:ty, $values_ctx:expr, $values_class:tt, ($($keys_ref:tt)*), ($($values_ref:tt)*)) => {
 
+        // TODO this method will have to be split out as it won't be needed in all implementations
+        /// Reserve capacity for `additional` more keys.
+        #[inline]
+        pub fn reserve(&mut self, additional: usize) {
+            self.inner.reserve(additional);
+        }
+
+        // TODO add try_reserve()
+        // TODO add shrink_to_fit()
+        // TODO add shrink_to()
+        // TODO add entry()
+
+        #[doc = concat!("Return a reference to the ", stringify!($values_class), " stored for `key`, if it is present, else `None`.")]
+        #[inline]
+        pub fn get<Q: ?Sized>(&self, key: &Q) -> Option<&$values>
+        where
+            $($keys_ref)*,
+        {
+            self.inner.get(key)
+        }
+
+        // TODO add get_key_values()
+
+        /// Returns `true` if the map contains a value for the specified key.
+        #[inline]
+        pub fn contains_key<Q: ?Sized>(&self, key: &Q) -> bool
+        where
+            $($keys_ref)*,
+        {
+            self.get(key).is_some()
+        }
+
+        // TODO add get_mut() --> only if it is possible to keep internal `len` consistent
+
         crate::insert!($values_class $values_ctx);
 
         /// Remove the key and all associated values from the multimap.
         ///
-        /// Returns values if at least one value is associated to `key`, returns `None` otherwise.
+        /// Returns values if at least one value is associated to `key`,
+        /// returns `None` otherwise.
+        #[inline]
         pub fn remove_key<Q: ?Sized>(&mut self, key: &Q) -> Option<$values>
         where
             $($keys_ref)*
@@ -109,6 +145,15 @@ macro_rules! multimap_mutators_impl {
                 None
             }
         }
+
+        // TODO add remove_entry()
+        // TODO add retain()
+        // TODO add into_keys()
+        // TODO add into_values()
+
+        //////////////////////////////////////
+        /// Multimap specific methods
+        //////////////////////////////////////
 
         /// Remove the entry from the multimap, and return `true` if it was present.
         pub fn remove<Q: ?Sized, R: ?Sized>(&mut self, key: &Q, value: &R) -> bool
@@ -131,22 +176,6 @@ macro_rules! multimap_mutators_impl {
             }
         }
 
-        #[doc = concat!("Return a reference to the ", stringify!($values_class), " stored for `key`, if it is present, else `None`.")]
-        pub fn get<Q: ?Sized>(&self, key: &Q) -> Option<&$values>
-        where
-            $($keys_ref)*,
-        {
-            self.inner.get(key)
-        }
-
-         /// Return `true` if an equivalent to `key` exists in the map.
-        pub fn contains_key<Q: ?Sized>(&self, key: &Q) -> bool
-        where
-            $($keys_ref)*,
-        {
-            self.get(key).is_some()
-        }
-
         /// Return `true` if an equivalent `key` and `value` combination exists in
         /// the multimap.
         pub fn contains<Q: ?Sized, R:?Sized>(&self, key: &Q, value: &R) -> bool
@@ -160,14 +189,58 @@ macro_rules! multimap_mutators_impl {
                 false
             }
         }
-
-        // TODO this method will have to be split out as it won't be needed in all implementations
-        /// Reserve capacity for `additional` more keys.
-        pub fn reserve(&mut self, additional: usize) {
-            self.inner.reserve(additional);
-        }
     };
 }
+
+//////////////////////////////////////
+/// IndexMap keys specific methods
+//////////////////////////////////////
+
+// TODO add insert_full()
+// TODO add get_full()
+// TODO add get_index_of()
+// TODO add get_full_mut()
+// TODO add swap_remove()
+// TODO add swap_remove_entry()
+// TODO add swap_remove_full()
+// TODO add shift_remove()
+// TODO add shift_remove_entry()
+// TODO add shift_remove_full()
+// TODO add pop()
+// TODO add sort_keys()
+// TODO add sort_by()
+// TODO add sorted_by()
+// TODO add reverse()
+
+// TODO add get_index()
+// TODO add get_index_mut()
+// TODO add first()
+// TODO add first_mut()
+// TODO add last()
+// TODO add last_mut()
+// TODO add swap_remove_index()
+// TODO add shift_remove_index()
+// TODO add swap_indices()
+
+//////////////////////////////////////
+/// *Set values specific methods
+//////////////////////////////////////
+
+// TODO add difference()
+// TODO add symmetric_difference()
+// TODO add intersection()
+// TODO add union()
+// TODO add is_disjoint()
+// TODO add is_subset()
+// TODO add is_superset()
+
+//////////////////////////////////////
+/// Vec / IndexSet values specific methods
+//////////////////////////////////////
+
+// TODO add sort_values()
+// TODO add sort_values_by()
+// TODO consider adding more mutators
 
 #[doc(hidden)]
 #[macro_export]
@@ -178,6 +251,7 @@ macro_rules! insert {
         /// If an equivalent entry already exists in the multimap, it returns
         /// `false` leaving the original value in the set and without altering its
         /// insertion order. Otherwise, it inserts the new entry and returns `true`.
+        #[inline]
         pub fn insert(&mut self, key: K, value: V) -> bool {
             if self
                 .inner
@@ -197,6 +271,7 @@ macro_rules! insert {
         /// Insert the value into the multimap.
         ///
         /// Allows duplicates.
+        #[inline]
         pub fn insert(&mut self, key: K, value: V) {
             self.inner
                 .entry(key)
@@ -293,6 +368,17 @@ macro_rules! multimap_extend {
                 map.retain(|_k, v| !v.is_empty());
                 let len = map.iter().map(|(_k, v)| v.len()).sum();
                 $type { inner: map, len }
+            }
+        }
+
+        impl<$($generic_ids)*> Default for $type<$($generic_ids)*>
+        where
+            S: Default,
+        {
+            /// Creates an empty multimap, with the `Default` value for the hasher.
+            #[inline]
+            fn default() -> $type<$($generic_ids)*> {
+                $type::with_hasher(Default::default())
             }
         }
     };
