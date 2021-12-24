@@ -1,7 +1,11 @@
 [package]
 edition = "2021"
-name = "collections"
+name = "more_collections"
+description = "Additional collections not found in std::collections"
 version = "0.1.0"
+license = "Apache-2.0"
+keywords = ["collections", "multimap"]
+categories = ["data-structures"]
 
 [dependencies]
 indexmap = "1.7.0" 

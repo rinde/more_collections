@@ -70,15 +70,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "collections"
-version = "0.1.0"
-dependencies = [
- "criterion",
- "indexmap",
- "maplit",
-]
-
-[[package]]
 name = "criterion"
 version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -281,6 +272,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "59accc507f1338036a0477ef61afdae33cde60840f4dfe481319ce3ad116ddf9"
 dependencies = [
  "autocfg",
+]
+
+[[package]]
+name = "more_collections"
+version = "0.1.0"
+dependencies = [
+ "criterion",
+ "indexmap",
+ "maplit",
 ]
 
 [[package]]

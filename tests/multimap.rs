@@ -249,8 +249,8 @@ macro_rules! general_multimap_tests {
 }
 
 mod hash_set_multimap {
-    use collections::hashsetmultimap;
-    use collections::multimap::HashSetMultimap;
+    use more_collections::hashsetmultimap;
+    use more_collections::HashSetMultimap;
 
     general_multimap_tests! {HashSetMultimap, hashsetmultimap}
     hash_multimap_tests! {HashSetMultimap}
@@ -258,16 +258,16 @@ mod hash_set_multimap {
 }
 
 mod hash_vec_multimap {
-    use collections::hashvecmultimap;
-    use collections::multimap::HashVecMultimap;
+    use more_collections::hashvecmultimap;
+    use more_collections::HashVecMultimap;
 
     general_multimap_tests! {HashVecMultimap, hashvecmultimap}
     hash_multimap_tests! {HashVecMultimap}
 }
 
 mod index_set_multimap {
-    use collections::indexsetmultimap;
-    use collections::multimap::IndexSetMultimap;
+    use more_collections::indexsetmultimap;
+    use more_collections::IndexSetMultimap;
 
     general_multimap_tests! {IndexSetMultimap, indexsetmultimap}
     set_multimap_tests! {IndexSetMultimap}
@@ -275,8 +275,8 @@ mod index_set_multimap {
 }
 
 mod index_vec_multimap {
-    use collections::indexvecmultimap;
-    use collections::multimap::IndexVecMultimap;
+    use more_collections::indexvecmultimap;
+    use more_collections::IndexVecMultimap;
 
     general_multimap_tests! {IndexVecMultimap, indexvecmultimap}
     index_multimap_tests! {IndexVecMultimap}
