@@ -10,6 +10,7 @@ use std::hash::Hash;
 use std::iter::repeat;
 use std::iter::FromIterator;
 
+use crate::multimap_base2_impl;
 use crate::multimap_base_impl;
 use crate::multimap_eq;
 use crate::multimap_extend;
@@ -22,8 +23,12 @@ pub struct HashSetMultimap<K, V, S = RandomState> {
     len: usize,
 }
 
-impl<K, V> HashSetMultimap<K, V> {
-    multimap_base_impl! {HashMap<K, HashSet<V>>, HashSet<V>}
+impl<K, V> HashSetMultimap<K, V, RandomState> {
+    multimap_base_impl! {HashMap<K, HashSet<V>>}
+}
+
+impl<K, V, S> HashSetMultimap<K, V, S> {
+    multimap_base2_impl! {HashMap}
 }
 
 impl<K, V, S> HashSetMultimap<K, V, S>
@@ -59,7 +64,11 @@ pub struct HashVecMultimap<K, V, S = RandomState> {
 }
 
 impl<K, V> HashVecMultimap<K, V> {
-    multimap_base_impl! { HashMap<K,Vec<V>>, Vec<V> }
+    multimap_base_impl! { HashMap<K,Vec<V>>}
+}
+
+impl<K, V, S> HashVecMultimap<K, V, S> {
+    multimap_base2_impl! {HashMap}
 }
 
 impl<K, V, S> HashVecMultimap<K, V, S>
@@ -95,7 +104,11 @@ pub struct IndexVecMultimap<K, V, S = RandomState> {
 }
 
 impl<K, V> IndexVecMultimap<K, V> {
-    multimap_base_impl! { IndexMap<K,Vec<V>>, Vec<V> }
+    multimap_base_impl! { IndexMap<K,Vec<V>>}
+}
+
+impl<K, V, S> IndexVecMultimap<K, V, S> {
+    multimap_base2_impl! {IndexMap}
 }
 
 impl<K, V, S> IndexVecMultimap<K, V, S>
@@ -131,7 +144,11 @@ pub struct IndexSetMultimap<K, V, S = RandomState> {
 }
 
 impl<K, V> IndexSetMultimap<K, V> {
-    multimap_base_impl! {IndexMap<K, IndexSet<V>>, IndexSet<V>}
+    multimap_base_impl! {IndexMap<K, IndexSet<V>>}
+}
+
+impl<K, V, S> IndexSetMultimap<K, V, S> {
+    multimap_base2_impl! {IndexMap}
 }
 
 impl<K, V, S> IndexSetMultimap<K, V, S>

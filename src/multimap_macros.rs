@@ -1,8 +1,8 @@
 #[doc(hidden)]
 #[macro_export]
 macro_rules! multimap_base_impl {
-    ($keys:ty, $values:ty ) => {
-        /// Creates a new multimap.
+    ($keys:ty) => {
+        /// Creates an empty multimap.
         ///
         /// The multimap is initially created with a capacity of 0, so it will
         /// not allocate until it is first inserted into.
@@ -13,15 +13,77 @@ macro_rules! multimap_base_impl {
             }
         }
 
+        /// Creates an empty multimap` with the specified key capacity.
+        ///
+        /// The multimap will be able to hold at least `capacity` keys without
+        /// reallocating. If `capacity` is 0, the multimap will not allocate.
         pub fn with_key_capacity(capacity: usize) -> Self {
             Self {
                 inner: <$keys>::with_capacity(capacity),
                 len: 0,
             }
         }
+    };
+}
 
+#[doc(hidden)]
+#[macro_export]
+macro_rules! multimap_base2_impl {
+    ($keys:tt) => {
+        /// Creates an empty multimap which will use the given hash builder to hash
+        /// keys.
+        #[inline]
+        pub fn with_hasher(hash_builder: S) -> Self {
+            Self::with_key_capacity_and_hasher(0, hash_builder)
+        }
+
+        /// Creates an empty multimap with the specified capacity, using `hash_builder`
+        /// to hash the keys.
+        #[inline]
+        pub fn with_key_capacity_and_hasher(n: usize, hash_builder: S) -> Self {
+            Self {
+                inner: $keys::with_capacity_and_hasher(n, hash_builder),
+                len: 0,
+            }
+        }
+
+        /// Returns the number of keys the multimap can hold without reallocating.
+        #[inline]
         pub fn key_capacity(&self) -> usize {
             self.inner.capacity()
+        }
+
+        // TODO keys()
+        // TODO values()
+        // TODO values_mut()
+
+        pub fn iter(&self) -> impl Iterator<Item = (&K, &V)> {
+            self.inner.iter().flat_map(|(k, v)| repeat(k).zip(v.iter()))
+        }
+
+        // TODO iter_mut()
+
+        /// Returns the number of elements in the multimap.
+        ///
+        /// Note that the number of elements in the multimap may not be the
+        /// same as the number of keys in the multimap. See
+        /// [Self::keys_len()].
+        pub fn len(&self) -> usize {
+            self.len
+        }
+
+        /// Returns `true` if the multimap contains no elements.
+        pub fn is_empty(&self) -> bool {
+            self.len == 0
+        }
+
+        /// Returns the number of keys in the multimap.
+        ///
+        /// Note that the number of keys in the multimap may not be the
+        /// same as the number of elements in the multimap. See
+        /// [Self::len()].
+        pub fn keys_len(&self) -> usize {
+            self.inner.len()
         }
     };
 }
@@ -30,33 +92,6 @@ macro_rules! multimap_base_impl {
 #[macro_export]
 macro_rules! multimap_mutators_impl {
     ($keys:ty, $values:ty, $values_ctx:expr, $values_class:tt, ($($keys_ref:tt)*), ($($values_ref:tt)*)) => {
-
-        pub fn len(&self) -> usize {
-            self.len
-        }
-
-        pub fn is_empty(&self) -> bool {
-            self.len == 0
-        }
-
-        pub fn keys_len(&self) -> usize {
-            self.inner.len()
-        }
-
-        pub fn iter(&self) -> impl Iterator<Item = (&K, &V)> {
-            self.inner.iter().flat_map(|(k, v)| repeat(k).zip(v.iter()))
-        }
-
-        pub fn with_capacity_and_hasher(n: usize, hash_builder: S) -> Self {
-            Self {
-                inner: <$keys>::with_capacity_and_hasher(n, hash_builder),
-                len: 0,
-            }
-        }
-
-        pub fn with_hasher(hash_builder: S) -> Self {
-            Self::with_capacity_and_hasher(0, hash_builder)
-        }
 
         crate::insert!($values_class $values_ctx);
 
@@ -242,7 +277,7 @@ macro_rules! multimap_extend {
                 let iter = iterable.into_iter();
                 let (low, _) = iter.size_hint();
                 // TODO this resizing has a high chance of over provisioning
-                let mut map = Self::with_capacity_and_hasher(low, <_>::default());
+                let mut map = Self::with_key_capacity_and_hasher(low, <_>::default());
                 map.extend(iter);
                 map
             }
