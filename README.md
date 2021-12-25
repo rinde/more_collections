@@ -4,14 +4,14 @@ Rust crate with additional collections not found in [std::collections](https://d
 
 ## Multimaps 
 
-| Completion | Name                 | Behaves like               |
+| Completion | Name                 | Behaves as                 |
 | ---------- | -------------------- | -------------------------- |
 | 🟩🟩🟨⬜️⬜️      | HashSetMultimap      | `HashMap<K, HashSet<V>>`   |
 | 🟩🟩🟨⬜️⬜️      | HashVecMultimap      | `HashMap<K, Vec<V>>`       |
 | 🟩🟩🟨⬜️⬜️      | IndexSetMultimap     | `IndexMap<K, IndexSet<V>>` |
 | 🟩🟩🟨⬜️⬜️      | IndexVecMultimap     | `IndexMap<K, Vec<V>>`      |
-| ⬜️⬜️⬜️⬜️⬜️      | SortedSetMultimap    | `BTreeMap<K, BTreeSet<V>>` |
-| ⬜️⬜️⬜️⬜️⬜️      | SortedVecMultimap    | `BTreeMap<K, Vec<V>>`      |
+| ⬜️⬜️⬜️⬜️⬜️      | BTreeSetMultimap     | `BTreeMap<K, BTreeSet<V>>` |
+| ⬜️⬜️⬜️⬜️⬜️      | BTreeVecMultimap     | `BTreeMap<K, Vec<V>>`      |
 | ⬜️⬜️⬜️⬜️⬜️      | EnumHashSetMultimap  | `EnumMap<K, HashSet<V>>`   |
 | ⬜️⬜️⬜️⬜️⬜️      | EnumIndexSetMultimap | `EnumMap<K, IndexSet<V>>`  |
 | ⬜️⬜️⬜️⬜️⬜️      | EnumVecMultimap      | `EnumMap<K, Vec<V>>     `  |
@@ -19,9 +19,10 @@ Rust crate with additional collections not found in [std::collections](https://d
 
 ## Multisets
 
-| Completion | Name          | Keys     |
-| ---------- | ------------- | -------- |
-| ⬜️⬜️⬜️⬜️⬜️      | IndexMultiset | IndexMap |
-| ⬜️⬜️⬜️⬜️⬜️      | HashMultiset  | HashMap  |
-| ⬜️⬜️⬜️⬜️⬜️      | EnumMultiset  | EnumMap  |
-| ⬜️⬜️⬜️⬜️⬜️      | UsizeMap      | Vec      |
+| Completion | Name          | Behaves as          |
+| ---------- | ------------- | ------------------- |
+| ⬜️⬜️⬜️⬜️⬜️      | IndexMultiset | `IndexMap<K,usize>` |
+| ⬜️⬜️⬜️⬜️⬜️      | HashMultiset  | `HashMap<K,usize>`  |
+| ⬜️⬜️⬜️⬜️⬜️      | BTreeMultiset | `BTreeMap<K,usize>` |
+| ⬜️⬜️⬜️⬜️⬜️      | EnumMultiset  | `EnumMap<K,usize>`  |
+
