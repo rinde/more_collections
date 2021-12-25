@@ -7,8 +7,6 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::hash::BuildHasher;
 use std::hash::Hash;
-use std::iter::repeat;
-use std::iter::FromIterator;
 
 #[macro_use]
 mod create_macros;
@@ -56,9 +54,11 @@ where
 multimap_extend! {
     HashSetMultimap,
     (K, V, S),
-    HashMap<K, HashSet<V,S>, S>,
+    HashMap,
+    HashSet<V,S>,
     (K: Hash + Eq),
-    (V: Hash + Eq)
+    (V: Hash + Eq),
+    (K: Hash + Eq + Borrow<Q>, Q: Hash + Eq)
 }
 multimap_eq! { HashSetMultimap, (Hash + Eq)}
 
@@ -96,9 +96,11 @@ where
 multimap_extend! {
     HashVecMultimap,
     (K, V, S),
-    HashMap<K, Vec<V>, S>,
+    HashMap,
+    Vec<V>,
     (K: Hash + Eq),
-    (V: Eq)
+    (V: Eq),
+    (K: Hash + Eq + Borrow<Q>, Q: Hash + Eq)
 }
 multimap_eq! { HashVecMultimap, (Eq)}
 
@@ -136,9 +138,11 @@ where
 multimap_extend! {
     IndexVecMultimap,
     (K, V, S),
-    IndexMap<K, Vec<V>, S>,
+    IndexMap,
+    Vec<V>,
     (K: Hash + Eq),
-    (V: Eq)
+    (V: Eq),
+    (K: Hash + Eq, Q: Hash + Equivalent<K>)
 }
 multimap_eq! { IndexVecMultimap, (Eq)}
 
@@ -176,8 +180,10 @@ where
 multimap_extend! {
     IndexSetMultimap,
     (K, V, S),
-    IndexMap<K, IndexSet<V,S>, S>,
+    IndexMap,
+    IndexSet<V,S>,
     (K: Hash + Eq),
-    (V: Hash + Eq)
+    (V: Hash + Eq),
+    (K: Hash + Eq, Q: Hash + Equivalent<K>)
 }
 multimap_eq! { IndexSetMultimap, (Hash + Eq)}

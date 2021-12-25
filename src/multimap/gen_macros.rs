@@ -58,7 +58,9 @@ macro_rules! multimap_base2_impl {
         // TODO values_mut()
 
         pub fn iter(&self) -> impl Iterator<Item = (&K, &V)> {
-            self.inner.iter().flat_map(|(k, v)| repeat(k).zip(v.iter()))
+            self.inner
+                .iter()
+                .flat_map(|(k, v)| std::iter::repeat(k).zip(v.iter()))
         }
 
         // TODO iter_mut()
@@ -314,7 +316,7 @@ macro_rules! values_remove {
 #[doc(hidden)]
 #[macro_export]
 macro_rules! multimap_extend {
-    ($type:tt, ($($generic_ids:tt)*), $inner_type:ty, ($($keys:tt)*), ($($values:tt)*) )=> {
+    ($type:tt, ($($generic_ids:tt)*), $inner_keys_type:tt, $inner_values_type:ty, ($($keys:tt)*), ($($values:tt)*), ($($keys_get:tt)*) )=> {
         impl<$($generic_ids)*> Extend<(K, V)> for $type<$($generic_ids)*>
         where
             $($keys)*,
@@ -342,7 +344,7 @@ macro_rules! multimap_extend {
             }
         }
 
-        impl<$($generic_ids)*> FromIterator<(K, V)> for $type<$($generic_ids)*>
+        impl<$($generic_ids)*> std::iter::FromIterator<(K, V)> for $type<$($generic_ids)*>
         where
             $($keys)*,
             $($values)*,
@@ -358,13 +360,13 @@ macro_rules! multimap_extend {
             }
         }
 
-        impl<$($generic_ids)*> From<$inner_type> for $type<$($generic_ids)*>
+        impl<$($generic_ids)*> From<$inner_keys_type<K,$inner_values_type,S>> for $type<$($generic_ids)*>
         where
             $($keys)*,
             $($values)*,
             S: BuildHasher + Default,
         {
-            fn from(mut map: $inner_type) -> Self {
+            fn from(mut map: $inner_keys_type<K,$inner_values_type,S>) -> Self {
                 map.retain(|_k, v| !v.is_empty());
                 let len = map.iter().map(|(_k, v)| v.len()).sum();
                 $type { inner: map, len }
@@ -379,6 +381,25 @@ macro_rules! multimap_extend {
             #[inline]
             fn default() -> $type<$($generic_ids)*> {
                 $type::with_hasher(Default::default())
+            }
+        }
+
+        impl<K, Q: ?Sized, V, S> std::ops::Index<&Q> for $type<$($generic_ids)*>
+        where
+            $($keys_get)*,
+            $($values)*,
+            S: BuildHasher + Default,
+        {
+            type Output = $inner_values_type;
+
+            /// Returns a reference to the values container corresponding to the supplied key.
+            ///
+            /// # Panics
+            ///
+            /// Panics if the key is not present in the multimap.
+            #[inline]
+            fn index(&self, key: &Q) -> &$inner_values_type {
+                self.get(key).expect("no entry found for key")
             }
         }
     };
