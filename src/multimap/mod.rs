@@ -1,12 +1,13 @@
-use indexmap::Equivalent;
-use indexmap::IndexMap;
-use indexmap::IndexSet;
 use std::borrow::Borrow;
 use std::collections::hash_map::RandomState;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::hash::BuildHasher;
 use std::hash::Hash;
+
+use indexmap::Equivalent;
+use indexmap::IndexMap;
+use indexmap::IndexSet;
 
 #[macro_use]
 mod create_macros;
