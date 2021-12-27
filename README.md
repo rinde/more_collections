@@ -1,4 +1,4 @@
-# More collections &emsp; [![Latest Version]][crates.io] [![Docs badge]][docs.rs] [![License: Apache-2.0][License badge]](/license)
+# More collections &emsp; [![Latest Version]][crates.io] [![Docs badge]][docs.rs] [![License: Apache-2.0][License badge]](/LICENSE)
 
 [Latest Version]: https://img.shields.io/crates/v/more_collections.svg
 [crates.io]: https://crates.io/crates/more_collections
