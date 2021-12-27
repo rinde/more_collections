@@ -1,4 +1,12 @@
-# More collections
+# More collections &emsp; [![Latest Version]][crates.io] [![Docs badge]][docs.rs] [![License: Apache-2.0][License badge]](/license)
+
+[Latest Version]: https://img.shields.io/crates/v/more_collections.svg
+[crates.io]: https://crates.io/crates/more_collections
+
+[License badge]: https://img.shields.io/crates/l/more_collections.svg
+
+[Docs badge]: https://img.shields.io/badge/docs.rs-rustdoc-yellow
+[docs.rs]: https://docs.rs/more_collections/
 
 Additional Rust collections not found in [std::collections](https://doc.rust-lang.org/std/collections/).
 
