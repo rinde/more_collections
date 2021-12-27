@@ -1,6 +1,6 @@
 # More collections
 
-Rust crate with additional collections not found in [std::collections](https://doc.rust-lang.org/std/collections/).
+Additional Rust collections not found in [std::collections](https://doc.rust-lang.org/std/collections/).
 
 ## Multimaps 
 
@@ -104,5 +104,7 @@ Rust crate with additional collections not found in [std::collections](https://d
 | Index                                 | ✅               | ✅               | ✅                | ✅                |
 | Eq                                    | ✅               | ✅               | ✅                | ✅                |
 | PartialEq                             | ✅               | ✅               | ✅                | ✅                |
+| Debug                                 | ✅               | ✅               | ✅                | ✅                |
+| Clone                                 | ✅               | ✅               | ✅                | ✅                |
 | Serializable                          | planned         | planned         | planned          | planned          |
 | Deserializable                        | planned         | planned         | planned          | planned          |
