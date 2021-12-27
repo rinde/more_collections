@@ -277,7 +277,7 @@ macro_rules! insert {
         pub fn insert(&mut self, key: K, value: V) {
             self.inner
                 .entry(key)
-                .or_insert_with(|| $values_ctx)
+                .or_insert_with($values_ctx)
                 .push(value);
             self.len += 1;
         }
