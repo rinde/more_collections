@@ -407,23 +407,6 @@ macro_rules! multimap_extend {
 
 #[doc(hidden)]
 #[macro_export]
-macro_rules! multimap_from {
-    ($type:tt, ($($generic_ids:tt)*), $keys:ty, $($where_clause:tt)*) => {
-        impl<$($generic_ids)*> From<$keys> for $type<$($generic_ids)*>
-        where
-           $($where_clause)*
-        {
-            fn from(mut map: $keys) -> Self {
-                map.retain(|_k, v| !v.is_empty());
-                let len = map.iter().map(|(_k, v)| v.len()).sum();
-                $type { inner: map, len }
-            }
-        }
-    }
-}
-
-#[doc(hidden)]
-#[macro_export]
 macro_rules! multimap_eq {
     ($type:tt, ($($values_generics:tt)*)) => {
         impl<K, V1, S1, V2, S2> PartialEq<$type<K, V2, S2>> for $type<K, V1, S1>
