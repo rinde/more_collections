@@ -26,3 +26,83 @@ Rust crate with additional collections not found in [std::collections](https://d
 | ⬜️⬜️⬜️⬜️⬜️      | BTreeMultiset | `BTreeMap<K,usize>` |
 | ⬜️⬜️⬜️⬜️⬜️      | EnumMultiset  | `EnumMap<K,usize>`  |
 
+## Multimaps overview
+
+| Method                                | HashSetMultimap | HashVecMultimap | IndexSetMultimap | IndexVecMultimap |
+| ------------------------------------- | --------------- | --------------- | ---------------- | ---------------- |
+| new()                                 | ✅               | ✅               | ✅                | ✅                |
+| with_key_capacity()                   | ✅               | ✅               | ✅                | ✅                |
+| with_hasher()                         | ✅               | ✅               | ✅                | ✅                |
+| with_key_capacity_and_hasher()        | ✅               | ✅               | ✅                | ✅                |
+| key_capacity()                        | ✅               | ✅               | ✅                | ✅                |
+| keys()                                | planned         | planned         | planned          | planned          |
+| values()                              | planned         | planned         | planned          | planned          |
+| values_mut()                          | maybe           | maybe           | maybe            | maybe            |
+| iter()                                | ✅               | ✅               | ✅                | ✅                |
+| len()                                 | ✅               | ✅               | ✅                | ✅                |
+| is_empty()                            | ✅               | ✅               | ✅                | ✅                |
+| keys_len()                            | ✅               | ✅               | ✅                | ✅                |
+| reserve()                             | ✅               | ✅               | ✅                | ✅                |
+| try_reserve()                         | planned         | planned         | planned          | planned          |
+| shrink_to_fit()                       | planned         | planned         | planned          | planned          |
+| shrink_to()                           | planned         | planned         | planned          | planned          |
+| entry()                               | planned         | planned         | planned          | planned          |
+| get()                                 | ✅               | ✅               | ✅                | ✅                |
+| get_key_values()                      | planned         | planned         | planned          | planned          |
+| contains_key()                        | ✅               | ✅               | ✅                | ✅                |
+| get_mut()                             | maybe           | maybe           | maybe            | maybe            |
+| insert()                              | ✅               | ✅               | ✅                | ✅                |
+| remove_key()                          | ✅               | ✅               | ✅                | ✅                |
+| remove_entry()                        | planned         | planned         | planned          | planned          |
+| retain()                              | planned         | planned         | planned          | planned          |
+| into_keys()                           | planned         | planned         | planned          | planned          |
+| into_values()                         | planned         | planned         | planned          | planned          |
+| remove()                              | ✅               | ✅               | ✅                | ✅                |
+| contains()                            | ✅               | ✅               | ✅                | ✅                |
+| __IndexMap keys methods__             |
+| insert_full()                         | -               | -               | planned          | planned          |
+| get_full()                            | -               | -               | planned          | planned          |
+| get_index_of()                        | -               | -               | planned          | planned          |
+| get_full_mut()                        | -               | -               | planned          | planned          |
+| swap_remove()                         | -               | -               | planned          | planned          |
+| swap_remove_entry()                   | -               | -               | planned          | planned          |
+| swap_remove_full()                    | -               | -               | planned          | planned          |
+| shift_remove()                        | -               | -               | planned          | planned          |
+| shift_remove_entry()                  | -               | -               | planned          | planned          |
+| shift_remove_full()                   | -               | -               | planned          | planned          |
+| pop()                                 | -               | -               | planned          | planned          |
+| sort_keys()                           | -               | -               | planned          | planned          |
+| sort_by()                             | -               | -               | planned          | planned          |
+| sorted_by()                           | -               | -               | planned          | planned          |
+| reverse()                             | -               | -               | planned          | planned          |
+| get_index()                           | -               | -               | planned          | planned          |
+| get_index_mut()                       | -               | -               | maybe            | maybe            |
+| first()                               | -               | -               | planned          | planned          |
+| first_mut()                           | -               | -               | maybe            | maybe            |
+| last()                                | -               | -               | planned          | planned          |
+| last_mut()                            | -               | -               | maybe            | maybe            |
+| swap_remove_index()                   | -               | -               | planned          | planned          |
+| shift_remove_index()                  | -               | -               | planned          | planned          |
+| swap_indices()                        | -               | -               | planned          | planned          |
+| __Set values methods__                |
+| difference()                          | planned         | -               | planned          | -                |
+| symmetric_difference()                | planned         | -               | planned          | -                |
+| intersection()                        | planned         | -               | planned          | -                |
+| union()                               | planned         | -               | planned          | -                |
+| is_disjoint()                         | planned         | -               | planned          | -                |
+| is_subset()                           | planned         | -               | planned          | -                |
+| is_superset()                         | planned         | -               | planned          | -                |
+| __Consistent ordered values methods__ |
+| sort_values()                         | -               | planned         | planned          | planned          |
+| sort_values_by()                      | -               | planned         | planned          | planned          |
+| TODO consider adding more mutators    |
+| __Traits__                            |
+| Extend                                | ✅               | ✅               | ✅                | ✅                |
+| FromIterator                          | ✅               | ✅               | ✅                | ✅                |
+| From wrapped type                     | ✅               | ✅               | ✅                | ✅                |
+| Default                               | ✅               | ✅               | ✅                | ✅                |
+| Index                                 | ✅               | ✅               | ✅                | ✅                |
+| Eq                                    | ✅               | ✅               | ✅                | ✅                |
+| PartialEq                             | ✅               | ✅               | ✅                | ✅                |
+| Serializable                          | planned         | planned         | planned          | planned          |
+| Deserializable                        | planned         | planned         | planned          | planned          |
