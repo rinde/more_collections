@@ -58,7 +58,7 @@ macro_rules! hash_multimap_tests {
 }
 
 macro_rules! general_multimap_tests {
-    ($type:tt, $multimap_macro:tt) => {
+    ($type:tt, $multimap_macro:tt, $values_macro:tt) => {
         #[test]
         fn remove_removes_key_when_needed() {
             let data = vec![(0, "A1".to_string()), (0, "A2".to_string())];
@@ -245,14 +245,36 @@ macro_rules! general_multimap_tests {
             };
             assert!(a.eq(&b))
         }
+
+        #[test]
+        fn get_and_index_give_same_result() {
+            let a = $multimap_macro! {
+                0 => { 1, 0, 7 },
+                1 => { 2, 3 }
+            };
+            let index = &a[&0];
+            let get = a.get(&0).unwrap();
+            assert_eq!(index, &$values_macro! { 1, 0, 7});
+            assert_eq!(index, get);
+        }
+
+        #[test]
+        #[should_panic(expected = "no entry found for key")]
+        fn index_panics_for_unknown_key() {
+            let a = $multimap_macro! {
+                0 => { 1, 0, 7 }
+            };
+            let _ = &a[&1];
+        }
     };
 }
 
 mod hash_set_multimap {
+    use maplit::hashset;
     use more_collections::hashsetmultimap;
     use more_collections::HashSetMultimap;
 
-    general_multimap_tests! {HashSetMultimap, hashsetmultimap}
+    general_multimap_tests! {HashSetMultimap, hashsetmultimap, hashset}
     hash_multimap_tests! {HashSetMultimap}
     set_multimap_tests! {HashSetMultimap}
 }
@@ -261,15 +283,16 @@ mod hash_vec_multimap {
     use more_collections::hashvecmultimap;
     use more_collections::HashVecMultimap;
 
-    general_multimap_tests! {HashVecMultimap, hashvecmultimap}
+    general_multimap_tests! {HashVecMultimap, hashvecmultimap, vec}
     hash_multimap_tests! {HashVecMultimap}
 }
 
 mod index_set_multimap {
+    use indexmap::indexset;
     use more_collections::indexsetmultimap;
     use more_collections::IndexSetMultimap;
 
-    general_multimap_tests! {IndexSetMultimap, indexsetmultimap}
+    general_multimap_tests! {IndexSetMultimap, indexsetmultimap, indexset}
     set_multimap_tests! {IndexSetMultimap}
     index_multimap_tests! {IndexSetMultimap}
 }
@@ -278,6 +301,6 @@ mod index_vec_multimap {
     use more_collections::indexvecmultimap;
     use more_collections::IndexVecMultimap;
 
-    general_multimap_tests! {IndexVecMultimap, indexvecmultimap}
+    general_multimap_tests! {IndexVecMultimap, indexvecmultimap, vec}
     index_multimap_tests! {IndexVecMultimap}
 }
