@@ -2,10 +2,9 @@
 //!
 //! # Multimap
 //!
-//! A collection that maps keys to values, similar to
-//! [HashMap](std::collections::HashMap), but where each key may be associated
-//! with _multiple_ values. Multimaps can be visualized as a map from keys to
-//! non-empty collections of values:
+//! A collection that maps keys to values, similar to [`HashMap`], but where
+//! each key may be associated with _multiple_ values. Multimaps can be
+//! visualized as a map from keys to non-empty collections of values:
 //! - a → 0, 1
 //! - b → 2
 //!
@@ -17,14 +16,20 @@
 //! The multimap API is based on the second form, `len() == 3` and `keys_len()
 //! == 2` for the above example.
 //!
-//! | Name               | Behaves as |
-//! | ------------------ | ----- |
-//! | [HashSetMultimap]  | [HashMap](std::collections::HashMap)`<K,
-//! `[HashSet](std::collections::HashSet)`<V>>` | [HashVecMultimap]  |
-//! [HashMap](std::collections::HashMap)`<K, `[Vec](std::vec::Vec)`<V>>`
-//! | [IndexSetMultimap] | [IndexMap](indexmap::IndexMap)`<K,
-//! `[HashSet](indexmap::IndexSet)`<V>>` | [IndexVecMultimap] |
-//! [IndexMap](indexmap::IndexMap)`<K, `[Vec](std::vec::Vec)`<V>>`
+//! | Name               | Behaves as                          | Keys order          | Values order        | Allows duplicates |
+//! | ------------------ | ----------------------------------- | ------------------- | ------------------- | ---------------- |
+//! | [HashSetMultimap]  | [`HashMap`]`<K,`[`HashSet`]`<V>>`   | Arbitrary order     | Arbitrary           | No               |
+//! | [HashVecMultimap]  | [`HashMap`]`<K, `[`Vec`]`<V>>`      | Arbitrary order     | Insertion order[^1] | Yes              |
+//! | [IndexSetMultimap] | [`IndexMap`]`<K,`[`IndexSet`]`<V>>` | Insertion order[^1] | Insertion order[^1] | No               |
+//! | [IndexVecMultimap] | [`IndexMap`]`<K, `[`Vec`]`<V>>`     | Insertion order[^1] | Insertion order[^1] | Yes              |
+//!
+//! [^1]: Insertion order is preserved, unless `remove()` or `swap_remove()` is called. See more in the [IndexMap](https://docs.rs/indexmap/1.7.0/indexmap/map/struct.IndexMap.html#order) documentation.
+//!
+//! [`HashMap`]: std::collections::HashMap
+//! [`HashSet`]: std::collections::HashSet
+//! [`IndexMap`]: indexmap::IndexMap
+//! [`IndexSet`]: indexmap::IndexSet
+//! [`Vec`]: std::vec::Vec
 
 mod multimap;
 

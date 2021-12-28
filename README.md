@@ -67,6 +67,8 @@ Additional Rust collections not found in [std::collections](https://doc.rust-lan
 | into_values()                         | planned         | planned         | planned          | planned          |
 | remove()                              | ✅               | ✅               | ✅                | ✅                |
 | contains()                            | ✅               | ✅               | ✅                | ✅                |
+| as_map()                              | planned         | planned         | planned          | planned          |
+| into_map()                            | planned         | planned         | planned          | planned          |
 | __IndexMap keys methods__             |
 | insert_full()                         | -               | -               | planned          | planned          |
 | get_full()                            | -               | -               | planned          | planned          |
@@ -108,6 +110,7 @@ Additional Rust collections not found in [std::collections](https://doc.rust-lan
 | Extend                                | ✅               | ✅               | ✅                | ✅                |
 | FromIterator                          | ✅               | ✅               | ✅                | ✅                |
 | From wrapped type                     | ✅               | ✅               | ✅                | ✅                |
+| IntoIterator                          | planned         | planned         | planned          | planned          |
 | Default                               | ✅               | ✅               | ✅                | ✅                |
 | Index                                 | ✅               | ✅               | ✅                | ✅                |
 | Eq                                    | ✅               | ✅               | ✅                | ✅                |
@@ -116,3 +119,13 @@ Additional Rust collections not found in [std::collections](https://doc.rust-lan
 | Clone                                 | ✅               | ✅               | ✅                | ✅                |
 | Serializable                          | planned         | planned         | planned          | planned          |
 | Deserializable                        | planned         | planned         | planned          | planned          |
+
+
+# Todo
+
+ - [ ] Add benches
+ - [ ] Look into `no_std` compatibility
+ - [ ] Look into `WASM` compatibility
+ - [ ] Look into no-unsafe clippy rule
+ - [ ] Add features to disable parts of the crate (e.g. dependencies should be optional)
+ - [ ] Implement custom iterators following this advice: https://stackoverflow.com/questions/52079983/what-is-the-advantage-of-publishing-a-concrete-type-in-a-crates-api-instead-of
