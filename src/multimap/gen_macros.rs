@@ -102,7 +102,6 @@ macro_rules! multimap_mutators_impl {
             self.inner.reserve(additional);
         }
 
-        // TODO add try_reserve()
         // TODO add shrink_to_fit()
         // TODO add shrink_to()
         // TODO add entry()
