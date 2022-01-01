@@ -165,8 +165,28 @@ macro_rules! multimap_mutators_impl {
             }
         }
 
-        // TODO add remove_entry()
-        // TODO add retain()
+        /// Retains only the elements specified by the predicate.
+        ///
+        /// In other words, remove all pairs `(k, v)` such that `f(&k, &v)`
+        /// returns `false`.
+        #[inline]
+        pub fn retain<F>(&mut self, f: F)
+        where
+            F: Fn(&K, &V) -> bool
+        {
+            self.inner.retain(|k,values| {
+                values.retain(|x| {
+                    let retain = f(k,x);
+                    if !retain {
+                        self.len -= 1;
+                    }
+                    retain
+                });
+                !values.is_empty()
+            });
+        }
+
+
         // TODO add into_keys()
         // TODO add into_values()
 
@@ -207,6 +227,17 @@ macro_rules! multimap_mutators_impl {
             } else {
                 false
             }
+        }
+
+        /// Return a borrow of the underlying map.
+        pub fn as_map(&self) -> &$keys {
+            &self.inner
+        }
+
+        /// Return the underlying map, the multimap cannot be used after
+        /// calling this.
+        pub fn into_map(self) -> $keys {
+            self.inner
         }
     };
 }

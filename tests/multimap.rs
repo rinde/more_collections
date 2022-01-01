@@ -58,7 +58,7 @@ macro_rules! hash_multimap_tests {
 }
 
 macro_rules! general_multimap_tests {
-    ($type:tt, $multimap_macro:tt, $values_macro:tt) => {
+    ($type:tt, $multimap_macro:tt, $keys_macro:tt, $values_macro:tt) => {
         #[test]
         fn remove_removes_key_when_needed() {
             let data = vec![(0, "A1".to_string()), (0, "A2".to_string())];
@@ -126,6 +126,53 @@ macro_rules! general_multimap_tests {
         }
 
         #[test]
+        fn retain_on_key_filter() {
+            let mut map = $multimap_macro! {
+                0 => {1, 2, 3 },
+                4 => {5},
+                7 => {3, 9}
+            };
+            map.retain(|k, _v| k == &4);
+            assert_eq!(1, map.len());
+            let expected = $multimap_macro! {
+                4 => {5}
+            };
+            assert_eq!(expected, map);
+        }
+
+        #[test]
+        fn retain_on_value_filter() {
+            let mut map = $multimap_macro! {
+                0 => {1, 2, 3 },
+                4 => {5},
+                7 => {3, 9}
+            };
+            map.retain(|_k, v| v == &3);
+            assert_eq!(2, map.len());
+            let expected = $multimap_macro! {
+                0 => {3},
+                7 => {3}
+            };
+            assert_eq!(expected, map);
+        }
+
+        #[test]
+        fn retain_on_key_value_filter() {
+            let mut map = $multimap_macro! {
+                0 => {1, 2, 3 },
+                4 => {5},
+                7 => {3, 9}
+            };
+            map.retain(|k, v| (k + v) % 2 == 0);
+            assert_eq!(3, map.len());
+            let expected = $multimap_macro! {
+                0 => {2},
+                7 => {3, 9}
+            };
+            assert_eq!(expected, map);
+        }
+
+        #[test]
         fn remove_is_noop_when_key_value_is_not_there() {
             let data = vec![(0, "A1".to_string()), (0, "A2".to_string())];
             let mut map = data.into_iter().collect::<$type<_, _>>();
@@ -171,6 +218,34 @@ macro_rules! general_multimap_tests {
             assert!(!map.contains_key(&1));
             assert!(!map.contains_key(&456));
             assert!(!map.contains_key(&7));
+        }
+
+        #[test]
+        fn as_map_returns_borrowed_inner() {
+            let mm = $multimap_macro! {
+                0 => { 1, 2, 3 },
+                9 => { 2, 3 }
+            };
+            let actual = mm.as_map();
+            let expected = &$keys_macro! {
+                0 => $values_macro! { 1, 2, 3},
+                9 => $values_macro! {2, 3},
+            };
+            assert_eq!(expected, actual);
+        }
+
+        #[test]
+        fn into_map_returns_owned_inner() {
+            let mm = $multimap_macro! {
+                0 => { 1, 2, 3 },
+                9 => { 2, 3 }
+            };
+            let actual = mm.into_map();
+            let expected = $keys_macro! {
+                0 => $values_macro! { 1, 2, 3},
+                9 => $values_macro! {2, 3},
+            };
+            assert_eq!(expected, actual);
         }
 
         #[test]
@@ -282,37 +357,41 @@ macro_rules! general_multimap_tests {
 }
 
 mod hash_set_multimap {
+    use maplit::hashmap;
     use maplit::hashset;
     use more_collections::hashsetmultimap;
     use more_collections::HashSetMultimap;
 
-    general_multimap_tests! {HashSetMultimap, hashsetmultimap, hashset}
+    general_multimap_tests! {HashSetMultimap, hashsetmultimap, hashmap, hashset}
     hash_multimap_tests! {HashSetMultimap}
     set_multimap_tests! {HashSetMultimap}
 }
 
 mod hash_vec_multimap {
+    use maplit::hashmap;
     use more_collections::hashvecmultimap;
     use more_collections::HashVecMultimap;
 
-    general_multimap_tests! {HashVecMultimap, hashvecmultimap, vec}
+    general_multimap_tests! {HashVecMultimap, hashvecmultimap, hashmap, vec}
     hash_multimap_tests! {HashVecMultimap}
 }
 
 mod index_set_multimap {
+    use indexmap::indexmap;
     use indexmap::indexset;
     use more_collections::indexsetmultimap;
     use more_collections::IndexSetMultimap;
 
-    general_multimap_tests! {IndexSetMultimap, indexsetmultimap, indexset}
+    general_multimap_tests! {IndexSetMultimap, indexsetmultimap, indexmap, indexset}
     set_multimap_tests! {IndexSetMultimap}
     index_multimap_tests! {IndexSetMultimap}
 }
 
 mod index_vec_multimap {
+    use indexmap::indexmap;
     use more_collections::indexvecmultimap;
     use more_collections::IndexVecMultimap;
 
-    general_multimap_tests! {IndexVecMultimap, indexvecmultimap, vec}
+    general_multimap_tests! {IndexVecMultimap, indexvecmultimap, indexmap, vec}
     index_multimap_tests! {IndexVecMultimap}
 }
