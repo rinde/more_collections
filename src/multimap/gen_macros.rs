@@ -148,6 +148,23 @@ macro_rules! multimap_mutators_impl {
             }
         }
 
+        /// Removes the key and all associated values from the multimap.
+        ///
+        /// Returns the entry (key and all associated values) if at least one
+        /// value is associated to `key`, returns `None` otherwise.
+        #[inline]
+        pub fn remove_key_entry<Q: ?Sized>(&mut self, key: &Q) -> Option<(K, $values)>
+        where
+            $($keys_ref)*
+        {
+            if let Some((key, values)) = self.inner.remove_entry(key) {
+                self.len -= values.len();
+                Some((key, values))
+            } else {
+                None
+            }
+        }
+
         // TODO add remove_entry()
         // TODO add retain()
         // TODO add into_keys()

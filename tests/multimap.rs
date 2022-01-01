@@ -114,6 +114,18 @@ macro_rules! general_multimap_tests {
         }
 
         #[test]
+        fn remove_key_entry_returns_entire_value_collection_when_present() {
+            let mut map = $multimap_macro! {
+                0 => {"A".to_string() }
+            };
+            let actual = map.remove_key_entry(&0);
+            let expected = Some((0, $values_macro! { "A".to_string() }));
+            assert_eq!(expected, actual);
+            assert!(map.is_empty());
+            assert_eq!(None, map.remove_key_entry(&0));
+        }
+
+        #[test]
         fn remove_is_noop_when_key_value_is_not_there() {
             let data = vec![(0, "A1".to_string()), (0, "A2".to_string())];
             let mut map = data.into_iter().collect::<$type<_, _>>();
