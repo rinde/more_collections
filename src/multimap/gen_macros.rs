@@ -102,8 +102,26 @@ macro_rules! multimap_mutators_impl {
             self.inner.reserve(additional);
         }
 
-        // TODO add shrink_to_fit()
-        // TODO add shrink_to()
+        /// Shrinks the capacity of the multimap's keys as much as possible.
+        /// It will drop down as much as possible while maintaining the
+        /// internal rules and possibly leaving some space in accordance with
+        /// the resize policy.
+        #[inline]
+        pub fn shrink_keys_to_fit(&mut self) {
+            self.inner.shrink_to_fit();
+        }
+
+        /// Shrinks the capacity of the multimap's values as much as possible.
+        /// It will drop down as much as possible while maintaining the
+        /// internal rules and possibly leaving some space in accordance with
+        /// the resize policy.
+        pub fn shrink_values_to_fit(&mut self) {
+            self.inner.iter_mut().for_each(|(_,values)| values.shrink_to_fit());
+        }
+
+        // TODO add shrink_keys_to for Hash*Multimaps
+        // TODO add shrink_values_to for Vec, HashSet
+
         // TODO add entry()
 
         #[doc = concat!("Return a reference to the ", stringify!($values_class), " stored for `key`, if it is present, else `None`.")]

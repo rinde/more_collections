@@ -204,6 +204,34 @@ macro_rules! general_multimap_tests {
         }
 
         #[test]
+        fn shrink_keys_to_fit_sets_capacity_at_most_len() {
+            // empty sets it to zero
+            let mut map7: $type<usize, usize> = $type::with_key_capacity(7);
+            map7.shrink_keys_to_fit();
+            assert_eq!(0, map7.key_capacity());
+
+            // occupied sets it to len
+            let mut map: $type<usize, usize> = $type::with_key_capacity(7);
+            map.insert(0, 1);
+            map.insert(0, 2);
+            map.insert(1, 7);
+            map.shrink_keys_to_fit();
+            assert!(map.key_capacity() >= 2);
+        }
+
+        #[test]
+        fn shrink_values_to_fit_sets_capacity_at_most_len() {
+            let mut map: $type<usize, usize> = $type::with_key_capacity(7);
+            map.insert(0, 1);
+            map.insert(0, 2);
+            map.insert(0, 3);
+            map.insert(1, 7);
+            map.shrink_values_to_fit();
+            assert!(map[&0].capacity() >= 3);
+            assert!(map[&1].capacity() >= 1);
+        }
+
+        #[test]
         fn contains_key_returns_correct_value() {
             let map = $multimap_macro! {
                 0 => { 1, 2, 3 },
