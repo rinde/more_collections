@@ -13,7 +13,7 @@ macro_rules! multimap_base_impl {
             }
         }
 
-        /// Creates an empty multimap` with the specified key capacity.
+        /// Creates an empty multimap with the specified key capacity.
         ///
         /// The multimap will be able to hold at least `capacity` keys without
         /// reallocating. If `capacity` is 0, the multimap will not allocate.
