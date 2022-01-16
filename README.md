@@ -71,7 +71,7 @@ Additional Rust collections not found in [std::collections](https://doc.rust-lan
 | as_map()                              | ✅               | ✅               | ✅                | ✅                |
 | into_map()                            | ✅               | ✅               | ✅                | ✅                |
 | __IndexMap keys methods__             |
-| insert_full()                         | -               | -               | planned          | planned          |
+| insert_full()                         | -               | -               | ✅                | ✅                |
 | get_full()                            | -               | -               | planned          | planned          |
 | get_index_of()                        | -               | -               | planned          | planned          |
 | get_full_mut()                        | -               | -               | planned          | planned          |

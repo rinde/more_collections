@@ -266,12 +266,8 @@ macro_rules! multimap_mutators_impl {
 #[macro_export]
 macro_rules! index_multimap_impl {
     ($keys:ty, $values:ty, $values_ctx:expr, $values_class:tt, ($($keys_ref:tt)*), ($($values_ref:tt)*)) => {
-        /// Insert a key-value pair in the multimap, and get their index.
-        // pub fn insert_full(&mut self, key: K, value: V) -> (usize, Option<V>) {
-        //     // self.inner.insert_full()
-        // TODO use get_index_of()
-        //     self.inner.entry(key)
-        // }
+
+        insert_full!($values_class $values_ctx);
 
         // TODO add get_full()
 
@@ -365,9 +361,77 @@ macro_rules! insert {
         pub fn insert(&mut self, key: K, value: V) {
             self.inner
                 .entry(key)
-                .or_insert_with($values_ctx)
+                .or_insert_with(|| $values_ctx)
                 .push(value);
             self.len += 1;
+        }
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! insert_full {
+    (set $values_ctx:expr) => {
+        /// Insert a key-value pair in the multimap, and get its indices.
+        ///
+        /// If an equivalent key already exists in the multimap, the key
+        /// remains and retains its place in the order. Additionally, if an
+        /// equivalent value already exists for that particular key the value
+        /// remains and retains its place in the order, and `false` is
+        /// returned.
+        ///
+        /// If no equivalent key existed in the multimap the new key is
+        /// inserted last in order. If no equivalent value existed in the
+        /// multimap for this key, the value is inserted last in order.
+        ///
+        /// Returns `(key index, values index, success)` where success is
+        /// `true` if the multimap changes as a result of calling this method.
+        pub fn insert_full(&mut self, key: K, value: V) -> (usize, usize, bool) {
+            match self.inner.get_full_mut(&key) {
+                Some((keys_index, _, values)) => {
+                    let (values_index, success) = values.insert_full(value);
+                    if success {
+                        self.len += 1;
+                    }
+                    (keys_index, values_index, success)
+                }
+                None => {
+                    let mut values = $values_ctx;
+                    values.insert(value);
+                    let (keys_index, _) = self.inner.insert_full(key, values);
+                    self.len += 1;
+                    (keys_index, 0, true)
+                }
+            }
+        }
+    };
+    (vec $values_ctx:expr) => {
+        /// Insert a key-value pair in the multimap, and get its indices.
+        ///
+        /// If an equivalent key already exists in the multimap, the key
+        /// remains and retains its place in the order. If no equivalent key
+        /// existed in the multimap the new key is inserted last in order.
+        ///
+        /// The value is inserted  last in order in the values for this
+        /// particular key (duplicates are allowed).
+        ///
+        /// Returns `(key index, values index)`
+        pub fn insert_full(&mut self, key: K, value: V) -> (usize, usize) {
+            match self.inner.get_full_mut(&key) {
+                Some((keys_index, _, values)) => {
+                    let values_index = values.len();
+                    values.push(value);
+                    self.len += 1;
+                    (keys_index, values_index)
+                }
+                None => {
+                    let mut values = $values_ctx;
+                    values.push(value);
+                    let (keys_index, _) = self.inner.insert_full(key, values);
+                    self.len += 1;
+                    (keys_index, 0)
+                }
+            }
         }
     };
 }

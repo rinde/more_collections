@@ -411,6 +411,27 @@ mod index_set_multimap {
     general_multimap_tests! {IndexSetMultimap, indexsetmultimap, indexmap, indexset}
     set_multimap_tests! {IndexSetMultimap}
     index_multimap_tests! {IndexSetMultimap, indexsetmultimap, indexset}
+
+    #[test]
+    fn insert_full_returns_correct_values() {
+        let mut map = indexsetmultimap! {
+            0 => {1, 2, 3},
+            2 => {2, 3},
+            1 => {3}
+        };
+
+        // new key, new value
+        assert_eq!((3, 0, true), map.insert_full(7, 2));
+        assert_eq!(7, map.len());
+
+        // existing key, new value
+        assert_eq!((2, 1, true), map.insert_full(1, 2));
+        assert_eq!(8, map.len());
+
+        // existing key and value
+        assert_eq!((0, 1, false), map.insert_full(0, 2));
+        assert_eq!(8, map.len());
+    }
 }
 
 mod index_vec_multimap {
@@ -420,4 +441,25 @@ mod index_vec_multimap {
 
     general_multimap_tests! {IndexVecMultimap, indexvecmultimap, indexmap, vec}
     index_multimap_tests! {IndexVecMultimap, indexvecmultimap, vec}
+
+    #[test]
+    fn insert_full_returns_correct_values() {
+        let mut map = indexvecmultimap! {
+            0 => {1, 2, 3},
+            2 => {2, 3},
+            1 => {3}
+        };
+
+        // new key, new value
+        assert_eq!((3, 0), map.insert_full(7, 2));
+        assert_eq!(7, map.len());
+
+        // existing key, new value
+        assert_eq!((2, 1), map.insert_full(1, 2));
+        assert_eq!(8, map.len());
+
+        // existing key and value
+        assert_eq!((0, 3), map.insert_full(0, 2));
+        assert_eq!(9, map.len());
+    }
 }

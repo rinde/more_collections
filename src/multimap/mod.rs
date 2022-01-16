@@ -87,7 +87,7 @@ where
     multimap_mutators_impl! {
         HashMap<K, Vec<V>, S>,
         Vec<V>,
-        Vec::new,
+        Vec::new(),
         vec,
         (K: Borrow<Q>, Q: Hash + Eq),
         (V: Borrow<R>, R: Equivalent<V>)
@@ -129,7 +129,7 @@ where
     multimap_mutators_impl! {
         IndexMap<K, Vec<V>, S>,
         Vec<V>,
-        Vec::new,
+        Vec::new(),
         vec,
         (Q: Hash + Equivalent<K>),
         (R: Equivalent<V>)
@@ -138,7 +138,7 @@ where
     index_multimap_impl! {
         IndexMap<K, Vec<V>, S>,
         Vec<V>,
-        Vec::new,
+        Vec::new(),
         vec,
         (Q: Hash + Equivalent<K>),
         (R: Equivalent<V>)
