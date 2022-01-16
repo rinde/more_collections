@@ -67,7 +67,6 @@ Additional Rust collections not found in [std::collections](https://doc.rust-lan
 | into_keys()                           | planned         | planned         | planned          | planned          |
 | into_values()                         | planned         | planned         | planned          | planned          |
 | remove()                              | ✅               | ✅               | ✅                | ✅                |
-| remove_entry()                        | planned         | planned         | planned          | planned          |
 | contains()                            | ✅               | ✅               | ✅                | ✅                |
 | as_map()                              | ✅               | ✅               | ✅                | ✅                |
 | into_map()                            | ✅               | ✅               | ✅                | ✅                |

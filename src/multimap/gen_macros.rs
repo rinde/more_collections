@@ -211,24 +211,23 @@ macro_rules! multimap_mutators_impl {
         /// Multimap specific methods
         //////////////////////////////////////
 
-        /// Remove the entry from the multimap, and return `true` if it was present.
-        pub fn remove<Q: ?Sized, R: ?Sized>(&mut self, key: &Q, value: &R) -> bool
+        /// Remove the entry from the multimap, and return it if it was present.
+        pub fn remove<Q: ?Sized, R: ?Sized>(&mut self, key: &Q, value: &R) -> Option<V>
         where
             $($keys_ref)*,
             $($values_ref)*,
         {
             if let Some(values) = self.inner.get_mut(key) {
-                if crate::values_remove!($values_class, values, value) {
+                let value = crate::values_remove!($values_class, values, value);
+                if value.is_some() {
                     if values.is_empty() {
                         self.inner.remove(key);
                     }
                     self.len -= 1;
-                    true
-                } else {
-                    false
                 }
+                value
             } else {
-                false
+                None
             }
         }
 
@@ -365,15 +364,14 @@ macro_rules! values_contains {
 #[macro_export]
 macro_rules! values_remove {
     (set, $values:ident, $value:ident) => {
-        $values.remove($value)
+        $values.take($value)
     };
 
     (vec, $values:ident, $value:ident) => {
         if let Some(index) = $values.iter().position(|x| $value.equivalent(x)) {
-            $values.remove(index);
-            true
+            Some($values.remove(index))
         } else {
-            false
+            None
         }
     };
 }

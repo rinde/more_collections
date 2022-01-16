@@ -67,7 +67,7 @@ macro_rules! general_multimap_tests {
             assert_eq!(1, map.keys_len());
             assert!(!map.is_empty());
 
-            assert!(map.remove(&0, &"A2".to_string()));
+            assert_eq!(Some("A2".to_string()), map.remove(&0, &"A2".to_string()));
             assert!(!map.contains(&0, &"A2".to_string()));
             assert_eq!(1, map.len());
             assert_eq!(1, map.keys_len());
@@ -81,7 +81,7 @@ macro_rules! general_multimap_tests {
                 result.unwrap().iter().collect::<Vec<_>>()
             );
 
-            assert!(map.remove(&0, &"A1".to_string()));
+            assert_eq!(Some("A1".to_string()), map.remove(&0, &"A1".to_string()));
             assert!(!map.contains(&0, &"A1".to_string()));
             assert_eq!(0, map.len());
             assert_eq!(0, map.keys_len());
@@ -176,7 +176,7 @@ macro_rules! general_multimap_tests {
         fn remove_is_noop_when_key_value_is_not_there() {
             let data = vec![(0, "A1".to_string()), (0, "A2".to_string())];
             let mut map = data.into_iter().collect::<$type<_, _>>();
-            assert!(!map.remove(&0, &"A3".to_string()));
+            assert_eq!(None, map.remove(&0, &"A3".to_string()));
             assert_eq!(2, map.len());
             assert_eq!(1, map.keys_len());
         }
