@@ -259,12 +259,36 @@ macro_rules! multimap_mutators_impl {
 }
 
 //////////////////////////////////////
-/// IndexMap keys specific methods
+// IndexMap keys specific methods
 //////////////////////////////////////
 
-// TODO add insert_full()
-// TODO add get_full()
-// TODO add get_index_of()
+#[doc(hidden)]
+#[macro_export]
+macro_rules! index_multimap_impl {
+    ($keys:ty, $values:ty, $values_ctx:expr, $values_class:tt, ($($keys_ref:tt)*), ($($values_ref:tt)*)) => {
+        /// Insert a key-value pair in the multimap, and get their index.
+        // pub fn insert_full(&mut self, key: K, value: V) -> (usize, Option<V>) {
+        //     // self.inner.insert_full()
+        // TODO use get_index_of()
+        //     self.inner.entry(key)
+        // }
+
+        // TODO add get_full()
+
+        /// Return key index if it exists in the map.
+        pub fn get_key_index<Q: ?Sized>(&self, key: &Q) -> Option<usize>
+        where
+            Q: Hash + Equivalent<K>,
+        {
+            if self.is_empty() {
+                None
+            } else {
+                self.inner.get_index_of(key)
+            }
+        }
+    };
+}
+
 // TODO add get_full_mut()
 // TODO add swap_remove()
 // TODO add swap_remove_entry()
@@ -497,16 +521,3 @@ macro_rules! multimap_eq {
         }
     };
 }
-
-// TODO create macro for IndexMap specific functions:
-// Return item index, if it exists in the map.
-//  pub fn get_index_of_key<Q: ?Sized>(&self, key: &Q) -> Option<usize>
-//  where
-//      Q: Hash + Equivalent<K>,
-//  {
-//      if self.is_empty() {
-//          None
-//      } else {
-//          self.inner.get_index_of(key)
-//      }
-//  }

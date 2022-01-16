@@ -1,20 +1,5 @@
 #![cfg(test)]
 
-// TODO fix
-// #[test]
-// fn get_index_returns_correct_value() {
-//     let map = IndexSetMultimap::from(indexmap! {
-//         0 => indexset!{ 1, 2, 3 },
-//         2 => indexset!{ 2, 3 },
-//         1 => indexset!{ 3 },
-//     });
-
-//     assert_eq!(map.get_index(0), Some((&0, &indexset! {1,2,3})));
-//     assert_eq!(map.get_index(1), Some((&2, &indexset! {2,3})));
-//     assert_eq!(map.get_index(2), Some((&1, &indexset! {3})));
-//     assert_eq!(map.get_index(3), None);
-// }
-
 macro_rules! set_multimap_tests {
     ($type:tt) => {
         #[test]
@@ -34,13 +19,26 @@ macro_rules! set_multimap_tests {
 }
 
 macro_rules! index_multimap_tests {
-    ($type:tt) => {
+    ($type:tt, $multimap_macro:tt, $values_macro:tt) => {
         #[test]
         fn with_capacity_constructs_instance_with_correct_capacity() {
             let map7: $type<usize, usize> = $type::with_key_capacity(7);
             let map17: $type<usize, usize> = $type::with_key_capacity(35);
             assert_eq!(7, map7.key_capacity());
             assert_eq!(35, map17.key_capacity());
+        }
+
+        #[test]
+        fn get_key_index_returns_correct_value() {
+            let map = $multimap_macro! {
+                0 => {1, 2, 3},
+                2 => {2, 3},
+                1 => {3}
+            };
+            assert_eq!(Some(0), map.get_key_index(&0));
+            assert_eq!(Some(2), map.get_key_index(&1));
+            assert_eq!(Some(1), map.get_key_index(&2));
+            assert_eq!(None, map.get_key_index(&3));
         }
     };
 }
@@ -412,7 +410,7 @@ mod index_set_multimap {
 
     general_multimap_tests! {IndexSetMultimap, indexsetmultimap, indexmap, indexset}
     set_multimap_tests! {IndexSetMultimap}
-    index_multimap_tests! {IndexSetMultimap}
+    index_multimap_tests! {IndexSetMultimap, indexsetmultimap, indexset}
 }
 
 mod index_vec_multimap {
@@ -421,5 +419,5 @@ mod index_vec_multimap {
     use more_collections::IndexVecMultimap;
 
     general_multimap_tests! {IndexVecMultimap, indexvecmultimap, indexmap, vec}
-    index_multimap_tests! {IndexVecMultimap}
+    index_multimap_tests! {IndexVecMultimap, indexvecmultimap, vec}
 }

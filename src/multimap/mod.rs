@@ -134,6 +134,15 @@ where
         (Q: Hash + Equivalent<K>),
         (R: Equivalent<V>)
     }
+
+    index_multimap_impl! {
+        IndexMap<K, Vec<V>, S>,
+        Vec<V>,
+        Vec::new,
+        vec,
+        (Q: Hash + Equivalent<K>),
+        (R: Equivalent<V>)
+    }
 }
 
 multimap_extend! {
@@ -169,6 +178,14 @@ where
     S: BuildHasher + Default,
 {
     multimap_mutators_impl! {
+        IndexMap<K, IndexSet<V,S>, S>,
+        IndexSet<V,S>,
+        IndexSet::with_hasher(S::default()),
+        set,
+        (Q: Hash + Equivalent<K>),
+        (R: Hash + Equivalent<V>)
+    }
+    index_multimap_impl! {
         IndexMap<K, IndexSet<V,S>, S>,
         IndexSet<V,S>,
         IndexSet::with_hasher(S::default()),
