@@ -456,11 +456,10 @@ macro_rules! values_remove {
     };
 
     (vec, $values:ident, $value:ident) => {
-        if let Some(index) = $values.iter().position(|x| $value.equivalent(x)) {
-            Some($values.remove(index))
-        } else {
-            None
-        }
+        $values
+            .iter()
+            .position(|x| $value.equivalent(x))
+            .map(|index| $values.remove(index))
     };
 }
 
