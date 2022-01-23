@@ -418,7 +418,7 @@ macro_rules! insert_full {
         /// remains and retains its place in the order. If no equivalent key
         /// existed in the multimap the new key is inserted last in order.
         ///
-        /// The value is inserted  last in order in the values for this
+        /// The value is inserted last in order in the values for this
         /// particular key (duplicates are allowed).
         ///
         /// Returns `(key index, values index)`
@@ -431,8 +431,7 @@ macro_rules! insert_full {
                     (keys_index, values_index)
                 }
                 None => {
-                    let mut values = $values_ctx;
-                    values.push(value);
+                    let values = vec![value];
                     let (keys_index, _) = self.inner.insert_full(key, values);
                     self.len += 1;
                     (keys_index, 0)
