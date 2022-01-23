@@ -29,6 +29,18 @@ macro_rules! index_multimap_tests {
         }
 
         #[test]
+        fn get_full_returns_correct_values() {
+            let map = $multimap_macro! {
+                0 => {1, 2, 3},
+                2 => {2, 3},
+                1 => {3}
+            };
+            assert_eq!(Some((0, &0, &$values_macro! { 1, 2, 3 })), map.get_full(&0));
+            assert_eq!(Some((1, &2, &$values_macro! { 2, 3 })), map.get_full(&2));
+            assert_eq!(None, map.get_full(&3));
+        }
+
+        #[test]
         fn get_key_index_returns_correct_value() {
             let map = $multimap_macro! {
                 0 => {1, 2, 3},

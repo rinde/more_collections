@@ -269,12 +269,18 @@ macro_rules! index_multimap_impl {
 
         insert_full!($values_class $values_ctx);
 
-        // TODO add get_full()
+        /// Return item index, key, and values.
+        pub fn get_full<Q: ?Sized>(&self, key: &Q) -> Option<(usize, &K, &$values)>
+        where
+            $($keys_ref)*,
+        {
+            self.inner.get_full(key)
+        }
 
         /// Return key index if it exists in the map.
         pub fn get_key_index<Q: ?Sized>(&self, key: &Q) -> Option<usize>
         where
-            Q: Hash + Equivalent<K>,
+            $($keys_ref)*,
         {
             if self.is_empty() {
                 None

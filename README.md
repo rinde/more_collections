@@ -72,9 +72,9 @@ Additional Rust collections not found in [std::collections](https://doc.rust-lan
 | into_map()                            | ✅               | ✅               | ✅                | ✅                |
 | __IndexMap keys methods__             |
 | insert_full()                         | -               | -               | ✅                | ✅                |
-| get_full()                            | -               | -               | planned          | planned          |
+| get_full()                            | -               | -               | ✅                | ✅                |
 | get_key_index()                       | -               | -               | ✅                | ✅                |
-| get_full_mut()                        | -               | -               | planned          | planned          |
+| get_full_mut()                        | -               | -               | maybe            | maybe            |
 | swap_remove()                         | -               | -               | planned          | planned          |
 | swap_remove_entry()                   | -               | -               | planned          | planned          |
 | swap_remove_full()                    | -               | -               | planned          | planned          |
