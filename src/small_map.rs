@@ -5,7 +5,7 @@ use ::core::hash::Hash;
 use std::fmt::Debug;
 use std::mem;
 
-struct SmallMap<K, V, const C: usize> {
+pub struct SmallMap<K, V, const C: usize> {
     data: MapData<K, V, C>,
 }
 
@@ -16,13 +16,13 @@ enum MapData<K, V, const C: usize> {
 
 impl<K, V, const C: usize> SmallMap<K, V, C>
 where
-    K: Hash + Eq + Debug,
-    V: Debug,
+    K: Hash + Eq + Debug + Clone,
+    V: Debug + Clone,
 {
     pub fn new() -> Self {
         debug_assert!(
             C > 0,
-            "Cannot instantiate SmallMap with 0 capacity, raise capacity or use IndexMap instead",
+            "Cannot instantiate SmallMap with 0 capacity, use positive capacity or use IndexMap instead",
         );
         SmallMap {
             data: MapData::Inline(SmallVec::new()),
@@ -40,12 +40,11 @@ where
         }
     }
 
-    pub fn insert(mut self, key: K, value: V) -> Option<V> {
-        match &self.data {
+    pub fn insert(&mut self, key: K, value: V) -> Option<V> {
+        match &mut self.data {
             MapData::Inline(sv) => {
                 if sv.len() + 1 > C {
-                    let inner = sv.into_inner().unwrap();
-                    let mut map = sv.into_iter().collect::<FastIndexMap<K, V>>();
+                    let mut map = sv.iter().cloned().collect::<FastIndexMap<_, _>>();
                     let ret = map.insert(key, value);
                     self.data = MapData::Heap(map);
                     ret
