@@ -120,6 +120,22 @@ where
             None => Entry::Vacant(self, key),
         }
     }
+
+    pub fn inline_size(&self) -> usize {
+        C
+    }
+
+    pub fn from_map(map: FastIndexMap<K, V>) -> Self {
+        if map.capacity() <= C {
+            Self {
+                data: MapData::Inline(SmallVec::from_vec(map.into_iter().collect())),
+            }
+        } else {
+            Self {
+                data: MapData::Heap(map),
+            }
+        }
+    }
 }
 
 impl<K, V, const C: usize> SmallMap<K, V, C>
@@ -304,6 +320,23 @@ where
     }
 }
 
+#[macro_export]
+macro_rules! smallmap {
+    // count helper: transform any expression into 1
+    (@one $x:expr) => (1usize);
+    ($($key:expr => $value:expr),*$(,)*) => ({
+        let count = 0usize $(+ $crate::smallmap!(@one $key))*;
+        #[allow(unused_mut)]
+        let mut map = $crate::SmallMap::new();
+        if count <= map.inline_size() {
+            $(map.insert($key, $value);)*
+            map
+        } else {
+            $crate::SmallMap::from_map($crate::fastindexmap![$($key => $value,)*])
+        }
+    });
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -317,5 +350,14 @@ mod test {
         assert_eq!(1, map.len());
 
         println!("{}", map.len());
+
+        let map: SmallMap<_, _, 10> = smallmap! {
+            0 => 1,
+            1 => 7,
+            4 => 9
+        };
+
+        assert_eq!(3, map.len());
+        assert_eq!(10, map.inline_size());
     }
 }
