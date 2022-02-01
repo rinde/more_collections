@@ -51,8 +51,15 @@ where
 
     pub fn iter<'a>(&'a self) -> Iter<'a, K, V> {
         match &self.data {
-            MapData::Inline(m) => Iter::Inline(m.iter()),
-            MapData::Heap(m) => Iter::Heap(m.iter()),
+            MapData::Inline(vec) => Iter::Inline(vec.iter()),
+            MapData::Heap(map) => Iter::Heap(map.iter()),
+        }
+    }
+
+    pub fn into_iter(self) -> IntoIter<K, V, C> {
+        match self.data {
+            MapData::Inline(vec) => IntoIter::Inline(vec.into_iter()),
+            MapData::Heap(map) => IntoIter::Heap(map.into_iter()),
         }
     }
 
@@ -230,6 +237,31 @@ impl<'a, K, V> ExactSizeIterator for Iter<'a, K, V> {
         match self {
             Iter::Inline(iter) => iter.len(),
             Iter::Heap(iter) => iter.len(),
+        }
+    }
+}
+
+pub enum IntoIter<K, V, const C: usize> {
+    Inline(smallvec::IntoIter<[(K, V); C]>),
+    Heap(indexmap::map::IntoIter<K, V>),
+}
+
+impl<K, V, const C: usize> Iterator for IntoIter<K, V, C> {
+    type Item = (K, V);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            IntoIter::Inline(iter) => iter.next().map(|(k, v)| (k, v)),
+            IntoIter::Heap(iter) => iter.next(),
+        }
+    }
+}
+
+impl<K, V, const C: usize> ExactSizeIterator for IntoIter<K, V, C> {
+    fn len(&self) -> usize {
+        match self {
+            IntoIter::Inline(iter) => iter.len(),
+            IntoIter::Heap(iter) => iter.len(),
         }
     }
 }
