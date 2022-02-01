@@ -320,6 +320,7 @@ where
     }
 }
 
+// TODO to make smallmap! more efficient it could be considered to directly create a smallvec internally, and check for duplicate keys using an debug_assert
 #[macro_export]
 macro_rules! smallmap {
     // count helper: transform any expression into 1
