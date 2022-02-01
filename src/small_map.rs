@@ -1,14 +1,23 @@
+use indexmap::Equivalent;
 use smallvec::SmallVec;
 
 use crate::FastIndexMap;
 use ::core::hash::Hash;
 use std::fmt::Debug;
 use std::mem;
+use std::ops::Index;
+use std::ops::IndexMut;
 
-pub struct SmallMap<K, V, const C: usize> {
+#[derive(Debug, Default, Eq, PartialEq)]
+pub struct SmallMap<K, V, const C: usize>
+where
+    K: Hash + Eq,
+    V: Eq,
+{
     data: MapData<K, V, C>,
 }
 
+#[derive(Debug)]
 enum MapData<K, V, const C: usize> {
     Inline(SmallVec<[(K, V); C]>),
     Heap(FastIndexMap<K, V>),
@@ -16,8 +25,8 @@ enum MapData<K, V, const C: usize> {
 
 impl<K, V, const C: usize> SmallMap<K, V, C>
 where
-    K: Hash + Eq + Debug + Clone,
-    V: Debug + Clone,
+    K: Hash + Eq,
+    V: Eq,
 {
     pub fn new() -> Self {
         debug_assert!(
@@ -40,6 +49,77 @@ where
         }
     }
 
+    pub fn iter<'a>(&'a self) -> Iter<'a, K, V> {
+        match &self.data {
+            MapData::Inline(m) => Iter::Inline(m.iter()),
+            MapData::Heap(m) => Iter::Heap(m.iter()),
+        }
+    }
+
+    pub fn get(&self, key: &K) -> Option<&V> {
+        match &self.data {
+            MapData::Inline(vec) => vec.iter().find(|(k, _v)| k == key).map(|(_k, v)| v),
+            MapData::Heap(map) => map.get(key),
+        }
+    }
+
+    pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
+        match &mut self.data {
+            MapData::Inline(vec) => vec.iter_mut().find(|(k, _v)| k == key).map(|(_k, v)| v),
+            MapData::Heap(map) => map.get_mut(key),
+        }
+    }
+
+    pub fn get_index(&self, index: usize) -> Option<(&K, &V)> {
+        match &self.data {
+            MapData::Inline(vec) => {
+                if index < self.len() {
+                    Some(&vec[index]).map(|(k, v)| (k, v))
+                } else {
+                    None
+                }
+            }
+            MapData::Heap(map) => map.get_index(index),
+        }
+    }
+
+    pub fn get_index_mut(&mut self, index: usize) -> Option<(&mut K, &mut V)> {
+        match &mut self.data {
+            MapData::Inline(vec) => {
+                if index < vec.len() {
+                    Some(&mut vec[index]).map(|(k, v)| (k, v))
+                } else {
+                    None
+                }
+            }
+            MapData::Heap(map) => map.get_index_mut(index),
+        }
+    }
+
+    pub fn get_index_of<Q: ?Sized>(&self, key: &Q) -> Option<usize>
+    where
+        Q: Hash + Equivalent<K>,
+    {
+        match &self.data {
+            MapData::Inline(vec) => vec.iter().position(|(k, _v)| key.equivalent(k)),
+            MapData::Heap(map) => map.get_index_of(key),
+        }
+    }
+
+    pub fn entry(&mut self, key: K) -> Entry<'_, K, V, C> {
+        let index = self.get_index_of(&key);
+        match index {
+            Some(index) => Entry::Occupied(self, index),
+            None => Entry::Vacant(self, key),
+        }
+    }
+}
+
+impl<K, V, const C: usize> SmallMap<K, V, C>
+where
+    K: Hash + Eq + Debug + Clone,
+    V: Eq + Debug + Clone,
+{
     pub fn insert(&mut self, key: K, value: V) -> Option<V> {
         match &mut self.data {
             MapData::Inline(sv) => {
@@ -61,6 +141,134 @@ where
             }
             MapData::Heap(map) => map.insert(key, value),
         }
+    }
+}
+
+impl<K, V, const C: usize> Eq for MapData<K, V, C>
+where
+    K: Hash + Eq,
+    V: Eq,
+{
+}
+impl<K, V, const C: usize> PartialEq for MapData<K, V, C>
+where
+    K: Hash + Eq,
+    V: Eq,
+{
+    // TODO consider comparing on iterators?
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Inline(l0), Self::Inline(r0)) => l0 == r0,
+            (Self::Heap(l0), Self::Heap(r0)) => l0 == r0,
+            (_, _) => false,
+        }
+    }
+}
+
+impl<K, V, const C: usize> Default for MapData<K, V, C> {
+    fn default() -> Self {
+        MapData::Inline(SmallVec::new())
+    }
+}
+
+impl<K, V, const C: usize> From<SmallVec<[(K, V); C]>> for SmallMap<K, V, C>
+where
+    K: Eq + Hash,
+    V: Eq,
+{
+    fn from(vec: SmallVec<[(K, V); C]>) -> Self {
+        SmallMap {
+            data: MapData::Inline(vec),
+        }
+    }
+}
+
+impl<K, V, const C: usize> Index<usize> for SmallMap<K, V, C>
+where
+    K: Eq + Hash,
+    V: Eq,
+{
+    type Output = V;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        self.get_index(index)
+            .expect("SmallMap: index out of bounds")
+            .1
+    }
+}
+
+impl<K, V, const C: usize> IndexMut<usize> for SmallMap<K, V, C>
+where
+    K: Eq + Hash,
+    V: Eq,
+{
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        self.get_index_mut(index)
+            .expect("SmallMap: index out of bounds")
+            .1
+    }
+}
+
+pub enum Iter<'a, K, V> {
+    Inline(std::slice::Iter<'a, (K, V)>),
+    Heap(indexmap::map::Iter<'a, K, V>),
+}
+
+impl<'a, K, V> Iterator for Iter<'a, K, V> {
+    type Item = (&'a K, &'a V);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            Iter::Inline(iter) => iter.next().map(|(k, v)| (k, v)),
+            Iter::Heap(iter) => iter.next(),
+        }
+    }
+}
+
+impl<'a, K, V> ExactSizeIterator for Iter<'a, K, V> {
+    fn len(&self) -> usize {
+        match self {
+            Iter::Inline(iter) => iter.len(),
+            Iter::Heap(iter) => iter.len(),
+        }
+    }
+}
+
+pub enum Entry<'a, K, V, const C: usize>
+where
+    K: Hash + Eq,
+    V: Eq,
+{
+    Occupied(&'a mut SmallMap<K, V, C>, usize),
+    Vacant(&'a mut SmallMap<K, V, C>, K),
+}
+
+impl<'a, K, V, const C: usize> Entry<'a, K, V, C>
+where
+    K: Hash + Eq + Debug + Clone,
+    V: Eq + Debug + Clone,
+{
+    pub fn and_modify<F>(self, f: F) -> Self
+    where
+        F: FnOnce(&mut V),
+    {
+        match self {
+            Entry::Occupied(map, index) => {
+                f(map.get_index_mut(index).map(|(_k, v)| v).unwrap());
+                Entry::Occupied(map, index)
+            }
+            x => x,
+        }
+    }
+
+    /// Inserts the given default value in the entry if it is vacant. Otherwise this is a no-op.
+    pub fn or_insert(self, default: V) {
+        match self {
+            Entry::Vacant(map, key) => {
+                map.insert(key, default);
+            }
+            _ => (),
+        };
     }
 }
 
