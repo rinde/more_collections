@@ -1,12 +1,14 @@
-use crate::FastIndexMap;
-use ::core::hash::Hash;
-use indexmap::Equivalent;
-use smallvec::SmallVec;
 use std::collections::HashSet;
 use std::fmt::Debug;
 use std::mem;
 use std::ops::Index;
 use std::ops::IndexMut;
+
+use ::core::hash::Hash;
+use indexmap::Equivalent;
+use smallvec::SmallVec;
+
+use crate::FastIndexMap;
 
 #[derive(Debug, Default)]
 pub struct SmallMap<K, V, const C: usize> {
@@ -31,17 +33,10 @@ impl<K, V, const C: usize> SmallMap<K, V, C> {
         }
     }
 
-    pub fn iter<'a>(&'a self) -> Iter<'a, K, V> {
+    pub fn iter(&'_ self) -> Iter<'_, K, V> {
         match &self.data {
             MapData::Inline(vec) => Iter::Inline(vec.iter()),
             MapData::Heap(map) => Iter::Heap(map.iter()),
-        }
-    }
-
-    pub fn into_iter(self) -> IntoIter<K, V, C> {
-        match self.data {
-            MapData::Inline(vec) => IntoIter::Inline(vec.into_iter()),
-            MapData::Heap(map) => IntoIter::Heap(map.into_iter()),
         }
     }
 
@@ -289,7 +284,10 @@ impl<K, V, const C: usize> IntoIterator for SmallMap<K, V, C> {
     type IntoIter = IntoIter<K, V, C>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.into_iter()
+        match self.data {
+            MapData::Inline(vec) => IntoIter::Inline(vec.into_iter()),
+            MapData::Heap(map) => IntoIter::Heap(map.into_iter()),
+        }
     }
 }
 
@@ -345,18 +343,18 @@ where
         }
     }
 
-    /// Inserts the given default value in the entry if it is vacant. Otherwise this is a no-op.
+    /// Inserts the given default value in the entry if it is vacant. Otherwise
+    /// this is a no-op.
     pub fn or_insert(self, default: V) {
-        match self {
-            Entry::Vacant(map, key) => {
-                map.insert(key, default);
-            }
-            _ => (),
+        if let Entry::Vacant(map, key) = self {
+            map.insert(key, default);
         };
     }
 }
 
-// TODO to make smallmap! more efficient it could be considered to directly create a smallvec internally, and check for duplicate keys using an debug_assert
+// TODO to make smallmap! more efficient it could be considered to directly
+// create a smallvec internally, and check for duplicate keys using an
+// debug_assert
 #[macro_export]
 macro_rules! smallmap {
     // count helper: transform any expression into 1
