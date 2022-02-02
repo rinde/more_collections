@@ -10,6 +10,15 @@ use smallvec::SmallVec;
 
 use crate::FastIndexMap;
 
+/// A map-like container that can store a specified number of elements inline.
+///
+/// `SmallMap` acts like an [IndexMap](indexmap::IndexMap). It can store a
+/// limited amount of data inline, backed by [SmallVec]. If the data exceeds
+/// the limit `C`, `SmallMap` will move _all_ its data over to the heap in the
+/// form of an `IndexMap`. For performance reasons, transitions between heap and
+/// inline storage should generally be avoided. This datastructure is meant
+/// for situations where the data does not exceed `C` _most of the time_ but it
+/// still needs to support cases where the data _does_ exceed `C`.
 #[derive(Debug, Default)]
 pub struct SmallMap<K, V, const C: usize> {
     data: MapData<K, V, C>,
@@ -146,6 +155,7 @@ where
         match &mut self.data {
             MapData::Inline(sv) => {
                 if sv.len() + 1 > C {
+                    // TODO can this be done without cloning
                     let mut map = sv.iter().cloned().collect::<FastIndexMap<_, _>>();
                     let ret = map.insert(key, value);
                     self.data = MapData::Heap(map);
