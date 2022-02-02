@@ -1,20 +1,15 @@
-use indexmap::Equivalent;
-use smallvec::SmallVec;
-
 use crate::FastIndexMap;
 use ::core::hash::Hash;
+use indexmap::Equivalent;
+use smallvec::SmallVec;
 use std::collections::HashSet;
 use std::fmt::Debug;
 use std::mem;
 use std::ops::Index;
 use std::ops::IndexMut;
 
-#[derive(Debug, Default, Eq, PartialEq)]
-pub struct SmallMap<K, V, const C: usize>
-where
-    K: Hash + Eq,
-    V: Eq,
-{
+#[derive(Debug, Default)]
+pub struct SmallMap<K, V, const C: usize> {
     data: MapData<K, V, C>,
 }
 
@@ -24,21 +19,7 @@ enum MapData<K, V, const C: usize> {
     Heap(FastIndexMap<K, V>),
 }
 
-impl<K, V, const C: usize> SmallMap<K, V, C>
-where
-    K: Hash + Eq,
-    V: Eq,
-{
-    pub fn new() -> Self {
-        debug_assert!(
-            C > 0,
-            "Cannot instantiate SmallMap with 0 capacity, use positive capacity or use IndexMap instead",
-        );
-        SmallMap {
-            data: MapData::Inline(SmallVec::new()),
-        }
-    }
-
+impl<K, V, const C: usize> SmallMap<K, V, C> {
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
@@ -61,6 +42,28 @@ where
         match self.data {
             MapData::Inline(vec) => IntoIter::Inline(vec.into_iter()),
             MapData::Heap(map) => IntoIter::Heap(map.into_iter()),
+        }
+    }
+
+    pub const fn from_const(inline: SmallVec<[(K, V); C]>) -> Self {
+        Self {
+            data: MapData::Inline(inline),
+        }
+    }
+}
+
+impl<K, V, const C: usize> SmallMap<K, V, C>
+where
+    K: Hash + Eq,
+    V: Eq,
+{
+    pub fn new() -> Self {
+        debug_assert!(
+            C > 0,
+            "Cannot instantiate SmallMap with 0 capacity, use positive capacity or use IndexMap instead",
+        );
+        SmallMap {
+            data: MapData::Inline(SmallVec::new()),
         }
     }
 
@@ -168,6 +171,22 @@ where
     }
 }
 
+impl<K, V, const C: usize> Eq for SmallMap<K, V, C>
+where
+    K: Hash + Eq,
+    V: Eq,
+{
+}
+impl<K, V, const C: usize> PartialEq for SmallMap<K, V, C>
+where
+    K: Hash + Eq,
+    V: Eq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.data == other.data
+    }
+}
+
 impl<K, V, const C: usize> Eq for MapData<K, V, C>
 where
     K: Hash + Eq,
@@ -264,6 +283,16 @@ impl<'a, K, V> ExactSizeIterator for Iter<'a, K, V> {
     }
 }
 
+impl<K, V, const C: usize> IntoIterator for SmallMap<K, V, C> {
+    type Item = (K, V);
+
+    type IntoIter = IntoIter<K, V, C>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.into_iter()
+    }
+}
+
 pub enum IntoIter<K, V, const C: usize> {
     Inline(smallvec::IntoIter<[(K, V); C]>),
     Heap(indexmap::map::IntoIter<K, V>),
@@ -345,6 +374,17 @@ macro_rules! smallmap {
     });
 }
 
+/// Creates [`SmallMap`] with capacity equal to the number of values.
+#[macro_export]
+macro_rules! smallmap_inline {
+    // count helper: transform any expression into 1
+    (@one $x:expr) => (1usize);
+    ($($key:expr => $value:expr),*$(,)*) => ({
+        let vec = smallvec::smallvec_inline!( $(($key, $value),)*);
+        $crate::SmallMap::from_const(vec)
+    });
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -367,5 +407,13 @@ mod test {
 
         assert_eq!(3, map.len());
         assert_eq!(10, map.inline_size());
+
+        let map = smallmap_inline! {
+            0 => 1,
+            1 => 7,
+            4 => 9
+        };
+        assert_eq!(3, map.len());
+        assert_eq!(3, map.inline_size());
     }
 }
