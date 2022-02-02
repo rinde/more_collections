@@ -3,6 +3,7 @@ use smallvec::SmallVec;
 
 use crate::FastIndexMap;
 use ::core::hash::Hash;
+use std::collections::HashSet;
 use std::fmt::Debug;
 use std::mem;
 use std::ops::Index;
@@ -199,7 +200,13 @@ where
     K: Eq + Hash,
     V: Eq,
 {
+    // TODO also add a 'safe' method to convert SmallVec to map
     fn from(vec: SmallVec<[(K, V); C]>) -> Self {
+        debug_assert_eq!(
+            vec.iter().map(|(k, _)| k).collect::<HashSet<_>>().len(),
+            vec.len(),
+            "Duplicate keys are not allowed"
+        );
         SmallMap {
             data: MapData::Inline(vec),
         }
