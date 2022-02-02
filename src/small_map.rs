@@ -16,9 +16,30 @@ use crate::FastIndexMap;
 /// limited amount of data inline, backed by [SmallVec]. If the data exceeds
 /// the limit `C`, `SmallMap` will move _all_ its data over to the heap in the
 /// form of an `IndexMap`. For performance reasons, transitions between heap and
-/// inline storage should generally be avoided. This datastructure is meant
-/// for situations where the data does not exceed `C` _most of the time_ but it
-/// still needs to support cases where the data _does_ exceed `C`.
+/// inline storage should generally be avoided.
+///
+/// The `SmallMap` datastructure is meant for situations where the data does not
+/// exceed `C` _most of the time_ but it still needs to support cases where the
+/// data _does_ exceed `C`.
+///
+/// # Example
+///
+/// ```
+/// use fast_hash_collections::SmallMap;
+///
+/// let mut map = SmallMap::<usize, String, 3>::new();
+/// // The map can hold up to three items inline
+/// map.insert(0, "zero".to_string());
+/// map.insert(1, "one".to_string());
+/// map.insert(2, "two".to_string());
+/// assert_eq!(3, map.len());
+/// assert!(map.is_inline());
+///
+/// // Adding the fourth item will move the map to the heap
+/// map.insert(3, "three".to_string());
+/// assert_eq!(4, map.len());
+/// assert!(!map.is_inline());
+/// ```
 #[derive(Debug, Default)]
 pub struct SmallMap<K, V, const C: usize> {
     data: MapData<K, V, C>,
@@ -31,10 +52,12 @@ enum MapData<K, V, const C: usize> {
 }
 
 impl<K, V, const C: usize> SmallMap<K, V, C> {
+    /// Returns `true` if the map is empty.
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
+    /// The number of key-values stored in the map.
     pub fn len(&self) -> usize {
         match &self.data {
             MapData::Inline(sv) => sv.len(),
@@ -42,6 +65,19 @@ impl<K, V, const C: usize> SmallMap<K, V, C> {
         }
     }
 
+    /// The memory capacity that will be allocated inline. If more entries than
+    /// this capacity are added, the map will move to the heap.
+    pub fn inline_capacity(&self) -> usize {
+        C
+    }
+
+    /// Is the data contained by this map stored inline (`true`) or on the heap
+    /// (`false`).
+    pub fn is_inline(&self) -> bool {
+        matches!(self.data, MapData::Inline(_))
+    }
+
+    /// Returns an iterator over the key-values in insertion order.
     pub fn iter(&'_ self) -> Iter<'_, K, V> {
         match &self.data {
             MapData::Inline(vec) => Iter::Inline(vec.iter()),
@@ -61,16 +97,23 @@ where
     K: Hash + Eq,
     V: Eq,
 {
+    /// Create a new map.
     pub fn new() -> Self {
         debug_assert!(
             C > 0,
-            "Cannot instantiate SmallMap with 0 capacity, use positive capacity or use IndexMap instead",
+            "Cannot instantiate SmallMap with no capacity, use positive capacity or use IndexMap instead",
         );
         SmallMap {
             data: MapData::Inline(SmallVec::new()),
         }
     }
 
+    /// Return a reference to the value stored for `key`, if it is present,
+    /// else `None`.
+    ///
+    /// Computational complexity:
+    ///  - inline: O(n)
+    ///  - heap: O(1)
     pub fn get(&self, key: &K) -> Option<&V> {
         match &self.data {
             MapData::Inline(vec) => vec.iter().find(|(k, _v)| k == key).map(|(_k, v)| v),
@@ -78,6 +121,12 @@ where
         }
     }
 
+    /// Return a mutable reference to the value stored for `key`, if it is
+    /// present, else `None`.
+    ///
+    /// Computational complexity:
+    ///  - inline: O(n)
+    ///  - heap: O(1)
     pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
         match &mut self.data {
             MapData::Inline(vec) => vec.iter_mut().find(|(k, _v)| k == key).map(|(_k, v)| v),
@@ -85,6 +134,9 @@ where
         }
     }
 
+    /// Get a key-value pair by index, if it is present, else `None`.
+    ///
+    /// Computational complexity: O(1)
     pub fn get_index(&self, index: usize) -> Option<(&K, &V)> {
         match &self.data {
             MapData::Inline(vec) => {
@@ -98,6 +150,9 @@ where
         }
     }
 
+    /// Get a mutable key-value pair by index, if it is present, else `None`.
+    ///     
+    /// Computational complexity: O(1)
     pub fn get_index_mut(&mut self, index: usize) -> Option<(&mut K, &mut V)> {
         match &mut self.data {
             MapData::Inline(vec) => {
@@ -111,6 +166,11 @@ where
         }
     }
 
+    /// Return the item index, if it exists in the map, else `None`.
+    ///
+    /// Computational complexity:
+    ///  - inline: O(n)
+    ///  - heap: O(1)
     pub fn get_index_of<Q: ?Sized>(&self, key: &Q) -> Option<usize>
     where
         Q: Hash + Equivalent<K>,
@@ -121,16 +181,17 @@ where
         }
     }
 
+    /// Get the given key's corresponding entry in the map for insertion and/or in-place manipulation.
+    ///
+    /// Computational complexity:
+    ///  - inline: O(n)
+    ///  - heap: O(1)
     pub fn entry(&mut self, key: K) -> Entry<'_, K, V, C> {
         let index = self.get_index_of(&key);
         match index {
             Some(index) => Entry::Occupied(self, index),
             None => Entry::Vacant(self, key),
         }
-    }
-
-    pub fn inline_size(&self) -> usize {
-        C
     }
 
     pub fn from_map(map: FastIndexMap<K, V>) -> Self {
@@ -144,19 +205,13 @@ where
             }
         }
     }
-}
 
-impl<K, V, const C: usize> SmallMap<K, V, C>
-where
-    K: Hash + Eq + Debug + Clone,
-    V: Eq + Debug + Clone,
-{
     pub fn insert(&mut self, key: K, value: V) -> Option<V> {
         match &mut self.data {
             MapData::Inline(sv) => {
                 if sv.len() + 1 > C {
-                    // TODO can this be done without cloning
-                    let mut map = sv.iter().cloned().collect::<FastIndexMap<_, _>>();
+                    // Move to heap
+                    let mut map = sv.drain(0..sv.len()).collect::<FastIndexMap<_, _>>();
                     let ret = map.insert(key, value);
                     self.data = MapData::Heap(map);
                     ret
@@ -337,8 +392,8 @@ where
 
 impl<'a, K, V, const C: usize> Entry<'a, K, V, C>
 where
-    K: Hash + Eq + Debug + Clone,
-    V: Eq + Debug + Clone,
+    K: Hash + Eq,
+    V: Eq,
 {
     pub fn and_modify<F>(self, f: F) -> Self
     where
@@ -373,7 +428,7 @@ macro_rules! smallmap {
         let count = 0usize $(+ $crate::smallmap!(@one $key))*;
         #[allow(unused_mut)]
         let mut map = $crate::SmallMap::new();
-        if count <= map.inline_size() {
+        if count <= map.inline_capacity() {
             $(map.insert($key, $value);)*
             map
         } else {
@@ -382,7 +437,7 @@ macro_rules! smallmap {
     });
 }
 
-/// Creates [`SmallMap`] with capacity equal to the number of values.
+/// Creates [`SmallMap`] with inline capacity equal to the number of values.
 #[macro_export]
 macro_rules! smallmap_inline {
     // count helper: transform any expression into 1
@@ -414,7 +469,7 @@ mod test {
         };
 
         assert_eq!(3, map.len());
-        assert_eq!(10, map.inline_size());
+        assert_eq!(10, map.inline_capacity());
 
         let map = smallmap_inline! {
             0 => 1,
@@ -422,6 +477,42 @@ mod test {
             4 => 9
         };
         assert_eq!(3, map.len());
-        assert_eq!(3, map.inline_size());
+        assert_eq!(3, map.inline_capacity());
+    }
+
+    #[test]
+    fn iter_iterates_in_insertion_order() {
+        let map: SmallMap<_, _, 3> = smallmap! {
+            1 => 7,
+            0 => 1,
+            4 => 9
+        };
+        assert_eq!(
+            vec![(&1, &7), (&0, &1), (&4, &9)],
+            map.iter().collect::<Vec<_>>(),
+            "inline iter() does not return values in the correct order"
+        );
+        assert_eq!(
+            vec![(1, 7), (0, 1), (4, 9)],
+            map.into_iter().collect::<Vec<_>>(),
+            "inline into_iter() does not return values in the correct order"
+        );
+
+        let map: SmallMap<_, _, 1> = smallmap! {
+            1 => 7,
+            0 => 1,
+            4 => 9,
+            5 => 1,
+        };
+        assert_eq!(
+            vec![(&1, &7), (&0, &1), (&4, &9), (&5, &1)],
+            map.iter().collect::<Vec<_>>(),
+            "heap iter() does not return values in the correct order"
+        );
+        assert_eq!(
+            vec![(1, 7), (0, 1), (4, 9), (5, 1)],
+            map.into_iter().collect::<Vec<_>>(),
+            "heap into_iter() does not return values in the correct order"
+        );
     }
 }
