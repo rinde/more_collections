@@ -5,6 +5,18 @@ use ::core::hash::Hash;
 use crate::small_map;
 use crate::SmallMap;
 
+/// A set-like container that can store a specified number of elements inline.
+///
+/// `SmallSet` shares most of its API with, and behaves like,
+/// [IndexSet](indexmap::IndexSet). It can store a limited amount of data
+/// inline, backed by [SmallVec](smallvec::SmallVec). If the data exceeds the
+/// limit `C`, `SmallSet` will move _all_ its data over to the heap in the form
+/// of an `IndexSet`. For performance reasons, transitions between heap and
+/// inline storage should generally be avoided.
+///
+/// The `SmallSet` datastructure is meant for situations where the data does not
+/// exceed `C` _most of the time_ but it still needs to support cases where the
+/// data _does_ exceed `C`.
 #[derive(Debug, Default)]
 pub struct SmallSet<T, const C: usize> {
     data: SmallMap<T, (), C>,
@@ -24,6 +36,14 @@ where
         self.data.len()
     }
 
+    pub fn is_inline(&self) -> bool {
+        self.data.is_inline()
+    }
+
+    pub fn inline_capacity(&self) -> usize {
+        self.data.inline_capacity()
+    }
+
     pub fn is_empty(&self) -> bool {
         self.data.is_empty()
     }
@@ -37,12 +57,7 @@ where
             inner: self.data.iter(),
         }
     }
-}
 
-impl<T, const C: usize> SmallSet<T, C>
-where
-    T: Hash + Eq + Debug + Clone,
-{
     pub fn insert(&mut self, value: T) {
         self.data.insert(value, ());
     }
@@ -80,17 +95,13 @@ impl<T, const C: usize> FromIterator<T> for SmallSet<T, C>
 where
     T: Hash + Eq + Debug + Clone,
 {
-    // TODO this is not efficient if the size is already known
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
-        let mut set = SmallSet::new();
-        iter.into_iter().for_each(|i| set.insert(i));
-        set
+        Self {
+            data: SmallMap::from_iter(iter.into_iter().map(|i| (i, ()))),
+        }
     }
 }
 
-// TODO to make smallset! more efficient it could be considered to directly
-// create a smallvec internally, and check for duplicate keys using an
-// debug_assert
 #[macro_export]
 macro_rules! smallset {
     ($($x:expr),*$(,)*) => ({
@@ -102,10 +113,13 @@ macro_rules! smallset {
 #[cfg(test)]
 mod test {
     use super::*;
+
     #[test]
-    fn test() {
+    fn iter_order_follows_insertion_order() {
         let set: SmallSet<_, 5> = smallset! { 0, 1, 2, 5, 2};
-        println!("{:?}", set);
-        // assert_eq!(set.iter())
+        assert_eq!(4, set.len());
+        let actual = set.iter().copied().collect::<Vec<_>>();
+        let expected = vec![0, 1, 2, 5];
+        assert_eq!(expected, actual);
     }
 }
