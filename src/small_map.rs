@@ -466,21 +466,17 @@ mod test {
     use crate::fastindexmap;
 
     #[test]
-    fn map() {
+    fn test_len_and_inline_capacity() {
         let mut map: SmallMap<usize, usize, 1> = SmallMap::new();
-
         assert_eq!(0, map.len());
         map.insert(0, 1);
         assert_eq!(1, map.len());
-
-        println!("{}", map.len());
 
         let map: SmallMap<_, _, 10> = smallmap! {
             0 => 1,
             1 => 7,
             4 => 9
         };
-
         assert_eq!(3, map.len());
         assert_eq!(10, map.inline_capacity());
 
