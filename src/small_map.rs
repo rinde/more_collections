@@ -393,6 +393,35 @@ impl<K, V, const C: usize> ExactSizeIterator for IntoIter<K, V, C> {
     }
 }
 
+impl<K, V, const C: usize> FromIterator<(K, V)> for SmallMap<K, V, C>
+where
+    K: Hash + Eq,
+{
+    fn from_iter<I: IntoIterator<Item = (K, V)>>(iterable: I) -> Self {
+        let iter = iterable.into_iter();
+        let (lower_bound, _) = iter.size_hint();
+        if lower_bound <= C {
+            let vec = SmallVec::<[(K, V); C]>::from_iter(iter);
+            // If the lower bound of the size hint is off, such that the actual vector
+            // length exceeds the inline capacity, then the data will be moved to an
+            // IndexMap _after_ it was moved into the SmallVec.
+            if vec.len() > C {
+                Self {
+                    data: MapData::Heap(FastIndexMap::from_iter(vec)),
+                }
+            } else {
+                Self {
+                    data: MapData::Inline(vec),
+                }
+            }
+        } else {
+            Self {
+                data: MapData::Heap(FastIndexMap::from_iter(iter)),
+            }
+        }
+    }
+}
+
 pub enum Entry<'a, K, V, const C: usize>
 where
     K: Hash + Eq,
