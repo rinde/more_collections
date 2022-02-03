@@ -12,11 +12,12 @@ use crate::FastIndexMap;
 
 /// A map-like container that can store a specified number of elements inline.
 ///
-/// `SmallMap` acts like an [IndexMap](indexmap::IndexMap). It can store a
-/// limited amount of data inline, backed by [SmallVec]. If the data exceeds
-/// the limit `C`, `SmallMap` will move _all_ its data over to the heap in the
-/// form of an `IndexMap`. For performance reasons, transitions between heap and
-/// inline storage should generally be avoided.
+/// `SmallMap` shares most of its API with, and behaves like
+/// [IndexMap](indexmap::IndexMap). It can store a limited amount of data
+/// inline, backed by [SmallVec]. If the data exceeds the limit `C`, `SmallMap`
+/// will move _all_ its data over to the heap in the form of an `IndexMap`. For
+/// performance reasons, transitions between heap and inline storage should
+/// generally be avoided.
 ///
 /// The `SmallMap` datastructure is meant for situations where the data does not
 /// exceed `C` _most of the time_ but it still needs to support cases where the
@@ -181,7 +182,8 @@ where
         }
     }
 
-    /// Get the given key's corresponding entry in the map for insertion and/or in-place manipulation.
+    /// Get the given key's corresponding entry in the map for insertion and/or
+    /// in-place manipulation.
     ///
     /// Computational complexity:
     ///  - inline: O(n)
@@ -194,8 +196,11 @@ where
         }
     }
 
+    /// Convert the specified map and turn it into a `SmallMap`.
+    ///
+    /// If the map is
     pub fn from_map(map: FastIndexMap<K, V>) -> Self {
-        if map.capacity() <= C {
+        if map.len() <= C {
             Self {
                 data: MapData::Inline(SmallVec::from_vec(map.into_iter().collect())),
             }
@@ -450,6 +455,8 @@ macro_rules! smallmap_inline {
 
 #[cfg(test)]
 mod test {
+    use crate::fastindexmap;
+
     use super::*;
 
     #[test]
@@ -513,6 +520,26 @@ mod test {
             vec![(1, 7), (0, 1), (4, 9), (5, 1)],
             map.into_iter().collect::<Vec<_>>(),
             "heap into_iter() does not return values in the correct order"
+        );
+    }
+
+    #[test]
+    fn from_map_stores_data_inline_or_on_heap_depending_on_c_and_input_len() {
+        let input = fastindexmap! { 0 => "zero", 3 => "three",  900 => "nine-hundred"};
+
+        let heap_map = SmallMap::<_, _, 2>::from_map(input.clone());
+        assert!(!heap_map.is_inline());
+
+        let inline_map = SmallMap::<_, _, 3>::from_map(input);
+        assert!(inline_map.is_inline());
+
+        assert_eq!(
+            vec![(0, "zero"), (3, "three"), (900, "nine-hundred")],
+            heap_map.into_iter().collect::<Vec<_>>()
+        );
+        assert_eq!(
+            vec![(0, "zero"), (3, "three"), (900, "nine-hundred")],
+            inline_map.into_iter().collect::<Vec<_>>()
         );
     }
 }
