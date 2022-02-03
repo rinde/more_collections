@@ -198,7 +198,8 @@ where
 
     /// Convert the specified map and turn it into a `SmallMap`.
     ///
-    /// If the map is
+    /// If the map len is smaller or equal the inline capacity, the data will be
+    /// moved inline.
     pub fn from_map(map: FastIndexMap<K, V>) -> Self {
         if map.len() <= C {
             Self {
@@ -220,6 +221,10 @@ where
     /// If a new key is added that causes the size of the `SmallMap` to exceed
     /// the inline capacity all existing data and the new key-value pair is
     /// moved to the heap.
+    ///
+    /// Computational complexity:
+    ///  - inline: O(n)
+    ///  - heap: O(1)
     pub fn insert(&mut self, key: K, value: V) -> Option<V> {
         match &mut self.data {
             MapData::Inline(sv) => {
