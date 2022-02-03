@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use std::fmt::Debug;
 use std::mem;
 use std::ops::Index;
@@ -658,5 +657,33 @@ mod test {
                 test_case.name
             );
         }
+    }
+
+    #[test]
+    fn equality_is_consistent() {
+        let map1: SmallMap<_, _, 3> = smallmap! {
+            0 => 1,
+            1 => 7,
+            4 => 9
+        };
+        let map2 = smallmap_inline! {
+            0 => 1,
+            1 => 7,
+            4 => 9
+        };
+        let map3 = SmallMap::<_, _, 3>::from_iter(vec![(0, 1), (1, 7), (4, 9)]);
+        let mut map4 = SmallMap::<_, _, 3>::new();
+        map4.insert(0, 1);
+        map4.insert(1, 7);
+        map4.insert(4, 9);
+
+        assert_eq!(map1, map2);
+        assert_eq!(map1, map3);
+        assert_eq!(map1, map4);
+
+        assert_eq!(map2, map3);
+        assert_eq!(map2, map4);
+
+        assert_eq!(map3, map4);
     }
 }
