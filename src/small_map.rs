@@ -260,52 +260,13 @@ where
     V: Eq,
 {
     fn eq(&self, other: &Self) -> bool {
-        self.data == other.data
-    }
-}
-
-impl<K, V, const C: usize> Eq for MapData<K, V, C>
-where
-    K: Hash + Eq,
-    V: Eq,
-{
-}
-impl<K, V, const C: usize> PartialEq for MapData<K, V, C>
-where
-    K: Hash + Eq,
-    V: Eq,
-{
-    // TODO consider comparing on iterators?
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Self::Inline(l0), Self::Inline(r0)) => l0 == r0,
-            (Self::Heap(l0), Self::Heap(r0)) => l0 == r0,
-            (_, _) => false,
-        }
+        self.iter().eq(other.iter())
     }
 }
 
 impl<K, V, const C: usize> Default for MapData<K, V, C> {
     fn default() -> Self {
         MapData::Inline(SmallVec::new())
-    }
-}
-
-impl<K, V, const C: usize> From<SmallVec<[(K, V); C]>> for SmallMap<K, V, C>
-where
-    K: Eq + Hash,
-    V: Eq,
-{
-    // TODO also add a 'safe' method to convert SmallVec to map
-    fn from(vec: SmallVec<[(K, V); C]>) -> Self {
-        debug_assert_eq!(
-            vec.iter().map(|(k, _)| k).collect::<HashSet<_>>().len(),
-            vec.len(),
-            "Duplicate keys are not allowed"
-        );
-        SmallMap {
-            data: MapData::Inline(vec),
-        }
     }
 }
 
@@ -463,9 +424,6 @@ where
     }
 }
 
-// TODO to make smallmap! more efficient it could be considered to directly
-// create a smallvec internally, and check for duplicate keys using an
-// debug_assert
 #[macro_export]
 macro_rules! smallmap {
     // count helper: transform any expression into 1
@@ -525,36 +483,38 @@ mod test {
 
     #[test]
     fn iter_iterates_in_insertion_order() {
-        let map: SmallMap<_, _, 3> = smallmap! {
+        let inline_map: SmallMap<_, _, 3> = smallmap! {
             1 => 7,
             0 => 1,
             4 => 9
         };
+        assert!(inline_map.is_inline());
         assert_eq!(
             vec![(&1, &7), (&0, &1), (&4, &9)],
-            map.iter().collect::<Vec<_>>(),
+            inline_map.iter().collect::<Vec<_>>(),
             "inline iter() does not return values in the correct order"
         );
         assert_eq!(
             vec![(1, 7), (0, 1), (4, 9)],
-            map.into_iter().collect::<Vec<_>>(),
+            inline_map.into_iter().collect::<Vec<_>>(),
             "inline into_iter() does not return values in the correct order"
         );
 
-        let map: SmallMap<_, _, 1> = smallmap! {
+        let heap_map: SmallMap<_, _, 1> = smallmap! {
             1 => 7,
             0 => 1,
             4 => 9,
             5 => 1,
         };
+        assert!(!heap_map.is_inline());
         assert_eq!(
             vec![(&1, &7), (&0, &1), (&4, &9), (&5, &1)],
-            map.iter().collect::<Vec<_>>(),
+            heap_map.iter().collect::<Vec<_>>(),
             "heap iter() does not return values in the correct order"
         );
         assert_eq!(
             vec![(1, 7), (0, 1), (4, 9), (5, 1)],
-            map.into_iter().collect::<Vec<_>>(),
+            heap_map.into_iter().collect::<Vec<_>>(),
             "heap into_iter() does not return values in the correct order"
         );
     }
