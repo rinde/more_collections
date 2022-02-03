@@ -211,24 +211,31 @@ where
         }
     }
 
+    /// Inserts the specified key-value pair into this map.
+    ///
+    /// If a value for the specified `key` already exists, the new value will
+    /// overwrite the existing value. The iteration order of the key-value pair
+    /// will remain in the original position.
+    ///
+    /// If a new key is added that causes the size of the `SmallMap` to exceed
+    /// the inline capacity all existing data and the new key-value pair is
+    /// moved to the heap.
     pub fn insert(&mut self, key: K, value: V) -> Option<V> {
         match &mut self.data {
             MapData::Inline(sv) => {
-                if sv.len() + 1 > C {
+                let existing_index = sv.iter().position(|(k, _v)| &key == k);
+                if let Some(existing_index) = existing_index {
+                    let ret = mem::replace(&mut sv[existing_index], (key, value));
+                    Some(ret.1)
+                } else if sv.len() + 1 > C {
                     // Move to heap
                     let mut map = sv.drain(0..sv.len()).collect::<FastIndexMap<_, _>>();
                     let ret = map.insert(key, value);
                     self.data = MapData::Heap(map);
                     ret
                 } else {
-                    let existing_index = sv.iter().position(|(k, _v)| &key == k);
-                    if let Some(existing_index) = existing_index {
-                        let ret = mem::replace(&mut sv[existing_index], (key, value));
-                        Some(ret.1)
-                    } else {
-                        sv.push((key, value));
-                        None
-                    }
+                    sv.push((key, value));
+                    None
                 }
             }
             MapData::Heap(map) => map.insert(key, value),
@@ -455,9 +462,8 @@ macro_rules! smallmap_inline {
 
 #[cfg(test)]
 mod test {
-    use crate::fastindexmap;
-
     use super::*;
+    use crate::fastindexmap;
 
     #[test]
     fn map() {
@@ -541,5 +547,126 @@ mod test {
             vec![(0, "zero"), (3, "three"), (900, "nine-hundred")],
             inline_map.into_iter().collect::<Vec<_>>()
         );
+    }
+
+    #[test]
+    fn insert_tests() {
+        // Test cases:
+        // | Key/Value           | Memory       | Insertion position |
+        // | ------------------- | ------------ | ------------------ |
+        // | new                 | Stay inline  | Last               |
+        // | new                 | Move to heap | Last               |
+        // | new                 | Stay on heap | Last               |
+        // | overwrites existing | Stay inline  | Same as existing   |
+        // | overwrites existing | Stay on heap | Same as existing   |
+
+        let values = vec![
+            (10, "ten"),
+            (5, "five"),
+            (86, "eighty-six"),
+            (93, "ninety-three"),
+        ];
+        struct TestCase {
+            name: &'static str,
+            initial_values: Vec<(usize, &'static str)>,
+            insert_key_value: (usize, &'static str),
+            expected_inline_before: bool,
+            expected_inline_after: bool,
+            expected_values: Vec<(usize, &'static str)>,
+            expected_return: Option<&'static str>,
+        }
+        let test_cases = vec![
+            TestCase {
+                name: "new key/value, stay inline",
+                initial_values: values[0..2].to_vec(),
+                insert_key_value: (7, "seven"),
+                expected_inline_before: true,
+                expected_inline_after: true,
+                expected_values: vec![(10, "ten"), (5, "five"), (7, "seven")],
+                expected_return: None,
+            },
+            TestCase {
+                name: "new key/value, move to heap",
+                initial_values: values[0..3].to_vec(),
+                insert_key_value: (7, "seven"),
+                expected_inline_before: true,
+                expected_inline_after: false,
+                expected_values: vec![(10, "ten"), (5, "five"), (86, "eighty-six"), (7, "seven")],
+                expected_return: None,
+            },
+            TestCase {
+                name: "new key/value, stay on heap",
+                initial_values: values[0..4].to_vec(),
+                insert_key_value: (7, "seven"),
+                expected_inline_before: false,
+                expected_inline_after: false,
+                expected_values: vec![
+                    (10, "ten"),
+                    (5, "five"),
+                    (86, "eighty-six"),
+                    (93, "ninety-three"),
+                    (7, "seven"),
+                ],
+                expected_return: None,
+            },
+            TestCase {
+                name: "overwrite existing key/value, stay inline",
+                initial_values: values[0..3].to_vec(),
+                insert_key_value: (5, "fivefivefive"),
+                expected_inline_before: true,
+                expected_inline_after: true,
+                expected_values: vec![(10, "ten"), (5, "fivefivefive"), (86, "eighty-six")],
+                expected_return: Some("five"),
+            },
+            TestCase {
+                name: "overwrite existing key/value, stay on heap",
+                initial_values: values[0..4].to_vec(),
+                insert_key_value: (10, "tententen"),
+                expected_inline_before: false,
+                expected_inline_after: false,
+                expected_values: vec![
+                    (10, "tententen"),
+                    (5, "five"),
+                    (86, "eighty-six"),
+                    (93, "ninety-three"),
+                ],
+                expected_return: Some("ten"),
+            },
+        ];
+
+        for test_case in test_cases {
+            let mut small_map = SmallMap::<usize, &str, 3>::new();
+
+            for (k, v) in test_case.initial_values {
+                small_map.insert(k, v);
+            }
+            assert_eq!(
+                test_case.expected_inline_before,
+                small_map.is_inline(),
+                "inline state before insertion in SmallMap does not match expected in test '{}'",
+                test_case.name
+            );
+
+            let actual_return =
+                small_map.insert(test_case.insert_key_value.0, test_case.insert_key_value.1);
+
+            assert_eq!(
+                test_case.expected_inline_after,
+                small_map.is_inline(),
+                "inline state after insertion in SmallMap does not match expected in test '{}'",
+                test_case.name
+            );
+            assert_eq!(
+                test_case.expected_return, actual_return,
+                "return of insertion in SmallMap does not match expected return in test '{}'",
+                test_case.name
+            );
+            assert_eq!(
+                test_case.expected_values,
+                small_map.into_iter().collect::<Vec<_>>(),
+                "values in SmallMap do not match expected values in test '{}'",
+                test_case.name
+            );
+        }
     }
 }
