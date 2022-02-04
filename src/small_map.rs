@@ -165,18 +165,22 @@ where
     }
 
     /// Get a mutable key-value pair by index, if it is present, else `None`.
-    ///     
+    ///
     /// Computational complexity: O(1)
-    pub fn get_index_mut(&mut self, index: usize) -> Option<(&mut K, &mut V)> {
+    pub fn get_index_mut(&mut self, index: usize) -> Option<(&K, &mut V)> {
+        // This is a slight deviation from the current IndexMap API which also
+        // returns a mutable key. As is stated here ([1]) however, that was a
+        // mistake and will be corrected in a future release.
+        // [1] https://github.com/bluss/indexmap/issues/174.
         match &mut self.data {
             MapData::Inline(vec) => {
                 if index < vec.len() {
-                    Some(&mut vec[index]).map(|(k, v)| (k, v))
+                    Some(&mut vec[index]).map(|(k, v)| (&*k, v))
                 } else {
                     None
                 }
             }
-            MapData::Heap(map) => map.get_index_mut(index),
+            MapData::Heap(map) => map.get_index_mut(index).map(|(k, v)| (&*k, v)),
         }
     }
 
@@ -793,6 +797,26 @@ mod test {
             assert_eq!(Some((&"1", &111)), map.get_index(1));
             assert_eq!(Some((&"3", &333)), map.get_index(2));
             assert_eq!(None, map.get_index(3));
+        }
+        test::<1>(false);
+        test::<3>(true);
+    }
+
+    #[test]
+    fn get_index_mut_test() {
+        fn test<const C: usize>(inline: bool) {
+            let mut map: SmallMap<&'static str, usize, C> =
+                smallmap! {"2" => 222, "1" => 111, "3" => 333};
+            assert_eq!(inline, map.is_inline());
+
+            assert_eq!(Some((&"2", &mut 222)), map.get_index_mut(0));
+            assert_eq!(Some((&"1", &mut 111)), map.get_index_mut(1));
+            assert_eq!(Some((&"3", &mut 333)), map.get_index_mut(2));
+            assert_eq!(None, map.get_index_mut(3));
+
+            let (_k, v) = map.get_index_mut(1).unwrap();
+            *v = 2;
+            assert_eq!(Some((&"1", &mut 2)), map.get_index_mut(1));
         }
         test::<1>(false);
         test::<3>(true);
