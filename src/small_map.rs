@@ -724,59 +724,49 @@ mod test {
 
     #[test]
     fn get_works_with_equal_and_equivalent_keys() {
-        let inline_map: SmallMap<String, usize, 3> =
-            smallmap! {"2".to_string() => 222, "1".to_string() => 111, "3".to_string() => 333};
-        assert!(inline_map.is_inline());
+        fn test<const C: usize>(inline: bool) {
+            let map: SmallMap<String, usize, C> =
+                smallmap! {"2".to_string() => 222, "1".to_string() => 111, "3".to_string() => 333};
+            assert_eq!(inline, map.is_inline());
 
-        assert_eq!(Some(&111), inline_map.get(&MyType(1)));
-        assert_eq!(Some(&111), inline_map.get(&"1".to_string()));
-        assert_eq!(Some(&333), inline_map.get(&MyType(3)));
-        assert_eq!(None, inline_map.get(&MyType(7)));
-        assert_eq!(None, inline_map.get(&"7".to_string()));
-
-        let mut heap_map = inline_map.clone();
-        heap_map.insert("7".to_string(), 777);
-        heap_map.insert("0".to_string(), 0);
-        assert!(!heap_map.is_inline());
-
-        assert_eq!(Some(&111), heap_map.get(&MyType(1)));
-        assert_eq!(Some(&333), heap_map.get(&MyType(3)));
-        assert_eq!(Some(&0), heap_map.get(&"0".to_string()));
-        assert_eq!(Some(&0), heap_map.get(&MyType(0)));
-        assert_eq!(Some(&777), heap_map.get(&MyType(7)));
-        assert_eq!(Some(&777), heap_map.get(&"7".to_string()));
-        assert_eq!(None, inline_map.get(&MyType(9)));
-        assert_eq!(None, inline_map.get(&"9".to_string()));
+            assert_eq!(Some(&111), map.get(&MyType(1)));
+            assert_eq!(Some(&111), map.get(&"1".to_string()));
+            assert_eq!(Some(&333), map.get(&MyType(3)));
+            assert_eq!(None, map.get(&MyType(7)));
+            assert_eq!(None, map.get(&"7".to_string()));
+        }
+        test::<1>(false);
+        test::<3>(true);
     }
 
     #[test]
     fn get_mut_works_with_equal_and_equivalent_keys() {
         fn test<const C: usize>(inline: bool) {
-            let mut inline_map: SmallMap<String, usize, C> =
+            let mut map: SmallMap<String, usize, C> =
                 smallmap! {"2".to_string() => 222, "1".to_string() => 111, "3".to_string() => 333};
-            assert_eq!(inline, inline_map.is_inline());
+            assert_eq!(inline, map.is_inline());
 
             // present
-            assert_eq!(Some(&mut 111), inline_map.get_mut(&MyType(1)));
-            assert_eq!(Some(&mut 111), inline_map.get_mut(&"1".to_string()));
+            assert_eq!(Some(&mut 111), map.get_mut(&MyType(1)));
+            assert_eq!(Some(&mut 111), map.get_mut(&"1".to_string()));
 
             // not present
-            assert_eq!(None, inline_map.get_mut(&MyType(7)));
-            assert_eq!(None, inline_map.get_mut(&"7".to_string()));
+            assert_eq!(None, map.get_mut(&MyType(7)));
+            assert_eq!(None, map.get_mut(&"7".to_string()));
 
             // change using equivalent key
-            let m = inline_map.get_mut(&MyType(1)).unwrap();
+            let m = map.get_mut(&MyType(1)).unwrap();
             *m = 1;
-            assert_eq!(&1, inline_map.get(&"1".to_string()).unwrap());
-            assert_eq!(&1, inline_map.get(&MyType(1)).unwrap());
+            assert_eq!(&1, map.get(&"1".to_string()).unwrap());
+            assert_eq!(&1, map.get(&MyType(1)).unwrap());
 
             // change using equal key
-            let m = inline_map.get_mut(&"1".to_string()).unwrap();
+            let m = map.get_mut(&"1".to_string()).unwrap();
             *m = 11;
-            assert_eq!(&11, inline_map.get(&"1".to_string()).unwrap());
-            assert_eq!(&11, inline_map.get(&MyType(1)).unwrap());
+            assert_eq!(&11, map.get(&"1".to_string()).unwrap());
+            assert_eq!(&11, map.get(&MyType(1)).unwrap());
         }
         test::<1>(false);
-        test::<5>(true);
+        test::<3>(true);
     }
 }
