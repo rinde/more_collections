@@ -40,12 +40,12 @@ use crate::FastIndexMap;
 /// assert_eq!(4, map.len());
 /// assert!(!map.is_inline());
 /// ```
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct SmallMap<K, V, const C: usize> {
     data: MapData<K, V, C>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum MapData<K, V, const C: usize> {
     Inline(SmallVec<[(K, V); C]>),
     Heap(FastIndexMap<K, V>),
@@ -101,7 +101,7 @@ where
     pub fn new() -> Self {
         debug_assert!(
             C > 0,
-            "Cannot instantiate SmallMap with no capacity, use positive capacity or use IndexMap instead",
+            "Cannot instantiate SmallMap with no inline capacity, use positive capacity or use IndexMap instead",
         );
         SmallMap {
             data: MapData::Inline(SmallVec::new()),
@@ -114,9 +114,15 @@ where
     /// Computational complexity:
     ///  - inline: O(n)
     ///  - heap: O(1)
-    pub fn get(&self, key: &K) -> Option<&V> {
+    pub fn get<Q: ?Sized>(&self, key: &Q) -> Option<&V>
+    where
+        Q: Hash + Equivalent<K>,
+    {
         match &self.data {
-            MapData::Inline(vec) => vec.iter().find(|(k, _v)| k == key).map(|(_k, v)| v),
+            MapData::Inline(vec) => vec
+                .iter()
+                .find(|(k, _v)| key.equivalent(k))
+                .map(|(_k, v)| v),
             MapData::Heap(map) => map.get(key),
         }
     }
@@ -127,9 +133,15 @@ where
     /// Computational complexity:
     ///  - inline: O(n)
     ///  - heap: O(1)
-    pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
+    pub fn get_mut<Q: ?Sized>(&mut self, key: &Q) -> Option<&mut V>
+    where
+        Q: Hash + Equivalent<K>,
+    {
         match &mut self.data {
-            MapData::Inline(vec) => vec.iter_mut().find(|(k, _v)| k == key).map(|(_k, v)| v),
+            MapData::Inline(vec) => vec
+                .iter_mut()
+                .find(|(k, _v)| key.equivalent(k))
+                .map(|(_k, v)| v),
             MapData::Heap(map) => map.get_mut(key),
         }
     }
@@ -685,5 +697,55 @@ mod test {
         assert_eq!(map2, map4);
 
         assert_eq!(map3, map4);
+    }
+
+    #[test]
+    fn empty_small_maps_are_equal() {
+        let map1: SmallMap<usize, usize, 3> = smallmap! {};
+        let map2: SmallMap<usize, usize, 3> = smallmap! {};
+        assert_eq!(map1, map2);
+    }
+
+    // Type for testing equivalence to String
+    struct MyType(usize);
+
+    // Hash needs to be equivalent to String::hash
+    impl Hash for MyType {
+        fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+            self.0.to_string().hash(state);
+        }
+    }
+
+    impl Equivalent<String> for MyType {
+        fn equivalent(&self, key: &String) -> bool {
+            &self.0.to_string() == key
+        }
+    }
+
+    #[test]
+    fn get_works_with_equivalent_keys() {
+        let inline_map: SmallMap<String, usize, 3> =
+            smallmap! {"2".to_string() => 222, "1".to_string() => 111, "3".to_string() => 333};
+        assert!(inline_map.is_inline());
+
+        assert_eq!(Some(&111), inline_map.get(&MyType(1)));
+        assert_eq!(Some(&111), inline_map.get(&"1".to_string()));
+        assert_eq!(Some(&333), inline_map.get(&MyType(3)));
+        assert_eq!(None, inline_map.get(&MyType(7)));
+        assert_eq!(None, inline_map.get(&"7".to_string()));
+
+        let mut heap_map = inline_map.clone();
+        heap_map.insert("7".to_string(), 777);
+        heap_map.insert("0".to_string(), 0);
+        assert!(!heap_map.is_inline());
+
+        assert_eq!(Some(&111), heap_map.get(&MyType(1)));
+        assert_eq!(Some(&333), heap_map.get(&MyType(3)));
+        assert_eq!(Some(&0), heap_map.get(&"0".to_string()));
+        assert_eq!(Some(&0), heap_map.get(&MyType(0)));
+        assert_eq!(Some(&777), heap_map.get(&MyType(7)));
+        assert_eq!(Some(&777), heap_map.get(&"7".to_string()));
+        assert_eq!(None, inline_map.get(&MyType(9)));
+        assert_eq!(None, inline_map.get(&"9".to_string()));
     }
 }
