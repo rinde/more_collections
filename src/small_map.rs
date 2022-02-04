@@ -769,4 +769,20 @@ mod test {
         test::<1>(false);
         test::<3>(true);
     }
+
+    #[test]
+    fn get_index_test() {
+        fn test<const C: usize>(inline: bool) {
+            let map: SmallMap<&'static str, usize, C> =
+                smallmap! {"2" => 222, "1" => 111, "3" => 333};
+            assert_eq!(inline, map.is_inline());
+
+            assert_eq!(Some((&"2", &222)), map.get_index(0));
+            assert_eq!(Some((&"1", &111)), map.get_index(1));
+            assert_eq!(Some((&"3", &333)), map.get_index(2));
+            assert_eq!(None, map.get_index(3));
+        }
+        test::<1>(false);
+        test::<3>(true);
+    }
 }
