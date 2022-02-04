@@ -323,6 +323,33 @@ mod test {
     }
 
     #[test]
+    fn equality_is_consistent() {
+        let set1: SmallSet<_, 3> = smallset! {0, 1, 4 };
+        let set2 = smallset_inline! {0, 1, 4 };
+        let set3 = SmallSet::<_, 3>::from_iter(vec![0, 1, 4]);
+        let mut set4 = SmallSet::<_, 3>::new();
+        set4.insert(0);
+        set4.insert(1);
+        set4.insert(4);
+
+        assert_eq!(set1, set2);
+        assert_eq!(set1, set3);
+        assert_eq!(set1, set4);
+
+        assert_eq!(set2, set3);
+        assert_eq!(set2, set4);
+
+        assert_eq!(set3, set4);
+    }
+
+    #[test]
+    fn empty_small_maps_are_equal() {
+        let set1: SmallSet<usize, 3> = smallset! {};
+        let set2: SmallSet<usize, 3> = smallset! {};
+        assert_eq!(set1, set2);
+    }
+
+    #[test]
     fn debug_string_test() {
         let actual = format!("{:?}", smallset_inline! {0, 1, 2});
         let expected = "{0, 1, 2}";
