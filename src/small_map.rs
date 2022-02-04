@@ -1040,4 +1040,11 @@ mod test {
         let output = map.into_iter().collect::<Vec<_>>();
         assert_eq!(data, output);
     }
+
+    #[test]
+    fn debug_string_test() {
+        let actual = format!("{:?}", smallmap_inline! {0=>6, 1=>5, 2=>4});
+        let expected = "{0: 6, 1: 5, 2: 4}";
+        assert_eq!(expected, actual);
+    }
 }
