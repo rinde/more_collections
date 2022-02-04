@@ -967,4 +967,23 @@ mod test {
         test::<1>(false);
         test::<3>(true);
     }
+
+    #[test]
+    fn exact_size_into_iterator_test() {
+        fn test<const C: usize>(inline: bool) {
+            let mut map = SmallMap::<&'static str, usize, C>::new();
+            assert_eq!(0, map.clone().into_iter().len());
+            map.insert("a", 0);
+            assert!(map.is_inline()); // a map of len <= 1 is always stored inline
+            assert_eq!(1, map.clone().into_iter().len());
+            map.insert("b", 0);
+            assert_eq!(inline, map.is_inline());
+            assert_eq!(2, map.clone().into_iter().len());
+            map.insert("c", 0);
+            assert_eq!(3, map.clone().into_iter().len());
+            assert_eq!(inline, map.is_inline());
+        }
+        test::<1>(false);
+        test::<3>(true);
+    }
 }
