@@ -1,4 +1,6 @@
+use std::fmt;
 use std::fmt::Debug;
+use std::fmt::Formatter;
 use std::mem;
 use std::ops::Index;
 use std::ops::IndexMut;
@@ -40,7 +42,7 @@ use crate::FastIndexMap;
 /// assert_eq!(4, map.len());
 /// assert!(!map.is_inline());
 /// ```
-#[derive(Debug, Default, Clone)]
+#[derive(Default, Clone)]
 pub struct SmallMap<K, V, const C: usize> {
     data: MapData<K, V, C>,
 }
@@ -432,6 +434,16 @@ where
         if let Entry::Vacant(map, key) = self {
             map.insert(key, default);
         };
+    }
+}
+
+impl<K, V, const C: usize> Debug for SmallMap<K, V, C>
+where
+    K: Debug,
+    V: Debug,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_map().entries(self.iter()).finish()
     }
 }
 
