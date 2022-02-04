@@ -804,6 +804,37 @@ mod test {
     }
 
     #[test]
+    fn get_index_trait_test() {
+        fn test<const C: usize>(inline: bool) {
+            let map: SmallMap<&'static str, usize, C> =
+                smallmap! {"2" => 222, "1" => 111, "3" => 333};
+            assert_eq!(inline, map.is_inline());
+
+            assert_eq!(222, map[0]);
+            assert_eq!(111, map[1]);
+            assert_eq!(333, map[2]);
+        }
+        test::<1>(false);
+        test::<3>(true);
+    }
+
+    #[test]
+    #[should_panic(expected = "SmallMap: index out of bounds")]
+    fn get_index_trait_panics_on_out_of_bounds_inline() {
+        let map: SmallMap<&'static str, usize, 3> = smallmap! {"2" => 222, "1" => 111, "3" => 333};
+        assert!(map.is_inline());
+        map[5];
+    }
+
+    #[test]
+    #[should_panic(expected = "SmallMap: index out of bounds")]
+    fn get_index_trait_panics_on_out_of_bounds_heap() {
+        let map: SmallMap<&'static str, usize, 1> = smallmap! {"2" => 222, "1" => 111, "3" => 333};
+        assert!(!map.is_inline());
+        map[5];
+    }
+
+    #[test]
     fn get_index_mut_test() {
         fn test<const C: usize>(inline: bool) {
             let mut map: SmallMap<&'static str, usize, C> =
@@ -821,6 +852,42 @@ mod test {
         }
         test::<1>(false);
         test::<3>(true);
+    }
+
+    #[test]
+    fn get_index_mut_trait_test() {
+        fn test<const C: usize>(inline: bool) {
+            let mut map: SmallMap<&'static str, usize, C> =
+                smallmap! {"2" => 222, "1" => 111, "3" => 333};
+            assert_eq!(inline, map.is_inline());
+
+            assert_eq!(&mut 222, &mut map[0]);
+            assert_eq!(&mut 111, &mut map[1]);
+            assert_eq!(&mut 333, &mut map[2]);
+
+            map[1] = 2;
+            assert_eq!(&mut 2, &mut map[1]);
+        }
+        test::<1>(false);
+        test::<3>(true);
+    }
+
+    #[test]
+    #[should_panic(expected = "SmallMap: index out of bounds")]
+    fn get_index_mut_trait_panics_on_out_of_bounds_inline() {
+        let mut map: SmallMap<&'static str, usize, 3> =
+            smallmap! {"2" => 222, "1" => 111, "3" => 333};
+        assert!(map.is_inline());
+        let _ = &mut map[4];
+    }
+
+    #[test]
+    #[should_panic(expected = "SmallMap: index out of bounds")]
+    fn get_index_mut_trait_panics_on_out_of_bounds_heap() {
+        let mut map: SmallMap<&'static str, usize, 1> =
+            smallmap! {"2" => 222, "1" => 111, "3" => 333};
+        assert!(!map.is_inline());
+        let _ = &mut map[4];
     }
 
     #[test]
