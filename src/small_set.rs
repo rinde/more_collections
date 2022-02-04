@@ -8,8 +8,6 @@ use smallvec::SmallVec;
 use crate::small_map;
 use crate::SmallMap;
 
-use crate::FastHashSet;
-
 /// A set-like container that can store a specified number of elements inline.
 ///
 /// `SmallSet` shares most of its API with, and behaves like,
@@ -64,6 +62,8 @@ impl<T, const C: usize> SmallSet<T, C> {
         }
     }
 
+    // Helper method for macro, don't use directly.
+    #[doc(hidden)]
     pub const fn from_const_unchecked(inline: SmallVec<[(T, ()); C]>) -> Self {
         Self {
             data: SmallMap::from_const_unchecked(inline),
@@ -162,7 +162,7 @@ macro_rules! smallset_inline {
             vec
                 .iter()
                 .map(|(k, _v)| k)
-                .collect::<FastHashSet<_>>()
+                .collect::<$crate::FastHashSet<_>>()
                 .len(),
             "smallset_inline! cannot be initialized with duplicate keys"
         );

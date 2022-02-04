@@ -9,7 +9,6 @@ use ::core::hash::Hash;
 use indexmap::Equivalent;
 use smallvec::SmallVec;
 
-use crate::FastHashSet;
 use crate::FastIndexMap;
 
 /// A map-like container that can store a specified number of elements inline.
@@ -99,6 +98,8 @@ impl<K, V, const C: usize> SmallMap<K, V, C> {
         }
     }
 
+    // Helper method for macro, don't use directly.
+    #[doc(hidden)]
     pub const fn from_const_unchecked(inline: SmallVec<[(K, V); C]>) -> Self {
         Self {
             data: MapData::Inline(inline),
@@ -480,7 +481,7 @@ macro_rules! smallmap_inline {
             vec
                 .iter()
                 .map(|(k, _v)| k)
-                .collect::<FastHashSet<_>>()
+                .collect::<$crate::FastHashSet<_>>()
                 .len(),
             "smallmap_inline! cannot be initialized with duplicate keys"
         );
