@@ -1,9 +1,8 @@
 use std::fmt;
 use std::fmt::Debug;
-
-use ::core::hash::Hash;
 use std::fmt::Formatter;
 
+use ::core::hash::Hash;
 use smallvec::SmallVec;
 
 use crate::small_map;
@@ -27,26 +26,40 @@ pub struct SmallSet<T, const C: usize> {
 }
 
 impl<T, const C: usize> SmallSet<T, C> {
+    /// Create a new set.
     pub fn new() -> Self {
         Self {
             data: SmallMap::new(),
         }
     }
 
+    /// The number of values stored in the set.
     pub fn len(&self) -> usize {
         self.data.len()
     }
 
-    pub fn is_inline(&self) -> bool {
-        self.data.is_inline()
+    /// Returns `true` if the set is empty.
+    pub fn is_empty(&self) -> bool {
+        self.data.is_empty()
     }
 
+    /// The memory capacity that will be allocated inline. If the nubmer of
+    /// values exceeds the inline capacity, the set will move to the heap.
     pub fn inline_capacity(&self) -> usize {
         self.data.inline_capacity()
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
+    /// Is the data contained by this set stored inline (`true`) or on the heap
+    /// (`false`).
+    pub fn is_inline(&self) -> bool {
+        self.data.is_inline()
+    }
+
+    /// Returns an iterator over the values in insertion order.
+    pub fn iter(&'_ self) -> Iter<'_, T> {
+        Iter {
+            inner: self.data.iter(),
+        }
     }
 
     pub const fn from_const(inline: SmallVec<[(T, ()); C]>) -> Self {
@@ -64,12 +77,17 @@ where
         SmallSet { data: map }
     }
 
-    pub fn iter(&'_ self) -> Iter<'_, T> {
-        Iter {
-            inner: self.data.iter(),
-        }
-    }
-
+    /// Inserts the specified value into this set.
+    ///
+    /// If the value already exists, this is a no-op.
+    ///
+    /// If a new value is added that causes the size of the `SmallSet` to exceed
+    /// the inline capacity, all existing data and the new value is moved to the
+    /// heap.
+    ///
+    /// Computational complexity:
+    ///  - inline: O(n)
+    ///  - heap: O(1)
     pub fn insert(&mut self, value: T) {
         self.data.insert(value, ());
     }

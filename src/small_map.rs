@@ -65,11 +65,6 @@ impl<K, V, const C: usize> SmallMap<K, V, C> {
         }
     }
 
-    /// Returns `true` if the map is empty.
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-
     /// The number of key-values stored in the map.
     pub fn len(&self) -> usize {
         match &self.data {
@@ -78,8 +73,13 @@ impl<K, V, const C: usize> SmallMap<K, V, C> {
         }
     }
 
-    /// The memory capacity that will be allocated inline. If more entries than
-    /// this capacity are added, the map will move to the heap.
+    /// Returns `true` if the map is empty.
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    /// The memory capacity that will be allocated inline. If the nubmer of
+    /// values exceeds the inline capacity, the map will move to the heap.
     pub fn inline_capacity(&self) -> usize {
         C
     }
@@ -236,7 +236,7 @@ where
     /// will remain in the original position.
     ///
     /// If a new key is added that causes the size of the `SmallMap` to exceed
-    /// the inline capacity all existing data and the new key-value pair is
+    /// the inline capacity, all existing data and the new key-value pair is
     /// moved to the heap.
     ///
     /// Computational complexity:
