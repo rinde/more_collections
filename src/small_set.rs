@@ -194,6 +194,22 @@ mod test {
     use super::*;
 
     #[test]
+    fn test_len_and_inline_capacity() {
+        let mut set = SmallSet::<usize, 1>::new();
+        assert_eq!(0, set.len());
+        set.insert(0);
+        assert_eq!(1, set.len());
+
+        let set: SmallSet<_, 10> = smallset! {0, 1, 4};
+        assert_eq!(3, set.len());
+        assert_eq!(10, set.inline_capacity());
+
+        let set = smallset_inline! {0, 1, 4 };
+        assert_eq!(3, set.len());
+        assert_eq!(3, set.inline_capacity());
+    }
+
+    #[test]
     fn iter_order_follows_insertion_order() {
         let set: SmallSet<_, 5> = smallset! { 0, 1, 2, 5, 2};
         assert_eq!(4, set.len());
