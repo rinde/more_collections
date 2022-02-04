@@ -210,7 +210,19 @@ mod test {
     }
 
     #[test]
-    fn iter_order_follows_insertion_order() {
+    fn smallset_macro_removes_duplicates() {
+        let set: SmallSet<_, 10> = smallset! { 0 , 0};
+        assert_eq!(1, set.len());
+    }
+
+    #[test]
+    #[should_panic(expected = "smallset_inline! cannot be initialized with duplicate keys")]
+    fn smallset_inline_macro_fails_on_duplicates() {
+        smallset_inline! { 0 , 0 };
+    }
+
+    #[test]
+    fn iter_iterates_in_insertion_order() {
         let set: SmallSet<_, 5> = smallset! { 0, 1, 2, 5, 2};
         assert_eq!(4, set.len());
         let actual = set.iter().copied().collect::<Vec<_>>();
@@ -223,17 +235,5 @@ mod test {
         let actual = format!("{:?}", smallset_inline! {0, 1, 2});
         let expected = "{0, 1, 2}";
         assert_eq!(expected, actual);
-    }
-
-    #[test]
-    fn smallset_macro_removes_duplicates() {
-        let set: SmallSet<_, 10> = smallset! { 0 , 0};
-        assert_eq!(1, set.len());
-    }
-
-    #[test]
-    #[should_panic(expected = "smallset_inline! cannot be initialized with duplicate keys")]
-    fn smallset_inline_macro_fails_on_duplicates() {
-        smallset_inline! { 0 , 0 };
     }
 }
