@@ -511,6 +511,7 @@ mod test {
 
     #[test]
     fn iter_iterates_in_insertion_order() {
+        // TODO refactor
         let inline_map: SmallMap<_, _, 3> = smallmap! {
             1 => 7,
             0 => 1,
@@ -985,5 +986,58 @@ mod test {
         }
         test::<1>(false);
         test::<3>(true);
+    }
+
+    #[test]
+    fn from_iterator_test() {
+        fn test<const C: usize>(inline: bool) {
+            let data = vec![("hi", 2), ("hello", 5), ("hamburg", 7), ("berlin", 6)];
+            let map = SmallMap::<&'static str, usize, C>::from_iter(data.clone());
+            assert_eq!(inline, map.is_inline());
+
+            let output = map.into_iter().collect::<Vec<_>>();
+            assert_eq!(data, output);
+        }
+        test::<1>(false);
+        test::<4>(true);
+    }
+
+    #[test]
+    fn from_iterator_wrong_size_hint_test() {
+        struct FaultyIter<T> {
+            data: Vec<T>,
+            index: usize,
+            len: usize,
+        }
+        impl<T: Clone> Iterator for FaultyIter<T> {
+            type Item = T;
+
+            fn next(&mut self) -> Option<Self::Item> {
+                let ret = self.data.get(self.index).cloned();
+                self.index += 1;
+                ret
+            }
+        }
+        impl<T: Clone> ExactSizeIterator for FaultyIter<T> {
+            fn len(&self) -> usize {
+                self.len
+            }
+        }
+
+        let data = vec![("hi", 2), ("hello", 5), ("hamburg", 7), ("berlin", 6)];
+        let iter = FaultyIter::<(&'static str, usize)> {
+            data: data.clone(),
+            index: 0,
+            len: 1,
+        };
+        // Even though the iterator says that it's len is 1, which would fit inline.
+        // The actual len is 4 which does not fit inline. This test checks whether the
+        // data is correctly allocated on the heap.
+
+        let map = SmallMap::<_, _, 3>::from_iter(iter);
+        assert!(!map.is_inline());
+
+        let output = map.into_iter().collect::<Vec<_>>();
+        assert_eq!(data, output);
     }
 }
