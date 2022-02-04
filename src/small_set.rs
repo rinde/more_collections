@@ -1,6 +1,10 @@
+use std::fmt;
 use std::fmt::Debug;
 
 use ::core::hash::Hash;
+use std::fmt::Formatter;
+
+use smallvec::SmallVec;
 
 use crate::small_map;
 use crate::SmallMap;
@@ -17,15 +21,12 @@ use crate::SmallMap;
 /// The `SmallSet` datastructure is meant for situations where the data does not
 /// exceed `C` _most of the time_ but it still needs to support cases where the
 /// data _does_ exceed `C`.
-#[derive(Debug, Default)]
+#[derive(Default, Clone)]
 pub struct SmallSet<T, const C: usize> {
     data: SmallMap<T, (), C>,
 }
 
-impl<T, const C: usize> SmallSet<T, C>
-where
-    T: Hash + Eq,
-{
+impl<T, const C: usize> SmallSet<T, C> {
     pub fn new() -> Self {
         Self {
             data: SmallMap::new(),
@@ -48,6 +49,17 @@ where
         self.data.is_empty()
     }
 
+    pub const fn from_const(inline: SmallVec<[(T, ()); C]>) -> Self {
+        Self {
+            data: SmallMap::from_const(inline),
+        }
+    }
+}
+
+impl<T, const C: usize> SmallSet<T, C>
+where
+    T: Hash + Eq,
+{
     pub fn from_keys(map: SmallMap<T, (), C>) -> SmallSet<T, C> {
         SmallSet { data: map }
     }
@@ -93,7 +105,7 @@ impl<'a, T> ExactSizeIterator for Iter<'a, T> {
 
 impl<T, const C: usize> FromIterator<T> for SmallSet<T, C>
 where
-    T: Hash + Eq + Debug + Clone,
+    T: Hash + Eq,
 {
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
         Self {
@@ -102,11 +114,29 @@ where
     }
 }
 
+impl<T, const C: usize> Debug for SmallSet<T, C>
+where
+    T: Hash + Eq + Debug,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_set().entries(self.iter()).finish()
+    }
+}
+
 #[macro_export]
 macro_rules! smallset {
     ($($x:expr),*$(,)*) => ({
         let map = $crate::smallmap!( $($x => (),)* );
         $crate::SmallSet::from_keys(map)
+    });
+}
+
+/// Creates [`SmallSet`] with inline capacity equal to the number of values.
+#[macro_export]
+macro_rules! smallset_inline {
+    ($($key:expr),*$(,)*) => ({
+        let vec = smallvec::smallvec_inline!( $(($key, ()),)*);
+        $crate::SmallSet::from_const(vec)
     });
 }
 
@@ -120,6 +150,13 @@ mod test {
         assert_eq!(4, set.len());
         let actual = set.iter().copied().collect::<Vec<_>>();
         let expected = vec![0, 1, 2, 5];
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn debug_string_test() {
+        let actual = format!("{:?}", smallset_inline! {0, 1, 2});
+        let expected = "{0, 1, 2}";
         assert_eq!(expected, actual);
     }
 }

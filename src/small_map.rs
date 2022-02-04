@@ -54,6 +54,17 @@ enum MapData<K, V, const C: usize> {
 }
 
 impl<K, V, const C: usize> SmallMap<K, V, C> {
+    /// Create a new map.
+    pub fn new() -> Self {
+        debug_assert!(
+                C > 0,
+                "Cannot instantiate SmallMap with no inline capacity, use positive capacity or use IndexMap instead",
+            );
+        SmallMap {
+            data: MapData::Inline(SmallVec::new()),
+        }
+    }
+
     /// Returns `true` if the map is empty.
     pub fn is_empty(&self) -> bool {
         self.len() == 0
@@ -99,17 +110,6 @@ where
     K: Hash + Eq,
     V: Eq,
 {
-    /// Create a new map.
-    pub fn new() -> Self {
-        debug_assert!(
-            C > 0,
-            "Cannot instantiate SmallMap with no inline capacity, use positive capacity or use IndexMap instead",
-        );
-        SmallMap {
-            data: MapData::Inline(SmallVec::new()),
-        }
-    }
-
     /// Return a reference to the value stored for `key`, if it is present,
     /// else `None`.
     ///
@@ -472,8 +472,6 @@ macro_rules! smallmap {
 /// Creates [`SmallMap`] with inline capacity equal to the number of values.
 #[macro_export]
 macro_rules! smallmap_inline {
-    // count helper: transform any expression into 1
-    (@one $x:expr) => (1usize);
     ($($key:expr => $value:expr),*$(,)*) => ({
         let vec = smallvec::smallvec_inline!( $(($key, $value),)*);
         $crate::SmallMap::from_const(vec)
