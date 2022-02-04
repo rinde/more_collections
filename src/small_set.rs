@@ -8,6 +8,8 @@ use smallvec::SmallVec;
 use crate::small_map;
 use crate::SmallMap;
 
+use crate::FastHashSet;
+
 /// A set-like container that can store a specified number of elements inline.
 ///
 /// `SmallSet` shares most of its API with, and behaves like,
@@ -62,9 +64,9 @@ impl<T, const C: usize> SmallSet<T, C> {
         }
     }
 
-    pub const fn from_const(inline: SmallVec<[(T, ()); C]>) -> Self {
+    pub const fn from_const_unchecked(inline: SmallVec<[(T, ()); C]>) -> Self {
         Self {
-            data: SmallMap::from_const(inline),
+            data: SmallMap::from_const_unchecked(inline),
         }
     }
 }
@@ -73,10 +75,6 @@ impl<T, const C: usize> SmallSet<T, C>
 where
     T: Hash + Eq,
 {
-    pub fn from_keys(map: SmallMap<T, (), C>) -> SmallSet<T, C> {
-        SmallSet { data: map }
-    }
-
     /// Inserts the specified value into this set.
     ///
     /// If the value already exists, this is a no-op.
@@ -90,6 +88,10 @@ where
     ///  - heap: O(1)
     pub fn insert(&mut self, value: T) {
         self.data.insert(value, ());
+    }
+
+    pub fn from_keys(map: SmallMap<T, (), C>) -> SmallSet<T, C> {
+        SmallSet { data: map }
     }
 }
 
@@ -155,7 +157,16 @@ macro_rules! smallset {
 macro_rules! smallset_inline {
     ($($key:expr),*$(,)*) => ({
         let vec = smallvec::smallvec_inline!( $(($key, ()),)*);
-        $crate::SmallSet::from_const(vec)
+        debug_assert_eq!(
+            vec.len(),
+            vec
+                .iter()
+                .map(|(k, _v)| k)
+                .collect::<FastHashSet<_>>()
+                .len(),
+            "smallset_inline! cannot be initialized with duplicate keys"
+        );
+        $crate::SmallSet::from_const_unchecked(vec)
     });
 }
 
@@ -177,5 +188,17 @@ mod test {
         let actual = format!("{:?}", smallset_inline! {0, 1, 2});
         let expected = "{0, 1, 2}";
         assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn smallset_macro_removes_duplicates() {
+        let set: SmallSet<_, 10> = smallset! { 0 , 0};
+        assert_eq!(1, set.len());
+    }
+
+    #[test]
+    #[should_panic(expected = "smallset_inline! cannot be initialized with duplicate keys")]
+    fn smallset_inline_macro_fails_on_duplicates() {
+        smallset_inline! { 0 , 0 };
     }
 }

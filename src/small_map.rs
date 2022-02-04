@@ -9,6 +9,7 @@ use ::core::hash::Hash;
 use indexmap::Equivalent;
 use smallvec::SmallVec;
 
+use crate::FastHashSet;
 use crate::FastIndexMap;
 
 /// A map-like container that can store a specified number of elements inline.
@@ -98,7 +99,7 @@ impl<K, V, const C: usize> SmallMap<K, V, C> {
         }
     }
 
-    pub const fn from_const(inline: SmallVec<[(K, V); C]>) -> Self {
+    pub const fn from_const_unchecked(inline: SmallVec<[(K, V); C]>) -> Self {
         Self {
             data: MapData::Inline(inline),
         }
@@ -474,7 +475,16 @@ macro_rules! smallmap {
 macro_rules! smallmap_inline {
     ($($key:expr => $value:expr),*$(,)*) => ({
         let vec = smallvec::smallvec_inline!( $(($key, $value),)*);
-        $crate::SmallMap::from_const(vec)
+        debug_assert_eq!(
+            vec.len(),
+            vec
+                .iter()
+                .map(|(k, _v)| k)
+                .collect::<FastHashSet<_>>()
+                .len(),
+            "smallmap_inline! cannot be initialized with duplicate keys"
+        );
+        $crate::SmallMap::from_const_unchecked(vec)
     });
 }
 
@@ -505,6 +515,18 @@ mod test {
         };
         assert_eq!(3, map.len());
         assert_eq!(3, map.inline_capacity());
+    }
+
+    #[test]
+    fn smallmap_macro_removes_duplicates() {
+        let map: SmallMap<_, _, 10> = smallmap! { 0 => 1, 0 => 2};
+        assert_eq!(1, map.len());
+    }
+
+    #[test]
+    #[should_panic(expected = "smallmap_inline! cannot be initialized with duplicate keys")]
+    fn smallmap_inline_macro_fails_on_duplicates() {
+        smallmap_inline! { 0 => 1, 0 => 2};
     }
 
     #[test]
