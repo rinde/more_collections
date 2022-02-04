@@ -20,6 +20,25 @@ use crate::SmallMap;
 /// The `SmallSet` datastructure is meant for situations where the data does not
 /// exceed `C` _most of the time_ but it still needs to support cases where the
 /// data _does_ exceed `C`.
+///
+/// # Example
+///
+/// ```
+/// use fast_hash_collections::SmallSet;
+///
+/// let mut set = SmallSet::<usize, 3>::new();
+/// // The set can hold up to three items inline
+/// set.insert(0);
+/// set.insert(1);
+/// set.insert(2);
+/// assert_eq!(3, set.len());
+/// assert!(set.is_inline());
+///
+/// // Adding the fourth element will move the set to the heap
+/// set.insert(3);
+/// assert_eq!(4, set.len());
+/// assert!(!set.is_inline());
+/// ```
 #[derive(Default, Clone)]
 pub struct SmallSet<T, const C: usize> {
     data: SmallMap<T, (), C>,

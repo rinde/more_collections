@@ -1039,7 +1039,6 @@ mod test {
         // Even though the iterator says that it's len is 1, which would fit inline.
         // The actual len is 4 which does not fit inline. This test checks whether the
         // data is correctly allocated on the heap.
-
         let map = SmallMap::<_, _, 3>::from_iter(iter);
         assert!(!map.is_inline());
 
