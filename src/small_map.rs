@@ -511,41 +511,26 @@ mod test {
 
     #[test]
     fn iter_iterates_in_insertion_order() {
-        // TODO refactor
-        let inline_map: SmallMap<_, _, 3> = smallmap! {
-            1 => 7,
-            0 => 1,
-            4 => 9
-        };
-        assert!(inline_map.is_inline());
-        assert_eq!(
-            vec![(&1, &7), (&0, &1), (&4, &9)],
-            inline_map.iter().collect::<Vec<_>>(),
-            "inline iter() does not return values in the correct order"
-        );
-        assert_eq!(
-            vec![(1, 7), (0, 1), (4, 9)],
-            inline_map.into_iter().collect::<Vec<_>>(),
-            "inline into_iter() does not return values in the correct order"
-        );
-
-        let heap_map: SmallMap<_, _, 1> = smallmap! {
-            1 => 7,
-            0 => 1,
-            4 => 9,
-            5 => 1,
-        };
-        assert!(!heap_map.is_inline());
-        assert_eq!(
-            vec![(&1, &7), (&0, &1), (&4, &9), (&5, &1)],
-            heap_map.iter().collect::<Vec<_>>(),
-            "heap iter() does not return values in the correct order"
-        );
-        assert_eq!(
-            vec![(1, 7), (0, 1), (4, 9), (5, 1)],
-            heap_map.into_iter().collect::<Vec<_>>(),
-            "heap into_iter() does not return values in the correct order"
-        );
+        fn test<const C: usize>(inline: bool) {
+            let inline_map: SmallMap<_, _, C> = smallmap! {
+                1 => 7,
+                0 => 1,
+                4 => 9
+            };
+            assert_eq!(inline, inline_map.is_inline());
+            assert_eq!(
+                vec![(&1, &7), (&0, &1), (&4, &9)],
+                inline_map.iter().collect::<Vec<_>>(),
+                "iter() does not return values in the correct order"
+            );
+            assert_eq!(
+                vec![(1, 7), (0, 1), (4, 9)],
+                inline_map.into_iter().collect::<Vec<_>>(),
+                "into_iter() does not return values in the correct order"
+            );
+        }
+        test::<1>(false);
+        test::<3>(true);
     }
 
     #[test]
