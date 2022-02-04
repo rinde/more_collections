@@ -231,6 +231,98 @@ mod test {
     }
 
     #[test]
+    fn insert_tests() {
+        // Test cases:
+        // | Value               | Memory       | Insertion position |
+        // | ------------------- | ------------ | ------------------ |
+        // | new                 | Stay inline  | Last               |
+        // | new                 | Move to heap | Last               |
+        // | new                 | Stay on heap | Last               |
+        // | already existing    | Stay inline  | Same as existing   |
+        // | already existing    | Stay on heap | Same as existing   |
+
+        let values = vec![10, 5, 86, 93];
+        struct TestCase {
+            name: &'static str,
+            initial_values: Vec<usize>,
+            insert_value: usize,
+            expected_inline_before: bool,
+            expected_inline_after: bool,
+            expected_values: Vec<usize>,
+        }
+        let test_cases = vec![
+            TestCase {
+                name: "new key/value, stay inline",
+                initial_values: values[0..2].to_vec(),
+                insert_value: 7,
+                expected_inline_before: true,
+                expected_inline_after: true,
+                expected_values: vec![10, 5, 7],
+            },
+            TestCase {
+                name: "new key/value, move to heap",
+                initial_values: values[0..3].to_vec(),
+                insert_value: 7,
+                expected_inline_before: true,
+                expected_inline_after: false,
+                expected_values: vec![10, 5, 86, 7],
+            },
+            TestCase {
+                name: "new key/value, stay on heap",
+                initial_values: values[0..4].to_vec(),
+                insert_value: 7,
+                expected_inline_before: false,
+                expected_inline_after: false,
+                expected_values: vec![10, 5, 86, 93, 7],
+            },
+            TestCase {
+                name: "overwrite existing key/value, stay inline",
+                initial_values: values[0..3].to_vec(),
+                insert_value: 5,
+                expected_inline_before: true,
+                expected_inline_after: true,
+                expected_values: vec![10, 5, 86],
+            },
+            TestCase {
+                name: "overwrite existing key/value, stay on heap",
+                initial_values: values[0..4].to_vec(),
+                insert_value: 10,
+                expected_inline_before: false,
+                expected_inline_after: false,
+                expected_values: vec![10, 5, 86, 93],
+            },
+        ];
+
+        for test_case in test_cases {
+            let mut small_set = SmallSet::<usize, 3>::new();
+
+            for v in test_case.initial_values {
+                small_set.insert(v);
+            }
+            assert_eq!(
+                test_case.expected_inline_before,
+                small_set.is_inline(),
+                "inline state before insertion in SmallSet does not match expected in test '{}'",
+                test_case.name
+            );
+
+            small_set.insert(test_case.insert_value);
+            assert_eq!(
+                test_case.expected_inline_after,
+                small_set.is_inline(),
+                "inline state after insertion in SmallSet does not match expected in test '{}'",
+                test_case.name
+            );
+            assert_eq!(
+                test_case.expected_values,
+                small_set.iter().copied().collect::<Vec<_>>(),
+                "values in SmallSet do not match expected values in test '{}'",
+                test_case.name
+            );
+        }
+    }
+
+    #[test]
     fn debug_string_test() {
         let actual = format!("{:?}", smallset_inline! {0, 1, 2});
         let expected = "{0, 1, 2}";
