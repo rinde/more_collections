@@ -197,8 +197,10 @@ mod test {
     fn test_len_and_inline_capacity() {
         let mut set = SmallSet::<usize, 1>::new();
         assert_eq!(0, set.len());
+        assert_eq!(0, set.iter().len());
         set.insert(0);
         assert_eq!(1, set.len());
+        assert_eq!(1, set.iter().len());
 
         let set: SmallSet<_, 10> = smallset! {0, 1, 4};
         assert_eq!(3, set.len());
@@ -206,6 +208,7 @@ mod test {
 
         let set = smallset_inline! {0, 1, 4 };
         assert_eq!(3, set.len());
+        assert_eq!(3, set.iter().len());
         assert_eq!(3, set.inline_capacity());
     }
 
