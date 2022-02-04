@@ -823,7 +823,7 @@ mod test {
     fn get_index_trait_panics_on_out_of_bounds_inline() {
         let map: SmallMap<&'static str, usize, 3> = smallmap! {"2" => 222, "1" => 111, "3" => 333};
         assert!(map.is_inline());
-        map[5];
+        let _ = map[5];
     }
 
     #[test]
@@ -831,7 +831,7 @@ mod test {
     fn get_index_trait_panics_on_out_of_bounds_heap() {
         let map: SmallMap<&'static str, usize, 1> = smallmap! {"2" => 222, "1" => 111, "3" => 333};
         assert!(!map.is_inline());
-        map[5];
+        let _ = map[5];
     }
 
     #[test]
