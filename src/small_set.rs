@@ -141,6 +141,7 @@ where
     }
 }
 
+/// Create a [`SmallSet`] with with the specified values.
 #[macro_export]
 macro_rules! smallset {
     ($($x:expr),*$(,)*) => ({
@@ -149,7 +150,7 @@ macro_rules! smallset {
     });
 }
 
-/// Creates [`SmallSet`] with inline capacity equal to the number of values.
+/// Create a [`SmallSet`] with inline capacity equal to the number of values.
 #[macro_export]
 macro_rules! smallset_inline {
     ($($key:expr),*$(,)*) => ({
