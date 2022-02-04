@@ -419,6 +419,7 @@ where
     K: Hash + Eq,
     V: Eq,
 {
+    /// Modifies the entry if it is occupied. Otherwise this is a no-op.
     pub fn and_modify<F>(self, f: F) -> Self
     where
         F: FnOnce(&mut V),
@@ -838,6 +839,44 @@ mod test {
             assert_eq!(Some(0), map.get_index_of(&MyType(2)));
             assert_eq!(Some(2), map.get_index_of(&"3"));
             assert_eq!(Some(2), map.get_index_of(&MyType(3)));
+        }
+        test::<1>(false);
+        test::<3>(true);
+    }
+
+    #[test]
+    fn entry_and_modify_test() {
+        fn test<const C: usize>(inline: bool) {
+            let mut map: SmallMap<&'static str, usize, C> =
+                smallmap! {"2" => 222, "1" => 111, "3" => 333};
+            assert_eq!(inline, map.is_inline());
+
+            // not existing -> no-op
+            map.entry(&"0").and_modify(|x| *x = 100);
+            assert_eq!(None, map.get(&"0"));
+
+            // existing -> multiply 111 x 2 = 222
+            map.entry(&"1").and_modify(|x| *x *= 2);
+            assert_eq!(Some(&222), map.get(&"1"));
+        }
+        test::<1>(false);
+        test::<3>(true);
+    }
+
+    #[test]
+    fn entry_or_insert_test() {
+        fn test<const C: usize>(inline: bool) {
+            let mut map: SmallMap<&'static str, usize, C> =
+                smallmap! {"2" => 222, "1" => 111, "3" => 333};
+            assert_eq!(inline, map.is_inline());
+
+            // not existing -> insert new
+            map.entry(&"0").or_insert(777);
+            assert_eq!(Some(&777), map.get(&"0"));
+
+            // existing -> no-op
+            map.entry(&"1").or_insert(777);
+            assert_eq!(Some(&111), map.get(&"1"));
         }
         test::<1>(false);
         test::<3>(true);
