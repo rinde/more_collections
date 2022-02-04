@@ -1053,4 +1053,12 @@ mod test {
         let expected = "{0: 6, 1: 5, 2: 4}";
         assert_eq!(expected, actual);
     }
+
+    #[test]
+    #[should_panic(
+        expected = "Cannot instantiate SmallMap with no inline capacity, use positive capacity or use IndexMap instead"
+    )]
+    fn new_fails_on_zero_capacity() {
+        SmallMap::<usize, usize, 0>::new();
+    }
 }
