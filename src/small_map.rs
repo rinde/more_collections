@@ -852,11 +852,11 @@ mod test {
             assert_eq!(inline, map.is_inline());
 
             // not existing -> no-op
-            map.entry(&"0").and_modify(|x| *x = 100);
+            map.entry("0").and_modify(|x| *x = 100);
             assert_eq!(None, map.get(&"0"));
 
             // existing -> multiply 111 x 2 = 222
-            map.entry(&"1").and_modify(|x| *x *= 2);
+            map.entry("1").and_modify(|x| *x *= 2);
             assert_eq!(Some(&222), map.get(&"1"));
         }
         test::<1>(false);
@@ -871,11 +871,11 @@ mod test {
             assert_eq!(inline, map.is_inline());
 
             // not existing -> insert new
-            map.entry(&"0").or_insert(777);
+            map.entry("0").or_insert(777);
             assert_eq!(Some(&777), map.get(&"0"));
 
             // existing -> no-op
-            map.entry(&"1").or_insert(777);
+            map.entry("1").or_insert(777);
             assert_eq!(Some(&111), map.get(&"1"));
         }
         test::<1>(false);
