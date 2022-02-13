@@ -444,6 +444,25 @@ mod index_set_multimap {
         assert_eq!((0, 1, false), map.insert_full(0, 2));
         assert_eq!(8, map.len());
     }
+
+    // TODO make generic for all variants
+    #[test]
+    fn into_iter_tests() {
+        let map = indexsetmultimap! {
+            "a" => {1, 2, 3},
+            "b" => {2, 3},
+            "c" => {3}
+        };
+
+        let actual = map.into_iter().collect::<Vec<_>>();
+        let expected = vec![("a", 1), ("a", 2), ("a", 3), ("b", 2), ("b", 3), ("c", 3)];
+        assert_eq!(expected, actual);
+
+        let empty = IndexSetMultimap::<&str, usize>::new();
+        let actual = empty.into_iter().collect::<Vec<_>>();
+        let expected = Vec::<(&str, usize)>::new();
+        assert_eq!(expected, actual);
+    }
 }
 
 mod index_vec_multimap {
