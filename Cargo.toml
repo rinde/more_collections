@@ -12,7 +12,7 @@ categories = ["data-structures"]
 include = [ "LICENSE", "README.md", "**/*.rs", "Cargo.toml" ]
 
 [dependencies]
-indexmap = "1.7.0" 
+indexmap = "1.8.0"
 maplit = "1.0.2"
 
 [dev-dependencies]
