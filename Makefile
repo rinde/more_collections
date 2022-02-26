@@ -2,7 +2,7 @@ SHELL := /bin/bash -eu
 
 .PHONY: test
 test:
-	cargo test --workspace --all-features --all-targets
+	cargo nextest run
 	cargo test --workspace --doc
 
 lint: 
