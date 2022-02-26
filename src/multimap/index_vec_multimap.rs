@@ -63,6 +63,7 @@ impl_iter! {
     indexmap::map::Iter<'a, K, Vec<V>>,
     std::slice::Iter<'a, V>
 }
+impl_keys! {IndexVecMultimap, (K,V), indexmap::map::Keys<'a, K, Vec<V>>}
 impl_into_iterator! {
     IndexVecMultimap,
     (K,V),

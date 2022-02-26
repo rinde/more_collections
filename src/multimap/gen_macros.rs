@@ -627,6 +627,30 @@ macro_rules! impl_iter {
 
         impl<'a, $($generic_ids)*> std::iter::FusedIterator for Iter<'a, $($generic_ids)*> {}
 
+        /// An iterator over the values of a multimap.
+        ///
+        /// This `struct` is created by the `values` method on multimap.
+        pub struct Values<'a, $($generic_ids)*>{
+            inner: Iter<'a, $($generic_ids)*>,
+        }
+
+        impl<'a, $($generic_ids)*> Iterator for Values<'a, $($generic_ids)*>
+        {
+            type Item = &'a V;
+
+            fn next(&mut self) -> Option<Self::Item> {
+                self.inner.next().map( |(_,v)| v)
+            }
+        }
+
+        impl<'a, $($generic_ids)*> ExactSizeIterator for Values<'a, $($generic_ids)*> {
+            fn len(&self) -> usize {
+                self.inner.len()
+            }
+        }
+
+        impl<'a, $($generic_ids)*> std::iter::FusedIterator for Values<'a, $($generic_ids)*> {}
+
         impl<K, V, S> $type<K, V, S> {
             /// Return an iterator over the key-value pairs of the multimap.
             pub fn iter(&self) -> Iter<'_, $($generic_ids)*> {
@@ -636,6 +660,51 @@ macro_rules! impl_iter {
                     outer: iter,
                     inner,
                     len: self.len,
+                }
+            }
+
+            /// Return an iterator over the values of the multimap.
+            pub fn values(&self) -> Values<'_, $($generic_ids)*> {
+                Values {
+                    inner: self.iter(),
+                }
+            }
+        }
+    }
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! impl_keys {
+    ($type:tt, ($($generic_ids:tt)*), $inner_iter:ty) => {
+        /// An iterator over the keys of a multimap.
+        ///
+        /// This `struct` is created by the `keys` method on multimap.
+        pub struct Keys<'a, $($generic_ids)*> {
+            inner: $inner_iter,
+        }
+
+        impl<'a, $($generic_ids)*> Iterator for Keys<'a, $($generic_ids)*> {
+            type Item = &'a K;
+
+            fn next(&mut self) -> Option<Self::Item> {
+                self.inner.next()
+            }
+        }
+
+        impl<'a, $($generic_ids)*> ExactSizeIterator for Keys<'a, $($generic_ids)*> {
+            fn len(&self) -> usize {
+                self.inner.len()
+            }
+        }
+
+        impl<'a, $($generic_ids)*> std::iter::FusedIterator for Keys<'a, $($generic_ids)*> {}
+
+        impl<K, V, S> $type<K, V, S> {
+            /// Return an iterator over the keys of the multimap.
+            pub fn keys(&self) -> Keys<'_, $($generic_ids)*> {
+                Keys {
+                    inner: self.inner.keys(),
                 }
             }
         }
@@ -718,43 +787,54 @@ macro_rules! impl_into_iterator {
         /// An owning iterator over the values of a multimap.
         ///
         /// This `struct` is created by the `into_values` method on multimap.
-        pub struct IntoValues<$($generic_ids)*>{
-            inner: IntoIter<$($generic_ids)*>,
+        pub struct IntoValues<$($generic_ids)*> {
+            outer: $outer_iter,
+            inner: Option<$inner_iter>,
+            len: usize,
         }
 
-        impl<$($generic_ids)*> Iterator for IntoValues<$($generic_ids)*>
-        where
-            K: Clone,
-        {
+        impl<$($generic_ids)*> Iterator for IntoValues<$($generic_ids)*>        {
             type Item = V;
 
             fn next(&mut self) -> Option<Self::Item> {
-                self.inner.next().map( |(_,v)| v)
+                if let Some(inner_iter) = &mut self.inner {
+                    let next = inner_iter.next();
+
+                    if let Some(next_value) = next {
+                        Some(next_value)
+                    } else {
+                        if let Some((_key, values)) = self.outer.next() {
+                            let mut new_inner_iter = values.into_iter();
+                            let v = new_inner_iter.next().unwrap();
+                            self.inner = Some(new_inner_iter);
+                            Some(v)
+                        } else {
+                            None
+                        }
+                    }
+                } else {
+                    None
+                }
             }
         }
 
-        impl<$($generic_ids)*> ExactSizeIterator for IntoValues<$($generic_ids)*>
-        where
-            K: Clone,
-        {
+        impl<$($generic_ids)*> ExactSizeIterator for IntoValues<$($generic_ids)*> {
             fn len(&self) -> usize {
-                self.inner.len()
+                self.len
             }
         }
 
-        impl<$($generic_ids)*> std::iter::FusedIterator for IntoValues<$($generic_ids)*>
-        where
-           K: Clone,
-        {}
+        impl<$($generic_ids)*> std::iter::FusedIterator for IntoValues<$($generic_ids)*> {}
 
-        impl<K, V, S> $type<K, V, S>
-        where
-            K: Clone,
-        {
-            /// Return an owning iterator over the values of the multimap.
+        impl<K, V, S> $type<K, V, S> {
+            /// Return an iterator over the values of the multimap.
             pub fn into_values(self) -> IntoValues<$($generic_ids)*> {
+                let mut iter = self.inner.into_iter();
+                let inner = iter.next().map(|(_k, v)| v.into_iter());
                 IntoValues {
-                    inner: self.into_iter(),
+                    outer: iter,
+                    inner,
+                    len: self.len,
                 }
             }
         }

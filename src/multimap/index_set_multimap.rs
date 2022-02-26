@@ -63,6 +63,7 @@ impl_iter! {
     indexmap::map::Iter<'a, K, IndexSet<V, S>>,
     indexmap::set::Iter<'a, V>
 }
+impl_keys! {IndexSetMultimap, (K, V, S), indexmap::map::Keys<'a, K, IndexSet<V, S>>}
 impl_into_iterator! {
     IndexSetMultimap,
     (K,V,S),

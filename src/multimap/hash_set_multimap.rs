@@ -53,6 +53,7 @@ impl_iter! {
     std::collections::hash_map::Iter<'a, K, HashSet<V, S>>,
     std::collections::hash_set::Iter<'a, V>
 }
+impl_keys! {HashSetMultimap, (K, V, S), std::collections::hash_map::Keys<'a, K, HashSet<V, S>>}
 impl_into_iterator! {
     HashSetMultimap,
     (K, V, S),
