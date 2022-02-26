@@ -617,6 +617,19 @@ macro_rules! general_multimap_tests {
         }
 
         #[test]
+        fn test_get_key_values() {
+            let mm = $multimap_macro! {
+                0 => { 1, 0, 7, 1 },
+                1 => { 2, 3 }
+            };
+            let actual = mm.get_key_values(&0);
+            let values = $values_macro! { 1, 0, 7, 1 };
+            let expected = Some((&0, &values));
+            assert_eq!(actual, expected);
+            assert_eq!(None, mm.get_key_values(&2));
+        }
+
+        #[test]
         #[should_panic(expected = "no entry found for key")]
         fn index_panics_for_unknown_key() {
             let a = $multimap_macro! {

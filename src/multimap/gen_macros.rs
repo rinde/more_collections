@@ -125,7 +125,14 @@ macro_rules! multimap_mutators_impl {
             self.inner.get(key)
         }
 
-        // TODO add get_key_values()
+        /// Return references to the key-values pair stored for `key`, if it is
+        /// present, else `None`.
+        pub fn get_key_values<Q: ?Sized>(&self, key: &Q) -> Option<(&K, &$values)>
+        where
+            $($keys_ref)*,
+        {
+            self.inner.get_key_value(key)
+        }
 
         /// Returns `true` if the map contains a value for the specified key.
         #[inline]
