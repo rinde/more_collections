@@ -57,6 +57,12 @@ multimap_extend! {
 }
 multimap_eq! { IndexVecMultimap, (Eq)}
 
+impl_iter! {
+    IndexVecMultimap,
+    (K,V),
+    indexmap::map::Iter<'a, K, Vec<V>>,
+    std::slice::Iter<'a, V>
+}
 impl_into_iterator! {
     IndexVecMultimap,
     (K,V),

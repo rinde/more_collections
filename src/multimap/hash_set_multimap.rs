@@ -47,6 +47,12 @@ multimap_extend! {
 }
 multimap_eq! { HashSetMultimap, (Hash + Eq)}
 
+impl_iter! {
+    HashSetMultimap,
+    (K, V, S),
+    std::collections::hash_map::Iter<'a, K, HashSet<V, S>>,
+    std::collections::hash_set::Iter<'a, V>
+}
 impl_into_iterator! {
     HashSetMultimap,
     (K, V, S),

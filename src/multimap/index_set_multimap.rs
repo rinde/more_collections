@@ -57,6 +57,12 @@ multimap_extend! {
 }
 multimap_eq! { IndexSetMultimap, (Hash + Eq)}
 
+impl_iter! {
+    IndexSetMultimap,
+    (K,V,S),
+    indexmap::map::Iter<'a, K, IndexSet<V, S>>,
+    indexmap::set::Iter<'a, V>
+}
 impl_into_iterator! {
     IndexSetMultimap,
     (K,V,S),

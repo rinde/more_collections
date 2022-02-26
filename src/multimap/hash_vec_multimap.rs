@@ -48,6 +48,12 @@ multimap_extend! {
 }
 multimap_eq! { HashVecMultimap, (Eq)}
 
+impl_iter! {
+    HashVecMultimap,
+    (K,V),
+    std::collections::hash_map::Iter<'a, K, Vec<V>>,
+    std::slice::Iter<'a, V>
+}
 impl_into_iterator! {
     HashVecMultimap,
     (K,V),
