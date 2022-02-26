@@ -53,8 +53,6 @@ macro_rules! multimap_base2_impl {
             self.inner.capacity()
         }
 
-        // TODO keys()
-        // TODO values()
         // TODO values_mut()
 
         // TODO iter_mut()
