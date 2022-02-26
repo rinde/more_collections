@@ -54,6 +54,31 @@ macro_rules! index_multimap_tests {
         }
 
         #[test]
+        fn iter_has_insertion_order() {
+            let map = $multimap_macro! {
+                "a" => {1, 2, 3},
+                "b" => {2, 3},
+                "c" => {3}
+            };
+
+            let actual = map.iter().collect::<Vec<_>>();
+            let expected = vec![
+                (&"a", &1),
+                (&"a", &2),
+                (&"a", &3),
+                (&"b", &2),
+                (&"b", &3),
+                (&"c", &3),
+            ];
+            assert_eq!(expected, actual);
+
+            let empty = $type::<&str, usize>::new();
+            let actual = empty.iter().collect::<Vec<_>>();
+            let expected = Vec::<(&&str, &usize)>::new();
+            assert_eq!(expected, actual);
+        }
+
+        #[test]
         fn into_iter_has_insertion_order() {
             let map = $multimap_macro! {
                 "a" => {1, 2, 3},
@@ -122,6 +147,31 @@ macro_rules! hash_multimap_tests {
         }
 
         #[test]
+        fn iter_contains_all_values() {
+            let map = $multimap_macro! {
+                "a" => {1, 2, 3},
+                "b" => {2, 3},
+                "c" => {3}
+            };
+
+            let actual = map.iter().collect::<HashSet<_>>();
+            let expected = maplit::hashset! {
+                (&"a", &1),
+                (&"a", &2),
+                (&"a", &3),
+                (&"b", &2),
+                (&"b", &3),
+                (&"c", &3),
+            };
+            assert_eq!(expected, actual);
+
+            let empty = $type::<&str, usize>::new();
+            let actual = empty.iter().collect::<HashSet<_>>();
+            let expected = HashSet::<(&&str, &usize)>::new();
+            assert_eq!(expected, actual);
+        }
+
+        #[test]
         fn into_iter_contains_all_values() {
             let map = $multimap_macro! {
                 "a" => {1, 2, 3},
@@ -149,7 +199,7 @@ macro_rules! hash_multimap_tests {
             };
 
             let actual = map.into_keys().collect::<HashSet<_>>();
-            let expected = maplit::hashset!["a", "b", "c"];
+            let expected = maplit::hashset! {"a", "b", "c"};
             assert_eq!(expected, actual);
 
             let empty = $type::<&str, usize>::new();
@@ -167,7 +217,7 @@ macro_rules! hash_multimap_tests {
             };
 
             let actual = map.into_values().collect::<HashSet<_>>();
-            let expected = maplit::hashset![1, 2, 3, 4, 5, 6];
+            let expected = maplit::hashset! {1, 2, 3, 4, 5, 6};
             assert_eq!(expected, actual);
 
             let empty = $type::<&str, usize>::new();
