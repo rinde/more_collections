@@ -54,3 +54,4 @@ impl_into_iterator! {
     std::collections::hash_map::IntoIter<K, Vec<V>>,
     std::vec::IntoIter<V>
 }
+impl_into_keys! {HashVecMultimap, (K, V), std::collections::hash_map::IntoKeys<K, Vec<V>>}

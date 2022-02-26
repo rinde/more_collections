@@ -63,3 +63,5 @@ impl_into_iterator! {
     indexmap::map::IntoIter<K, Vec<V>>,
     std::vec::IntoIter<V>
 }
+
+impl_into_keys! {IndexVecMultimap, (K,V), indexmap::map::IntoKeys<K, Vec<V>>}
