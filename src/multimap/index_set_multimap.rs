@@ -2,7 +2,6 @@ use std::borrow::Borrow;
 use std::collections::hash_map::RandomState;
 use std::hash::BuildHasher;
 use std::hash::Hash;
-use std::iter::FusedIterator;
 
 use indexmap::Equivalent;
 use indexmap::IndexMap;
@@ -58,62 +57,69 @@ multimap_extend! {
 }
 multimap_eq! { IndexSetMultimap, (Hash + Eq)}
 
-/// An owning iterator over the entries of a multimap.
-pub struct IntoIter<K, V, S> {
-    outer: indexmap::map::IntoIter<K, IndexSet<V, S>>,
-    inner: Option<(K, indexmap::set::IntoIter<V>)>,
-    len: usize,
+impl_into_iterator! {
+    IndexSetMultimap,
+    (K,V,S),
+    indexmap::map::IntoIter<K, IndexSet<V, S>>,
+    indexmap::set::IntoIter<V>
 }
 
-impl<K, V, S> Iterator for IntoIter<K, V, S>
-where
-    K: Clone,
-{
-    type Item = (K, V);
+// /// An owning iterator over the entries of a multimap.
+// pub struct IntoIter<K, V, S> {
+//     outer: indexmap::map::IntoIter<K, IndexSet<V, S>>,
+//     inner: Option<(K, indexmap::set::IntoIter<V>)>,
+//     len: usize,
+// }
 
-    fn next(&mut self) -> Option<Self::Item> {
-        if let Some((current_key, inner_iter)) = &mut self.inner {
-            let next = inner_iter.next();
+// impl<K, V, S> Iterator for IntoIter<K, V, S>
+// where
+//     K: Clone,
+// {
+//     type Item = (K, V);
 
-            if let Some(next_value) = next {
-                Some((current_key.clone(), next_value))
-            } else {
-                if let Some((key, values)) = self.outer.next() {
-                    let mut new_inner_iter = values.into_iter();
-                    let v = new_inner_iter.next().unwrap();
-                    self.inner = Some((key.clone(), new_inner_iter));
+//     fn next(&mut self) -> Option<Self::Item> {
+//         if let Some((current_key, inner_iter)) = &mut self.inner {
+//             let next = inner_iter.next();
 
-                    Some((key, v))
-                } else {
-                    None
-                }
-            }
-        } else {
-            None
-        }
-    }
-}
+//             if let Some(next_value) = next {
+//                 Some((current_key.clone(), next_value))
+//             } else {
+//                 if let Some((key, values)) = self.outer.next() {
+//                     let mut new_inner_iter = values.into_iter();
+//                     let v = new_inner_iter.next().unwrap();
+//                     self.inner = Some((key.clone(), new_inner_iter));
 
-impl<K: Clone, V, S> ExactSizeIterator for IntoIter<K, V, S> {
-    fn len(&self) -> usize {
-        self.len
-    }
-}
+//                     Some((key, v))
+//                 } else {
+//                     None
+//                 }
+//             }
+//         } else {
+//             None
+//         }
+//     }
+// }
 
-impl<K: Clone, V, S> FusedIterator for IntoIter<K, V, S> {}
+// impl<K: Clone, V, S> ExactSizeIterator for IntoIter<K, V, S> {
+//     fn len(&self) -> usize {
+//         self.len
+//     }
+// }
 
-impl<K: Clone, V, S> IntoIterator for IndexSetMultimap<K, V, S> {
-    type Item = (K, V);
+// impl<K: Clone, V, S> FusedIterator for IntoIter<K, V, S> {}
 
-    type IntoIter = IntoIter<K, V, S>;
+// impl<K: Clone, V, S> IntoIterator for IndexSetMultimap<K, V, S> {
+//     type Item = (K, V);
 
-    fn into_iter(self) -> Self::IntoIter {
-        let mut iter = self.inner.into_iter();
-        let inner = iter.next().map(|(k, v)| (k, v.into_iter()));
-        IntoIter {
-            outer: iter,
-            inner,
-            len: self.len,
-        }
-    }
-}
+//     type IntoIter = IntoIter<K, V, S>;
+
+//     fn into_iter(self) -> Self::IntoIter {
+//         let mut iter = self.inner.into_iter();
+//         let inner = iter.next().map(|(k, v)| (k, v.into_iter()));
+//         IntoIter {
+//             outer: iter,
+//             inner,
+//             len: self.len,
+//         }
+//     }
+// }

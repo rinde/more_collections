@@ -46,3 +46,10 @@ multimap_extend! {
     (K: Hash + Eq + Borrow<Q>, Q: Hash + Eq)
 }
 multimap_eq! { HashSetMultimap, (Hash + Eq)}
+
+impl_into_iterator! {
+    HashSetMultimap,
+    (K,V,S),
+    std::collections::hash_map::IntoIter<K, HashSet<V, S>>,
+    std::collections::hash_set::IntoIter<V>
+}

@@ -47,3 +47,10 @@ multimap_extend! {
     (K: Hash + Eq + Borrow<Q>, Q: Hash + Eq)
 }
 multimap_eq! { HashVecMultimap, (Eq)}
+
+impl_into_iterator! {
+    HashVecMultimap,
+    (K,V),
+    std::collections::hash_map::IntoIter<K, Vec<V>>,
+    std::vec::IntoIter<V>
+}

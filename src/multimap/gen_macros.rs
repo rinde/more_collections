@@ -589,3 +589,75 @@ macro_rules! multimap_eq {
         }
     };
 }
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! impl_into_iterator {
+    ($type:tt, ($($generic_ids:tt)*), $outer_iter:ty, $inner_iter:ty) => {
+        /// An owning iterator over the entries of a multimap.
+        pub struct IntoIter<$($generic_ids)*> {
+            outer: $outer_iter,
+            inner: Option<(K, $inner_iter)>,
+            len: usize,
+        }
+
+        impl<$($generic_ids)*> Iterator for IntoIter<$($generic_ids)*>
+        where
+            K: Clone,
+        {
+            type Item = (K, V);
+
+            fn next(&mut self) -> Option<Self::Item> {
+                if let Some((current_key, inner_iter)) = &mut self.inner {
+                    let next = inner_iter.next();
+
+                    if let Some(next_value) = next {
+                        Some((current_key.clone(), next_value))
+                    } else {
+                        if let Some((key, values)) = self.outer.next() {
+                            let mut new_inner_iter = values.into_iter();
+                            let v = new_inner_iter.next().unwrap();
+                            self.inner = Some((key.clone(), new_inner_iter));
+
+                            Some((key, v))
+                        } else {
+                            None
+                        }
+                    }
+                } else {
+                    None
+                }
+            }
+        }
+
+        impl<$($generic_ids)*> ExactSizeIterator for IntoIter<$($generic_ids)*>
+        where
+            K: Clone,
+        {
+            fn len(&self) -> usize {
+                self.len
+            }
+        }
+
+        impl<$($generic_ids)*> std::iter::FusedIterator for IntoIter<$($generic_ids)*>
+        where
+           K: Clone,
+        {}
+
+        impl<K: Clone, V, S> IntoIterator for $type<K, V, S> {
+            type Item = (K, V);
+
+            type IntoIter = IntoIter<$($generic_ids)*>;
+
+            fn into_iter(self) -> Self::IntoIter {
+                let mut iter = self.inner.into_iter();
+                let inner = iter.next().map(|(k, v)| (k, v.into_iter()));
+                IntoIter {
+                    outer: iter,
+                    inner,
+                    len: self.len,
+                }
+            }
+        }
+    };
+}

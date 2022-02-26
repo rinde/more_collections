@@ -56,3 +56,10 @@ multimap_extend! {
     (K: Hash + Eq, Q: Hash + Equivalent<K>)
 }
 multimap_eq! { IndexVecMultimap, (Eq)}
+
+impl_into_iterator! {
+    IndexVecMultimap,
+    (K,V),
+    indexmap::map::IntoIter<K, Vec<V>>,
+    std::vec::IntoIter<V>
+}

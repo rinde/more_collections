@@ -52,17 +52,56 @@ macro_rules! index_multimap_tests {
             assert_eq!(Some(1), map.get_key_index(&2));
             assert_eq!(None, map.get_key_index(&3));
         }
+
+        #[test]
+        fn into_iter_has_insertion_order() {
+            let map = $multimap_macro! {
+                "a" => {1, 2, 3},
+                "b" => {2, 3},
+                "c" => {3}
+            };
+
+            let actual = map.into_iter().collect::<Vec<_>>();
+            let expected = vec![("a", 1), ("a", 2), ("a", 3), ("b", 2), ("b", 3), ("c", 3)];
+            assert_eq!(expected, actual);
+
+            let empty = $type::<&str, usize>::new();
+            let actual = empty.into_iter().collect::<Vec<_>>();
+            let expected = Vec::<(&str, usize)>::new();
+            assert_eq!(expected, actual);
+        }
     };
 }
 
 macro_rules! hash_multimap_tests {
-    ($type:tt) => {
+    ($type:tt, $multimap_macro:tt) => {
+        use std::collections::HashSet;
+
         #[test]
         fn with_capacity_constructs_instance_with_correct_capacity() {
             let map7: $type<usize, usize> = $type::with_key_capacity(7);
             let map17: $type<usize, usize> = $type::with_key_capacity(35);
             assert_eq!(7, map7.key_capacity());
             assert!(35 <= map17.key_capacity());
+        }
+
+        #[test]
+        fn into_iter_contains_all_values() {
+            let map = $multimap_macro! {
+                "a" => {1, 2, 3},
+                "b" => {2, 3},
+                "c" => {3}
+            };
+
+            let actual = map.into_iter().collect::<HashSet<_>>();
+            let expected =
+                maplit::hashset![("a", 1), ("a", 2), ("a", 3), ("b", 2), ("b", 3), ("c", 3)];
+            assert_eq!(expected, actual);
+
+            let empty = $type::<&str, usize>::new();
+            let actual = empty.into_iter().collect::<HashSet<_>>();
+            let expected = HashSet::<(&str, usize)>::new();
+            assert_eq!(expected, actual);
         }
     };
 }
@@ -401,7 +440,7 @@ mod hash_set_multimap {
     use more_collections::HashSetMultimap;
 
     general_multimap_tests! {HashSetMultimap, hashsetmultimap, hashmap, hashset}
-    hash_multimap_tests! {HashSetMultimap}
+    hash_multimap_tests! {HashSetMultimap, hashsetmultimap}
     set_multimap_tests! {HashSetMultimap}
 }
 
@@ -411,7 +450,7 @@ mod hash_vec_multimap {
     use more_collections::HashVecMultimap;
 
     general_multimap_tests! {HashVecMultimap, hashvecmultimap, hashmap, vec}
-    hash_multimap_tests! {HashVecMultimap}
+    hash_multimap_tests! {HashVecMultimap, hashvecmultimap}
 }
 
 mod index_set_multimap {
@@ -443,25 +482,6 @@ mod index_set_multimap {
         // existing key and value
         assert_eq!((0, 1, false), map.insert_full(0, 2));
         assert_eq!(8, map.len());
-    }
-
-    // TODO make generic for all variants
-    #[test]
-    fn into_iter_tests() {
-        let map = indexsetmultimap! {
-            "a" => {1, 2, 3},
-            "b" => {2, 3},
-            "c" => {3}
-        };
-
-        let actual = map.into_iter().collect::<Vec<_>>();
-        let expected = vec![("a", 1), ("a", 2), ("a", 3), ("b", 2), ("b", 3), ("c", 3)];
-        assert_eq!(expected, actual);
-
-        let empty = IndexSetMultimap::<&str, usize>::new();
-        let actual = empty.into_iter().collect::<Vec<_>>();
-        let expected = Vec::<(&str, usize)>::new();
-        assert_eq!(expected, actual);
     }
 }
 
