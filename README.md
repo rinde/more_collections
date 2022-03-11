@@ -14,10 +14,10 @@ Additional Rust collections not found in [std::collections](https://doc.rust-lan
 
 | Completion | Name                 | Behaves as                 |
 | ---------- | -------------------- | -------------------------- |
-| 🟩🟩🟨⬜️⬜️      | HashSetMultimap      | `HashMap<K, HashSet<V>>`   |
-| 🟩🟩🟨⬜️⬜️      | HashVecMultimap      | `HashMap<K, Vec<V>>`       |
-| 🟩🟩🟨⬜️⬜️      | IndexSetMultimap     | `IndexMap<K, IndexSet<V>>` |
-| 🟩🟩🟨⬜️⬜️      | IndexVecMultimap     | `IndexMap<K, Vec<V>>`      |
+| 🟩🟩🟩🟩🟨      | HashSetMultimap      | `HashMap<K, HashSet<V>>`   |
+| 🟩🟩🟩🟩🟨      | HashVecMultimap      | `HashMap<K, Vec<V>>`       |
+| 🟩🟩🟩🟩🟨      | IndexSetMultimap     | `IndexMap<K, IndexSet<V>>` |
+| 🟩🟩🟩🟩🟨      | IndexVecMultimap     | `IndexMap<K, Vec<V>>`      |
 | ⬜️⬜️⬜️⬜️⬜️      | BTreeSetMultimap     | `BTreeMap<K, BTreeSet<V>>` |
 | ⬜️⬜️⬜️⬜️⬜️      | BTreeVecMultimap     | `BTreeMap<K, Vec<V>>`      |
 | ⬜️⬜️⬜️⬜️⬜️      | EnumHashSetMultimap  | `EnumMap<K, HashSet<V>>`   |
