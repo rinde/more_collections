@@ -5,21 +5,21 @@ authors = ["Rinde van Lon <rindevanlon@gmail.com>"]
 description = "Additional collections not found in std::collections"
 repository = "https://github.com/rinde/more_collections/"
 homepage = "https://github.com/rinde/more_collections/"
-version = "0.2.0"
+version = "0.3.0"
 license = "Apache-2.0"
 keywords = ["collections", "multimap"]
 categories = ["data-structures"]
 include = [ "LICENSE", "README.md", "**/*.rs", "Cargo.toml" ]
 
 [features]
-hashsetmultimap = []
+hashsetmultimap = ["maplit"]
 hashvecmultimap = []
 indexsetmultimap = ["indexmap"]
 indexvecmultimap = ["indexmap"]
 
 [dependencies]
 indexmap = { version = "1.8.0", optional = true }
+maplit = { version = "1.0.2", optional = true }
 
 [dev-dependencies]
-maplit = "1.0.2"
 criterion = { version = "0.3", features = ["html_reports"] }

@@ -8,7 +8,7 @@ test:
 lint: 
 	cargo fmt -- --check
 	cargo clippy --workspace --all-features --tests --benches -- -D clippy::style -D clippy::perf -D warnings
-	cargo doc --all --no-deps --document-private-items
+	cargo doc --all --no-deps --document-private-items --all-features
 
 fmt:
 	cargo +nightly fmt -- --config-path ./rustfmt-nightly.toml

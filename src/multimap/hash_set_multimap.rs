@@ -61,3 +61,21 @@ impl_into_iterator! {
     std::collections::hash_set::IntoIter<V>
 }
 impl_into_keys! {HashSetMultimap, (K, V, S), std::collections::hash_map::IntoKeys<K, HashSet<V, S>>}
+
+#[macro_export]
+macro_rules! hashsetmultimap {
+    (@single $($x:tt)*) => (());
+    (@count $($rest:expr),*) => (<[()]>::len(&[$(hashsetmultimap!(@single $rest)),*]));
+
+    ($($key:expr => {$($value:expr),* },)+) => { hashsetmultimap!($($key => $($value,)* ),+) };
+    ($($key:expr => {$($value:expr),* }),*) => {
+        {
+            let _cap = hashsetmultimap!(@count $($key),*);
+            let mut _map = std::collections::HashMap::with_capacity(_cap);
+            $(
+                let _ = _map.insert($key, maplit::hashset!{$( $value, )*});
+            )*
+            HashSetMultimap::from(_map)
+        }
+    };
+}

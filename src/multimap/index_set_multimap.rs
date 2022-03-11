@@ -71,3 +71,21 @@ impl_into_iterator! {
     indexmap::set::IntoIter<V>
 }
 impl_into_keys! {IndexSetMultimap, (K, V, S), indexmap::map::IntoKeys<K, IndexSet<V, S>>}
+
+#[macro_export]
+macro_rules! indexsetmultimap {
+    (@single $($x:tt)*) => (());
+    (@count $($rest:expr),*) => (<[()]>::len(&[$(indexsetmultimap!(@single $rest)),*]));
+
+    ($($key:expr => {$($value:expr),* },)+) => { indexsetmultimap!($($key => $($value,)* ),+) };
+    ($($key:expr => {$($value:expr),* }),*) => {
+        {
+            let _cap = indexsetmultimap!(@count $($key),*);
+            let mut _map = indexmap::IndexMap::with_capacity(_cap);
+            $(
+                let _ = _map.insert($key, indexmap::indexset!{$( $value, )*});
+            )*
+            IndexSetMultimap::from(_map)
+        }
+    };
+}

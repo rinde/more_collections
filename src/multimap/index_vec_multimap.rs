@@ -72,3 +72,21 @@ impl_into_iterator! {
 }
 
 impl_into_keys! {IndexVecMultimap, (K,V), indexmap::map::IntoKeys<K, Vec<V>>}
+
+#[macro_export]
+macro_rules! indexvecmultimap {
+    (@single $($x:tt)*) => (());
+    (@count $($rest:expr),*) => (<[()]>::len(&[$(indexvecmultimap!(@single $rest)),*]));
+
+    ($($key:expr => {$($value:expr),* },)+) => { indexvecmultimap!($($key => $($value,)* ),+) };
+    ($($key:expr => {$($value:expr),* }),*) => {
+        {
+            let _cap = indexvecmultimap!(@count $($key),*);
+            let mut _map = indexmap::IndexMap::with_capacity(_cap);
+            $(
+                let _ = _map.insert($key, vec!{$( $value, )*});
+            )*
+            IndexVecMultimap::from(_map)
+        }
+    };
+}

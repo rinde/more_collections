@@ -60,3 +60,21 @@ impl_into_iterator! {
     std::vec::IntoIter<V>
 }
 impl_into_keys! {HashVecMultimap, (K, V), std::collections::hash_map::IntoKeys<K, Vec<V>>}
+
+#[macro_export]
+macro_rules! hashvecmultimap {
+    (@single $($x:tt)*) => (());
+    (@count $($rest:expr),*) => (<[()]>::len(&[$(hashvecmultimap!(@single $rest)),*]));
+
+    ($($key:expr => {$($value:expr),* },)+) => { hashvecmultimap!($($key => $($value,)* ),+) };
+    ($($key:expr => {$($value:expr),* }),*) => {
+        {
+            let _cap = hashvecmultimap!(@count $($key),*);
+            let mut _map = std::collections::HashMap::with_capacity(_cap);
+            $(
+                let _ = _map.insert($key, vec!{$( $value, )*});
+            )*
+            HashVecMultimap::from(_map)
+        }
+    };
+}
