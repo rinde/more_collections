@@ -4,8 +4,6 @@ use std::collections::HashMap;
 use std::hash::BuildHasher;
 use std::hash::Hash;
 
-use indexmap::Equivalent;
-
 /// Multimap implementation that behaves like `HashMap<K, Vec<V>>`.
 #[derive(Debug, Clone)]
 pub struct HashVecMultimap<K, V, S = RandomState> {
@@ -31,9 +29,9 @@ where
         HashMap<K, Vec<V>, S>,
         Vec<V>,
         Vec::new(),
-        vec,
+        vec_equal,
         (K: Borrow<Q>, Q: Hash + Eq),
-        (V: Borrow<R>, R: Equivalent<V>)
+        (V: Borrow<R>, R: Eq)
     }
 }
 

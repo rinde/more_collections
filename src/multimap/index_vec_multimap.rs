@@ -31,7 +31,7 @@ where
         IndexMap<K, Vec<V>, S>,
         Vec<V>,
         Vec::new(),
-        vec,
+        vec_equivalent,
         (Q: Hash + Equivalent<K>),
         (R: Equivalent<V>)
     }

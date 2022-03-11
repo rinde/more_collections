@@ -228,7 +228,7 @@ macro_rules! multimap_mutators_impl {
 
         /// Return `true` if an equivalent `key` and `value` combination exists in
         /// the multimap.
-        pub fn contains<Q: ?Sized, R:?Sized>(&self, key: &Q, value: &R) -> bool
+        pub fn contains<Q: ?Sized, R: ?Sized>(&self, key: &Q, value: &R) -> bool
         where
             $($keys_ref)*,
             $($values_ref)*,
@@ -354,7 +354,18 @@ macro_rules! insert {
         }
     };
 
-    (vec $values_ctx:expr) => {
+    (vec_equal $values_ctx:expr) => {
+        crate::vec_insert!($values_ctx);
+    };
+    (vec_equivalent $values_ctx:expr) => {
+        crate::vec_insert!($values_ctx);
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! vec_insert {
+    ($values_ctx:expr) => {
         /// Insert the value into the multimap.
         ///
         /// Allows duplicates.
@@ -443,8 +454,12 @@ macro_rules! values_contains {
         $values.contains($value)
     };
 
-    (vec, $values:ident, $value:ident) => {
+    (vec_equivalent, $values:ident, $value:ident) => {
         $values.iter().find(|x| $value.equivalent(x)).is_some()
+    };
+
+    (vec_equal, $values:ident, $value:ident) => {
+        $values.iter().find(|&x| $value == x.borrow()).is_some()
     };
 }
 
@@ -455,10 +470,16 @@ macro_rules! values_remove {
         $values.take($value)
     };
 
-    (vec, $values:ident, $value:ident) => {
+    (vec_equivalent, $values:ident, $value:ident) => {
         $values
             .iter()
             .position(|x| $value.equivalent(x))
+            .map(|index| $values.remove(index))
+    };
+    (vec_equal, $values:ident, $value:ident) => {
+        $values
+            .iter()
+            .position(|x| $value == x.borrow())
             .map(|index| $values.remove(index))
     };
 }
