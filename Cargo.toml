@@ -11,9 +11,15 @@ keywords = ["collections", "multimap"]
 categories = ["data-structures"]
 include = [ "LICENSE", "README.md", "**/*.rs", "Cargo.toml" ]
 
+[features]
+hashsetmultimap = []
+hashvecmultimap = []
+indexsetmultimap = ["indexmap"]
+indexvecmultimap = ["indexmap"]
+
 [dependencies]
 indexmap = { version = "1.8.0", optional = true }
-maplit = "1.0.2"
 
 [dev-dependencies]
+maplit = "1.0.2"
 criterion = { version = "0.3", features = ["html_reports"] }

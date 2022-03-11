@@ -35,6 +35,14 @@
 //! [`IndexMap`]: indexmap::IndexMap
 //! [`IndexSet`]: indexmap::IndexSet
 //! [`Vec`]: std::vec::Vec
+//!
+//! # Crate features
+//!
+//! All features are _disabled_ by default. The options are:
+//! - `hashsetmultimap`
+//! - `hashvecmultimap`
+//! - `indexsetmultimap`
+//! - `indexvecmultimap`
 
 mod multimap;
 
