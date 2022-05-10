@@ -475,7 +475,7 @@ macro_rules! smallmap {
 #[macro_export]
 macro_rules! smallmap_inline {
     ($($key:expr => $value:expr),*$(,)*) => ({
-        let vec = smallvec::smallvec_inline!( $(($key, $value),)*);
+        let vec = $crate::smallvec_inline!( $(($key, $value),)*);
         debug_assert_eq!(
             vec.len(),
             vec
