@@ -107,11 +107,7 @@ impl<K, V, const C: usize> SmallMap<K, V, C> {
     }
 }
 
-impl<K, V, const C: usize> SmallMap<K, V, C>
-where
-    K: Hash + Eq,
-    V: Eq,
-{
+impl<K: Hash + Eq, V, const C: usize> SmallMap<K, V, C> {
     /// Return a reference to the value stored for `key`, if it is present,
     /// else `None`.
     ///
@@ -407,20 +403,12 @@ where
     }
 }
 
-pub enum Entry<'a, K, V, const C: usize>
-where
-    K: Hash + Eq,
-    V: Eq,
-{
+pub enum Entry<'a, K, V, const C: usize> {
     Occupied(&'a mut SmallMap<K, V, C>, usize),
     Vacant(&'a mut SmallMap<K, V, C>, K),
 }
 
-impl<'a, K, V, const C: usize> Entry<'a, K, V, C>
-where
-    K: Hash + Eq,
-    V: Eq,
-{
+impl<'a, K: Hash + Eq, V, const C: usize> Entry<'a, K, V, C> {
     /// Modifies the entry if it is occupied. Otherwise this is a no-op.
     pub fn and_modify<F>(self, f: F) -> Self
     where
