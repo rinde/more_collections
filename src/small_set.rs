@@ -253,7 +253,7 @@ mod test {
             expected_inline_after: bool,
             expected_values: Vec<usize>,
         }
-        let test_cases = vec![
+        let test_cases = [
             TestCase {
                 name: "new key/value, stay inline",
                 initial_values: values[0..2].to_vec(),
