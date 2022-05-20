@@ -588,7 +588,7 @@ mod test {
             expected_values: Vec<(usize, &'static str)>,
             expected_return: Option<&'static str>,
         }
-        let test_cases = vec![
+        let test_cases = [
             TestCase {
                 name: "new key/value, stay inline",
                 initial_values: values[0..2].to_vec(),
