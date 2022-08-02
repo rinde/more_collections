@@ -261,6 +261,27 @@ impl<K: Hash + Eq, V, const C: usize> SmallMap<K, V, C> {
             MapData::Heap(map) => map.insert(key, value),
         }
     }
+
+    /// Remove the key-value pair equivalent to `key` and return
+    /// its value.
+    ///
+    /// **NOTE:** This is equivalent to `.swap_remove(key)`, if you need to
+    /// preserve the order of the keys in the map, use `.shift_remove(key)`
+    /// instead.
+    ///
+    /// Computes in **O(1)** time (average).
+    pub fn remove<Q: ?Sized>(&mut self, key: &Q) -> Option<V>
+    where
+        Q: Hash + Equivalent<K>,
+    {
+        match &mut self.data {
+            MapData::Inline(vec) => {
+                let index = vec.iter().position(|(k, _v)| key.equivalent(k));
+                index.map(|i| vec.remove(i).1)
+            }
+            MapData::Heap(map) => map.remove(key),
+        }
+    }
 }
 
 impl<K, V, const C: usize> Eq for SmallMap<K, V, C>
