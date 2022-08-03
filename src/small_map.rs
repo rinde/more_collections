@@ -279,7 +279,7 @@ impl<K: Hash + Eq, V, const C: usize> SmallMap<K, V, C> {
                 let index = vec.iter().position(|(k, _v)| key.equivalent(k));
                 index.map(|i| vec.remove(i).1)
             }
-            MapData::Heap(map) => map.remove(key),
+            MapData::Heap(map) => map.shift_remove(key),
         }
     }
 }
@@ -593,6 +593,88 @@ mod test {
             vec![(0, "zero"), (3, "three"), (900, "nine-hundred")],
             inline_map.into_iter().collect::<Vec<_>>()
         );
+    }
+
+    #[test]
+    fn remove_tests() {
+        let values = vec![
+            (10, "ten"),
+            (5, "five"),
+            (86, "eighty-six"),
+            (93, "ninety-three"),
+        ];
+        struct TestCase {
+            name: &'static str,
+            initial_values: Vec<(usize, &'static str)>,
+            remove_key: usize,
+            expected_inline_before: bool,
+            expected_inline_after: bool,
+            expected_values: Vec<(usize, &'static str)>,
+            expected_return: Option<&'static str>,
+        }
+        let test_cases = [
+            TestCase {
+                name: "remove key from the middle preserves order when inline",
+                initial_values: values[0..3].to_vec(),
+                remove_key: 5,
+                expected_inline_before: true,
+                expected_inline_after: true,
+                expected_values: vec![(10, "ten"), (86, "eighty-six")],
+                expected_return: Some("five"),
+            },
+            TestCase {
+                name: "remove key from the middle preserves order when on the heap",
+                initial_values: values[0..4].to_vec(),
+                remove_key: 5,
+                expected_inline_before: false,
+                expected_inline_after: false,
+                expected_values: vec![(10, "ten"), (86, "eighty-six"), (93, "ninety-three")],
+                expected_return: Some("five"),
+            },
+            TestCase {
+                name: "remove key from the end",
+                initial_values: values[0..4].to_vec(),
+                remove_key: 93,
+                expected_inline_before: false,
+                expected_inline_after: false,
+                expected_values: vec![(10, "ten"), (5, "five"), (86, "eighty-six")],
+                expected_return: Some("ninety-three"),
+            },
+        ];
+
+        for test_case in test_cases {
+            let mut small_map = SmallMap::<usize, &str, 3>::new();
+
+            for (k, v) in test_case.initial_values {
+                small_map.insert(k, v);
+            }
+            assert_eq!(
+                test_case.expected_inline_before,
+                small_map.is_inline(),
+                "inline state before removal from SmallMap does not match expected in test '{}'",
+                test_case.name
+            );
+
+            let actual_return = small_map.remove(&test_case.remove_key);
+
+            assert_eq!(
+                test_case.expected_inline_after,
+                small_map.is_inline(),
+                "inline state after removal from SmallMap does not match expected in test '{}'",
+                test_case.name
+            );
+            assert_eq!(
+                test_case.expected_return, actual_return,
+                "return of removal from SmallMap does not match expected return in test '{}'",
+                test_case.name
+            );
+            assert_eq!(
+                test_case.expected_values,
+                small_map.into_iter().collect::<Vec<_>>(),
+                "values in SmallMap do not match expected values in test '{}'",
+                test_case.name
+            );
+        }
     }
 
     #[test]
