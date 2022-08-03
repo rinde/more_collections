@@ -284,6 +284,18 @@ impl<K: Hash + Eq, V, const C: usize> SmallMap<K, V, C> {
     }
 }
 
+impl<K, V, const C: usize> Hash for SmallMap<K, V, C>
+where
+    K: Hash + Eq,
+    V: Hash + Eq,
+{
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.iter().for_each(|(k, v)| {
+            k.hash(state);
+            v.hash(state);
+        });
+    }
+}
 impl<K, V, const C: usize> Eq for SmallMap<K, V, C>
 where
     K: Hash + Eq,

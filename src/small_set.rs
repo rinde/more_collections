@@ -149,6 +149,14 @@ where
     }
 }
 
+impl<T, const C: usize> Hash for SmallSet<T, C>
+where
+    T: Hash + Eq,
+{
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.data.hash(state);
+    }
+}
 impl<T, const C: usize> Eq for SmallSet<T, C> where T: Hash + Eq {}
 impl<T, const C: usize> PartialEq for SmallSet<T, C>
 where
