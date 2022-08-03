@@ -121,7 +121,7 @@ where
         self.data.get_index(index).map(|(k, _v)| k)
     }
 
-    /// Return the item index, if it exists in the map, else `None`.
+    /// Return the item index, if it exists in the set, else `None`.
     ///
     /// Computational complexity:
     ///  - inline: O(n)
