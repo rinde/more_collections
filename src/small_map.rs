@@ -264,8 +264,14 @@ impl<K: Hash + Eq, V, const C: usize> SmallMap<K, V, C> {
 
     /// Remove the key-value pair equivalent to `key` and return its value.
     ///
-    /// This is equivalent to `.swap_remove(key)` on `HashMap`s and `Vec`s, this
-    /// does not preserve order.
+    /// If `key` is not present `None` is returned.
+    ///
+    /// If an existing key is removed that causes the size of the `SmallMap` to
+    /// be equal to or below the inline capacity, all remaining data after
+    /// removal of the specified key-value pair is moved to the heap.
+    ///
+    /// The behavior of this method is equivalent to `.swap_remove(key)` on
+    /// `HashMap`s and `Vec`s, order is not preserved.
     ///
     /// Computational complexity:
     ///  - inline: O(n)
@@ -279,7 +285,13 @@ impl<K: Hash + Eq, V, const C: usize> SmallMap<K, V, C> {
                 let index = vec.iter().position(|(k, _v)| key.equivalent(k));
                 index.map(|i| vec.swap_remove(i).1)
             }
-            MapData::Heap(map) => map.swap_remove(key),
+            MapData::Heap(map) => {
+                let value = map.swap_remove(key);
+                if value.is_some() && map.len() <= C {
+                    self.data = MapData::Inline(map.drain(0..map.len()).collect());
+                }
+                value
+            }
         }
     }
 }
@@ -603,6 +615,7 @@ mod test {
             (86, "eighty-six"),
             (93, "ninety-three"),
             (17, "seven-teen"),
+            (1, "one"),
         ];
         struct TestCase {
             name: &'static str,
@@ -625,10 +638,25 @@ mod test {
             },
             TestCase {
                 name: "remove key from the middle swaps last item into middle when on the heap",
-                initial_values: values[0..5].to_vec(),
+                initial_values: values[0..6].to_vec(),
                 remove_key: 5,
                 expected_inline_before: false,
                 expected_inline_after: false,
+                expected_values: vec![
+                    (10, "ten"),
+                    (1, "one"),
+                    (86, "eighty-six"),
+                    (93, "ninety-three"),
+                    (17, "seven-teen"),
+                ],
+                expected_return: Some("five"),
+            },
+            TestCase {
+                name: "remove key from the middle swaps last item into middle when on the heap and moves inline",
+                initial_values: values[0..5].to_vec(),
+                remove_key: 5,
+                expected_inline_before: false,
+                expected_inline_after: true,
                 expected_values: vec![
                     (10, "ten"),
                     (17, "seven-teen"),
@@ -638,11 +666,11 @@ mod test {
                 expected_return: Some("five"),
             },
             TestCase {
-                name: "remove key from the end",
+                name: "remove key from the end moves map inline",
                 initial_values: values[0..5].to_vec(),
                 remove_key: 93,
                 expected_inline_before: false,
-                expected_inline_after: false,
+                expected_inline_after: true,
                 expected_values: vec![
                     (10, "ten"),
                     (5, "five"),
@@ -650,6 +678,30 @@ mod test {
                     (17, "seven-teen"),
                 ],
                 expected_return: Some("ninety-three"),
+            },
+            TestCase {
+                name: "remove non-existing returns None when inline",
+                initial_values: values[0..3].to_vec(),
+                remove_key: 94,
+                expected_inline_before: true,
+                expected_inline_after: true,
+                expected_values: vec![(10, "ten"), (5, "five"), (86, "eighty-six")],
+                expected_return: None,
+            },
+            TestCase {
+                name: "remove non-existing returns None when on the heap",
+                initial_values: values[0..5].to_vec(),
+                remove_key: 94,
+                expected_inline_before: false,
+                expected_inline_after: false,
+                expected_values: vec![
+                    (10, "ten"),
+                    (5, "five"),
+                    (86, "eighty-six"),
+                    (93, "ninety-three"),
+                    (17, "seven-teen"),
+                ],
+                expected_return: None,
             },
         ];
 
