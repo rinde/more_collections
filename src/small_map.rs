@@ -262,14 +262,14 @@ impl<K: Hash + Eq, V, const C: usize> SmallMap<K, V, C> {
         }
     }
 
-    /// Remove the key-value pair equivalent to `key` and return
-    /// its value.
+    /// Remove the key-value pair equivalent to `key` and return its value.
     ///
-    /// **NOTE:** This is equivalent to `.swap_remove(key)`, if you need to
-    /// preserve the order of the keys in the map, use `.shift_remove(key)`
-    /// instead.
+    /// This is equivalent to `.swap_remove(key)` on `HashMap`s and `Vec`s, this
+    /// does not preserve order.
     ///
-    /// Computes in **O(1)** time (average).
+    /// Computational complexity:
+    ///  - inline: O(n)
+    ///  - heap: O(1)
     pub fn remove<Q: ?Sized>(&mut self, key: &Q) -> Option<V>
     where
         Q: Hash + Equivalent<K>,
@@ -277,9 +277,9 @@ impl<K: Hash + Eq, V, const C: usize> SmallMap<K, V, C> {
         match &mut self.data {
             MapData::Inline(vec) => {
                 let index = vec.iter().position(|(k, _v)| key.equivalent(k));
-                index.map(|i| vec.remove(i).1)
+                index.map(|i| vec.swap_remove(i).1)
             }
-            MapData::Heap(map) => map.shift_remove(key),
+            MapData::Heap(map) => map.swap_remove(key),
         }
     }
 }
@@ -602,6 +602,7 @@ mod test {
             (5, "five"),
             (86, "eighty-six"),
             (93, "ninety-three"),
+            (17, "seven-teen"),
         ];
         struct TestCase {
             name: &'static str,
@@ -614,36 +615,46 @@ mod test {
         }
         let test_cases = [
             TestCase {
-                name: "remove key from the middle preserves order when inline",
-                initial_values: values[0..3].to_vec(),
+                name: "remove key from the middle swaps last item into middle when inline",
+                initial_values: values[0..4].to_vec(),
                 remove_key: 5,
                 expected_inline_before: true,
                 expected_inline_after: true,
-                expected_values: vec![(10, "ten"), (86, "eighty-six")],
+                expected_values: vec![(10, "ten"), (93, "ninety-three"), (86, "eighty-six")],
                 expected_return: Some("five"),
             },
             TestCase {
-                name: "remove key from the middle preserves order when on the heap",
-                initial_values: values[0..4].to_vec(),
+                name: "remove key from the middle swaps last item into middle when on the heap",
+                initial_values: values[0..5].to_vec(),
                 remove_key: 5,
                 expected_inline_before: false,
                 expected_inline_after: false,
-                expected_values: vec![(10, "ten"), (86, "eighty-six"), (93, "ninety-three")],
+                expected_values: vec![
+                    (10, "ten"),
+                    (17, "seven-teen"),
+                    (86, "eighty-six"),
+                    (93, "ninety-three"),
+                ],
                 expected_return: Some("five"),
             },
             TestCase {
                 name: "remove key from the end",
-                initial_values: values[0..4].to_vec(),
+                initial_values: values[0..5].to_vec(),
                 remove_key: 93,
                 expected_inline_before: false,
                 expected_inline_after: false,
-                expected_values: vec![(10, "ten"), (5, "five"), (86, "eighty-six")],
+                expected_values: vec![
+                    (10, "ten"),
+                    (5, "five"),
+                    (86, "eighty-six"),
+                    (17, "seven-teen"),
+                ],
                 expected_return: Some("ninety-three"),
             },
         ];
 
         for test_case in test_cases {
-            let mut small_map = SmallMap::<usize, &str, 3>::new();
+            let mut small_map = SmallMap::<usize, &str, 4>::new();
 
             for (k, v) in test_case.initial_values {
                 small_map.insert(k, v);
