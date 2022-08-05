@@ -97,7 +97,9 @@ where
 {
     /// Inserts the specified value into this set.
     ///
-    /// If the value already exists, this is a no-op.
+    /// If an equivalent item already exists in the set, it returns `false`
+    /// leaving the original value in the set and without altering its insertion
+    /// order. Otherwise, it inserts the new item and returns `true`.
     ///
     /// If a new value is added that causes the size of the `SmallSet` to exceed
     /// the inline capacity, all existing data and the new value is moved to the
@@ -106,8 +108,8 @@ where
     /// Computational complexity:
     ///  - inline: O(n)
     ///  - heap: O(1)
-    pub fn insert(&mut self, value: T) {
-        self.data.insert(value, ());
+    pub fn insert(&mut self, value: T) -> bool {
+        self.data.insert(value, ()).is_some()
     }
 
     pub fn from_keys(map: SmallMap<T, (), C>) -> SmallSet<T, C> {

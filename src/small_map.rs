@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::fmt;
 use std::fmt::Debug;
 use std::fmt::Formatter;
@@ -95,6 +96,14 @@ impl<K, V, const C: usize> SmallMap<K, V, C> {
         match &self.data {
             MapData::Inline(vec) => Iter::Inline(vec.iter()),
             MapData::Heap(map) => Iter::Heap(map.iter()),
+        }
+    }
+
+    /// Returns an iterator over the key-values in insertion order.
+    pub fn iter_mut(&mut self) -> IterMut<'_, K, V> {
+        match &mut self.data {
+            MapData::Inline(vec) => IterMut::Inline(vec.iter_mut()),
+            MapData::Heap(map) => IterMut::Heap(map.iter_mut()),
         }
     }
 
@@ -294,6 +303,53 @@ impl<K: Hash + Eq, V, const C: usize> SmallMap<K, V, C> {
             }
         }
     }
+
+    // TODO add test
+    pub fn swap_remove_full<Q: ?Sized>(&mut self, key: &Q) -> Option<(usize, K, V)>
+    where
+        Q: Hash + Equivalent<K>,
+    {
+        match &mut self.data {
+            MapData::Inline(vec) => {
+                let index = vec.iter().position(|(k, _v)| key.equivalent(k));
+                index
+                    .map(|i| (i, vec.swap_remove(i)))
+                    .map(|(i, (k, v))| (i, k, v))
+            }
+            MapData::Heap(map) => {
+                let value = map.swap_remove_full(key);
+                if value.is_some() && map.len() <= C {
+                    self.data = MapData::Inline(map.drain(0..map.len()).collect());
+                }
+                value
+            }
+        }
+    }
+
+    // TODO add test
+    pub fn binary_search_by<'a, F>(&'a self, mut f: F) -> Result<usize, usize>
+    where
+        F: FnMut((&'a K, &'a V)) -> Ordering,
+    {
+        let mut size = self.len();
+        let mut left = 0;
+        let mut right = size;
+        while left < right {
+            let mid = left + size / 2;
+
+            let cmp = f(self.get_index(mid).unwrap());
+
+            if cmp == Ordering::Less {
+                left = mid + 1;
+            } else if cmp == Ordering::Greater {
+                right = mid;
+            } else {
+                return Ok(mid);
+            }
+            size = right - left;
+        }
+        Err(left)
+    }
 }
 
 impl<K, V, const C: usize> Hash for SmallMap<K, V, C>
@@ -377,6 +433,31 @@ impl<'a, K, V> ExactSizeIterator for Iter<'a, K, V> {
         match self {
             Iter::Inline(iter) => iter.len(),
             Iter::Heap(iter) => iter.len(),
+        }
+    }
+}
+
+pub enum IterMut<'a, K, V> {
+    Inline(std::slice::IterMut<'a, (K, V)>),
+    Heap(indexmap::map::IterMut<'a, K, V>),
+}
+
+impl<'a, K, V> Iterator for IterMut<'a, K, V> {
+    type Item = (&'a K, &'a mut V);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            IterMut::Inline(iter) => iter.next().map(|(k, v)| (&*k, v)),
+            IterMut::Heap(iter) => iter.next(),
+        }
+    }
+}
+
+impl<K, V> ExactSizeIterator for IterMut<'_, K, V> {
+    fn len(&self) -> usize {
+        match self {
+            IterMut::Inline(iter) => iter.len(),
+            IterMut::Heap(iter) => iter.len(),
         }
     }
 }
