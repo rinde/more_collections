@@ -289,22 +289,24 @@ impl<K: Hash + Eq, V, const C: usize> SmallMap<K, V, C> {
     where
         Q: Hash + Equivalent<K>,
     {
-        match &mut self.data {
-            MapData::Inline(vec) => {
-                let index = vec.iter().position(|(k, _v)| key.equivalent(k));
-                index.map(|i| vec.swap_remove(i).1)
-            }
-            MapData::Heap(map) => {
-                let value = map.swap_remove(key);
-                if value.is_some() && map.len() <= C {
-                    self.data = MapData::Inline(map.drain(0..map.len()).collect());
-                }
-                value
-            }
-        }
+        self.swap_remove_full(key).map(|(_, _, v)| v)
     }
 
-    // TODO add test
+    /// Remove the key-value pair equivalent to `key` and return its index, key,
+    /// and value.
+    ///
+    /// If `key` is not present `None` is returned.
+    ///
+    /// If an existing key is removed that causes the size of the `SmallMap` to
+    /// be equal to or below the inline capacity, all remaining data after
+    /// removal of the specified key-value pair is moved to the heap.
+    ///
+    /// The behavior of this method is equivalent to `.swap_remove(key)` on
+    /// `HashMap`s and `Vec`s, order is not preserved.
+    ///
+    /// Computational complexity:
+    ///  - inline: O(n)
+    ///  - heap: O(1)
     pub fn swap_remove_full<Q: ?Sized>(&mut self, key: &Q) -> Option<(usize, K, V)>
     where
         Q: Hash + Equivalent<K>,
@@ -705,7 +707,7 @@ mod test {
             expected_inline_before: bool,
             expected_inline_after: bool,
             expected_values: Vec<(usize, &'static str)>,
-            expected_return: Option<&'static str>,
+            expected_return: Option<(usize, usize, &'static str)>,
         }
         let test_cases = [
             TestCase {
@@ -715,7 +717,7 @@ mod test {
                 expected_inline_before: true,
                 expected_inline_after: true,
                 expected_values: vec![(10, "ten"), (93, "ninety-three"), (86, "eighty-six")],
-                expected_return: Some("five"),
+                expected_return: Some((1,5,"five")),
             },
             TestCase {
                 name: "remove key from the middle swaps last item into middle when on the heap",
@@ -730,7 +732,7 @@ mod test {
                     (93, "ninety-three"),
                     (17, "seven-teen"),
                 ],
-                expected_return: Some("five"),
+                expected_return: Some((1,5,"five")),
             },
             TestCase {
                 name: "remove key from the middle swaps last item into middle when on the heap and moves inline",
@@ -744,7 +746,7 @@ mod test {
                     (86, "eighty-six"),
                     (93, "ninety-three"),
                 ],
-                expected_return: Some("five"),
+                expected_return: Some((1,5,"five")),
             },
             TestCase {
                 name: "remove key from the end moves map inline",
@@ -758,7 +760,7 @@ mod test {
                     (86, "eighty-six"),
                     (17, "seven-teen"),
                 ],
-                expected_return: Some("ninety-three"),
+                expected_return: Some((3, 93, "ninety-three")),
             },
             TestCase {
                 name: "remove non-existing returns None when inline",
@@ -787,35 +789,69 @@ mod test {
         ];
 
         for test_case in test_cases {
+            // remove
             let mut small_map = SmallMap::<usize, &str, 4>::new();
 
+            for (k, v) in test_case.initial_values.clone() {
+                small_map.insert(k, v);
+            }
+            assert_eq!(
+                test_case.expected_inline_before,
+                small_map.is_inline(),
+                "inline state before remove() from SmallMap does not match expected in test '{}'",
+                test_case.name
+            );
+
+            let actual_return_remove = small_map.remove(&test_case.remove_key);
+            assert_eq!(
+                test_case.expected_inline_after,
+                small_map.is_inline(),
+                "inline state after remove() from SmallMap does not match expected in test '{}'",
+                test_case.name
+            );
+            assert_eq!(
+                test_case.expected_return.map(|(_i, _k, v)| v),
+                actual_return_remove,
+                "return of remove() from SmallMap does not match expected return in test '{}'",
+                test_case.name
+            );
+            assert_eq!(
+                test_case.expected_values,
+                small_map.into_iter().collect::<Vec<_>>(),
+                "values in SmallMap do not match expected values in test after remove() '{}'",
+                test_case.name
+            );
+
+            // swap remove full
+            let mut small_map = SmallMap::<usize, &str, 4>::new();
             for (k, v) in test_case.initial_values {
                 small_map.insert(k, v);
             }
             assert_eq!(
                 test_case.expected_inline_before,
                 small_map.is_inline(),
-                "inline state before removal from SmallMap does not match expected in test '{}'",
+                "inline state before swap_remove_full() from SmallMap does not match expected in test '{}'",
                 test_case.name
             );
 
-            let actual_return = small_map.remove(&test_case.remove_key);
+            let actual_return_swap_remove_full = small_map.swap_remove_full(&test_case.remove_key);
 
             assert_eq!(
                 test_case.expected_inline_after,
                 small_map.is_inline(),
-                "inline state after removal from SmallMap does not match expected in test '{}'",
+                "inline state after swap_remove_full() from SmallMap does not match expected in test '{}'",
                 test_case.name
             );
             assert_eq!(
-                test_case.expected_return, actual_return,
-                "return of removal from SmallMap does not match expected return in test '{}'",
+                test_case.expected_return,
+                actual_return_swap_remove_full,
+                "return of swap_remove_full() from SmallMap does not match expected return in test '{}'",
                 test_case.name
             );
             assert_eq!(
                 test_case.expected_values,
                 small_map.into_iter().collect::<Vec<_>>(),
-                "values in SmallMap do not match expected values in test '{}'",
+                "values in SmallMap do not match expected values in test after swap_remove_full() '{}'",
                 test_case.name
             );
         }
