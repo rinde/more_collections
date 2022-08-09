@@ -1346,12 +1346,10 @@ mod test {
     #[test]
     fn binary_search_test() {
         fn find_key(k: i32, target: i32) -> Ordering {
-            if k == target {
-                Ordering::Equal
-            } else if k < target {
-                Ordering::Less
-            } else {
-                Ordering::Greater
+            match k {
+                x if x == target => Ordering::Equal,
+                x if x < target => Ordering::Less,
+                _ => Ordering::Greater,
             }
         }
         struct TestCase {
