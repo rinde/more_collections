@@ -328,6 +328,19 @@ impl<K: Hash + Eq, V, const C: usize> SmallMap<K, V, C> {
         }
     }
 
+    /// Binary searches this map with a comparator function. This behaves
+    /// similarly to [`contains`] if this slice is sorted.
+    ///
+    /// The comparator function should implement an order consistent with the
+    /// sort order of the underlying slice, returning an order code that
+    /// indicates whether its argument is `Less`, `Equal` or `Greater` the
+    /// desired target.
+    ///
+    /// If the value is found then [`Result::Ok`] is returned, containing the
+    /// index of the matching element. If there are multiple matches, then any
+    /// one of the matches could be returned. If the value is not found then
+    /// [`Result::Err`] is returned, containing the index where a matching
+    /// element could be inserted while maintaining sorted order.
     pub fn binary_search_by<'a, F>(&'a self, mut f: F) -> Result<usize, usize>
     where
         F: FnMut((&'a K, &'a V)) -> Ordering,
