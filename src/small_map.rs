@@ -328,7 +328,6 @@ impl<K: Hash + Eq, V, const C: usize> SmallMap<K, V, C> {
         }
     }
 
-    // TODO add test
     pub fn binary_search_by<'a, F>(&'a self, mut f: F) -> Result<usize, usize>
     where
         F: FnMut((&'a K, &'a V)) -> Ordering,
@@ -1342,5 +1341,93 @@ mod test {
     )]
     fn new_fails_on_zero_capacity() {
         SmallMap::<usize, usize, 0>::new();
+    }
+
+    #[test]
+    fn binary_search_test() {
+        fn find_key(k: i32, target: i32) -> Ordering {
+            if k == target {
+                Ordering::Equal
+            } else if k < target {
+                Ordering::Less
+            } else {
+                Ordering::Greater
+            }
+        }
+        struct TestCase {
+            name: &'static str,
+            map: SmallMap<i32, &'static str, 5>,
+            key_to_find: i32,
+            expected: Result<usize, usize>,
+        }
+
+        let test_cases = [
+            TestCase {
+                name: "key exists - middle",
+                map: smallmap! { 0 => "", 1 => "", 2 => "", 7 => "", 9 => "", 255 => ""},
+                key_to_find: 7,
+                expected: Ok(3),
+            },
+            TestCase {
+                name: "key exists - first",
+                map: smallmap! { 0 => "", 1 => "", 2 => "", 7 => "", 9 => "", 255 => ""},
+                key_to_find: 0,
+                expected: Ok(0),
+            },
+            TestCase {
+                name: "key exists - last",
+                map: smallmap! { 0 => "", 1 => "", 2 => "", 7 => "", 9 => "", 255 => ""},
+                key_to_find: 255,
+                expected: Ok(5),
+            },
+            TestCase {
+                name: "key doesn't exist - middle",
+                map: smallmap! { 0 => "", 1 => "", 2 => "", 7 => "", 9 => "", 255 => ""},
+                key_to_find: 8,
+                expected: Err(4),
+            },
+            TestCase {
+                name: "key doesn't exist - first",
+                map: smallmap! { 0 => "", 1 => "", 2 => "", 7 => "", 9 => "", 255 => ""},
+                key_to_find: -1,
+                expected: Err(0),
+            },
+            TestCase {
+                name: "key doesn't exist - last",
+                map: smallmap! { 0 => "", 1 => "", 2 => "", 7 => "", 9 => "", 255 => ""},
+                key_to_find: 65000,
+                expected: Err(6),
+            },
+            TestCase {
+                name: "key doesn't exist - empty map",
+                map: smallmap! {},
+                key_to_find: 65000,
+                expected: Err(0),
+            },
+        ];
+
+        for test_case in test_cases {
+            let actual = test_case
+                .map
+                .binary_search_by(|(&k, _)| find_key(k, test_case.key_to_find));
+            assert_eq!(
+                test_case.expected, actual,
+                "inline test fails '{}'",
+                test_case.name
+            );
+
+            let heap_map: SmallMap<_, _, 0> = SmallMap::from_iter(test_case.map);
+            assert!(
+                !heap_map.is_inline() || heap_map.is_empty(),
+                "map is not on the heap for test '{}'",
+                test_case.name
+            );
+            let actual = heap_map.binary_search_by(|(&k, _)| find_key(k, test_case.key_to_find));
+            assert_eq!(
+                test_case.expected, actual,
+                "heap test fails '{}'",
+                test_case.name
+            );
+        }
     }
 }
