@@ -107,6 +107,13 @@ impl<K, V, const C: usize> SmallMap<K, V, C> {
         }
     }
 
+    pub fn keys(&self) -> Keys<'_, K, V> {
+        match &self.data {
+            MapData::Inline(vec) => Keys::Inline(vec.iter()),
+            MapData::Heap(map) => Keys::Heap(map.keys()),
+        }
+    }
+
     // Helper method for macro, don't use directly.
     #[doc(hidden)]
     pub const fn from_const_unchecked(inline: SmallVec<[(K, V); C]>) -> Self {
@@ -425,6 +432,30 @@ where
     }
 }
 
+impl<K, V, Q: ?Sized, const C: usize> Index<&Q> for SmallMap<K, V, C>
+where
+    K: Eq + Hash,
+    V: Eq,
+    Q: Hash + Equivalent<K>,
+{
+    type Output = V;
+
+    fn index(&self, key: &Q) -> &Self::Output {
+        self.get(key).expect("SmallMap: index out of bounds")
+    }
+}
+
+impl<K, V, Q: ?Sized, const C: usize> IndexMut<&Q> for SmallMap<K, V, C>
+where
+    K: Eq + Hash,
+    V: Eq,
+    Q: Hash + Equivalent<K>,
+{
+    fn index_mut(&mut self, key: &Q) -> &mut Self::Output {
+        self.get_mut(key).expect("SmallMap: index out of bounds")
+    }
+}
+
 pub enum Iter<'a, K, V> {
     Inline(std::slice::Iter<'a, (K, V)>),
     Heap(indexmap::map::Iter<'a, K, V>),
@@ -484,6 +515,31 @@ impl<K, V, const C: usize> IntoIterator for SmallMap<K, V, C> {
         match self.data {
             MapData::Inline(vec) => IntoIter::Inline(vec.into_iter()),
             MapData::Heap(map) => IntoIter::Heap(map.into_iter()),
+        }
+    }
+}
+
+pub enum Keys<'a, K, V> {
+    Inline(std::slice::Iter<'a, (K, V)>),
+    Heap(indexmap::map::Keys<'a, K, V>),
+}
+
+impl<'a, K, V> Iterator for Keys<'a, K, V> {
+    type Item = &'a K;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            Keys::Inline(iter) => iter.next().map(|(k, _)| k),
+            Keys::Heap(iter) => iter.next(),
+        }
+    }
+}
+
+impl<K, V> ExactSizeIterator for Keys<'_, K, V> {
+    fn len(&self) -> usize {
+        match self {
+            Keys::Inline(iter) => iter.len(),
+            Keys::Heap(iter) => iter.len(),
         }
     }
 }
