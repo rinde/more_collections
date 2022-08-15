@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::fmt;
 use std::fmt::Debug;
 use std::fmt::Formatter;
@@ -95,6 +96,21 @@ impl<K, V, const C: usize> SmallMap<K, V, C> {
         match &self.data {
             MapData::Inline(vec) => Iter::Inline(vec.iter()),
             MapData::Heap(map) => Iter::Heap(map.iter()),
+        }
+    }
+
+    /// Returns an iterator over the key-values in insertion order.
+    pub fn iter_mut(&mut self) -> IterMut<'_, K, V> {
+        match &mut self.data {
+            MapData::Inline(vec) => IterMut::Inline(vec.iter_mut()),
+            MapData::Heap(map) => IterMut::Heap(map.iter_mut()),
+        }
+    }
+
+    pub fn keys(&self) -> Keys<'_, K, V> {
+        match &self.data {
+            MapData::Inline(vec) => Keys::Inline(vec.iter()),
+            MapData::Heap(map) => Keys::Heap(map.keys()),
         }
     }
 
@@ -261,8 +277,113 @@ impl<K: Hash + Eq, V, const C: usize> SmallMap<K, V, C> {
             MapData::Heap(map) => map.insert(key, value),
         }
     }
+
+    /// Remove the key-value pair equivalent to `key` and return its value.
+    ///
+    /// If `key` is not present `None` is returned.
+    ///
+    /// If an existing key is removed that causes the size of the `SmallMap` to
+    /// be equal to or below the inline capacity, all remaining data after
+    /// removal of the specified key-value pair is moved to the heap.
+    ///
+    /// The behavior of this method is equivalent to `.swap_remove(key)` on
+    /// `HashMap`s and `Vec`s, order is not preserved.
+    ///
+    /// Computational complexity:
+    ///  - inline: O(n)
+    ///  - heap: O(1)
+    pub fn remove<Q: ?Sized>(&mut self, key: &Q) -> Option<V>
+    where
+        Q: Hash + Equivalent<K>,
+    {
+        self.swap_remove_full(key).map(|(_, _, v)| v)
+    }
+
+    /// Remove the key-value pair equivalent to `key` and return its index, key,
+    /// and value.
+    ///
+    /// If `key` is not present `None` is returned.
+    ///
+    /// If an existing key is removed that causes the size of the `SmallMap` to
+    /// be equal to or below the inline capacity, all remaining data after
+    /// removal of the specified key-value pair is moved to the heap.
+    ///
+    /// The behavior of this method is equivalent to `.swap_remove(key)` on
+    /// `HashMap`s and `Vec`s, order is not preserved.
+    ///
+    /// Computational complexity:
+    ///  - inline: O(n)
+    ///  - heap: O(1)
+    pub fn swap_remove_full<Q: ?Sized>(&mut self, key: &Q) -> Option<(usize, K, V)>
+    where
+        Q: Hash + Equivalent<K>,
+    {
+        match &mut self.data {
+            MapData::Inline(vec) => {
+                let index = vec.iter().position(|(k, _v)| key.equivalent(k));
+                index
+                    .map(|i| (i, vec.swap_remove(i)))
+                    .map(|(i, (k, v))| (i, k, v))
+            }
+            MapData::Heap(map) => {
+                let value = map.swap_remove_full(key);
+                if value.is_some() && map.len() <= C {
+                    self.data = MapData::Inline(map.drain(0..map.len()).collect());
+                }
+                value
+            }
+        }
+    }
+
+    /// Binary searches this map with a comparator function.
+    ///
+    /// The comparator function should implement an order consistent with the
+    /// sort order of the underlying slice, returning an order code that
+    /// indicates whether its argument is `Less`, `Equal` or `Greater` the
+    /// desired target.
+    ///
+    /// If the value is found then [`Result::Ok`] is returned, containing the
+    /// index of the matching element. If there are multiple matches, then any
+    /// one of the matches could be returned. If the value is not found then
+    /// [`Result::Err`] is returned, containing the index where a matching
+    /// element could be inserted while maintaining sorted order.
+    pub fn binary_search_by<'a, F>(&'a self, mut f: F) -> Result<usize, usize>
+    where
+        F: FnMut((&'a K, &'a V)) -> Ordering,
+    {
+        let mut size = self.len();
+        let mut left = 0;
+        let mut right = size;
+        while left < right {
+            let mid = left + size / 2;
+
+            let cmp = f(self.get_index(mid).unwrap());
+
+            if cmp == Ordering::Less {
+                left = mid + 1;
+            } else if cmp == Ordering::Greater {
+                right = mid;
+            } else {
+                return Ok(mid);
+            }
+            size = right - left;
+        }
+        Err(left)
+    }
 }
 
+impl<K, V, const C: usize> Hash for SmallMap<K, V, C>
+where
+    K: Hash + Eq,
+    V: Hash + Eq,
+{
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.iter().for_each(|(k, v)| {
+            k.hash(state);
+            v.hash(state);
+        });
+    }
+}
 impl<K, V, const C: usize> Eq for SmallMap<K, V, C>
 where
     K: Hash + Eq,
@@ -311,6 +432,30 @@ where
     }
 }
 
+impl<K, V, Q: ?Sized, const C: usize> Index<&Q> for SmallMap<K, V, C>
+where
+    K: Eq + Hash,
+    V: Eq,
+    Q: Hash + Equivalent<K>,
+{
+    type Output = V;
+
+    fn index(&self, key: &Q) -> &Self::Output {
+        self.get(key).expect("SmallMap: index out of bounds")
+    }
+}
+
+impl<K, V, Q: ?Sized, const C: usize> IndexMut<&Q> for SmallMap<K, V, C>
+where
+    K: Eq + Hash,
+    V: Eq,
+    Q: Hash + Equivalent<K>,
+{
+    fn index_mut(&mut self, key: &Q) -> &mut Self::Output {
+        self.get_mut(key).expect("SmallMap: index out of bounds")
+    }
+}
+
 pub enum Iter<'a, K, V> {
     Inline(std::slice::Iter<'a, (K, V)>),
     Heap(indexmap::map::Iter<'a, K, V>),
@@ -336,6 +481,31 @@ impl<'a, K, V> ExactSizeIterator for Iter<'a, K, V> {
     }
 }
 
+pub enum IterMut<'a, K, V> {
+    Inline(std::slice::IterMut<'a, (K, V)>),
+    Heap(indexmap::map::IterMut<'a, K, V>),
+}
+
+impl<'a, K, V> Iterator for IterMut<'a, K, V> {
+    type Item = (&'a K, &'a mut V);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            IterMut::Inline(iter) => iter.next().map(|(k, v)| (&*k, v)),
+            IterMut::Heap(iter) => iter.next(),
+        }
+    }
+}
+
+impl<K, V> ExactSizeIterator for IterMut<'_, K, V> {
+    fn len(&self) -> usize {
+        match self {
+            IterMut::Inline(iter) => iter.len(),
+            IterMut::Heap(iter) => iter.len(),
+        }
+    }
+}
+
 impl<K, V, const C: usize> IntoIterator for SmallMap<K, V, C> {
     type Item = (K, V);
 
@@ -345,6 +515,31 @@ impl<K, V, const C: usize> IntoIterator for SmallMap<K, V, C> {
         match self.data {
             MapData::Inline(vec) => IntoIter::Inline(vec.into_iter()),
             MapData::Heap(map) => IntoIter::Heap(map.into_iter()),
+        }
+    }
+}
+
+pub enum Keys<'a, K, V> {
+    Inline(std::slice::Iter<'a, (K, V)>),
+    Heap(indexmap::map::Keys<'a, K, V>),
+}
+
+impl<'a, K, V> Iterator for Keys<'a, K, V> {
+    type Item = &'a K;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            Keys::Inline(iter) => iter.next().map(|(k, _)| k),
+            Keys::Heap(iter) => iter.next(),
+        }
+    }
+}
+
+impl<K, V> ExactSizeIterator for Keys<'_, K, V> {
+    fn len(&self) -> usize {
+        match self {
+            Keys::Inline(iter) => iter.len(),
+            Keys::Heap(iter) => iter.len(),
         }
     }
 }
@@ -560,6 +755,173 @@ mod test {
             vec![(0, "zero"), (3, "three"), (900, "nine-hundred")],
             inline_map.into_iter().collect::<Vec<_>>()
         );
+    }
+
+    #[test]
+    fn remove_tests() {
+        let values = vec![
+            (10, "ten"),
+            (5, "five"),
+            (86, "eighty-six"),
+            (93, "ninety-three"),
+            (17, "seven-teen"),
+            (1, "one"),
+        ];
+        struct TestCase {
+            name: &'static str,
+            initial_values: Vec<(usize, &'static str)>,
+            remove_key: usize,
+            expected_inline_before: bool,
+            expected_inline_after: bool,
+            expected_values: Vec<(usize, &'static str)>,
+            expected_return: Option<(usize, usize, &'static str)>,
+        }
+        let test_cases = [
+            TestCase {
+                name: "remove key from the middle swaps last item into middle when inline",
+                initial_values: values[0..4].to_vec(),
+                remove_key: 5,
+                expected_inline_before: true,
+                expected_inline_after: true,
+                expected_values: vec![(10, "ten"), (93, "ninety-three"), (86, "eighty-six")],
+                expected_return: Some((1,5,"five")),
+            },
+            TestCase {
+                name: "remove key from the middle swaps last item into middle when on the heap",
+                initial_values: values[0..6].to_vec(),
+                remove_key: 5,
+                expected_inline_before: false,
+                expected_inline_after: false,
+                expected_values: vec![
+                    (10, "ten"),
+                    (1, "one"),
+                    (86, "eighty-six"),
+                    (93, "ninety-three"),
+                    (17, "seven-teen"),
+                ],
+                expected_return: Some((1,5,"five")),
+            },
+            TestCase {
+                name: "remove key from the middle swaps last item into middle when on the heap and moves inline",
+                initial_values: values[0..5].to_vec(),
+                remove_key: 5,
+                expected_inline_before: false,
+                expected_inline_after: true,
+                expected_values: vec![
+                    (10, "ten"),
+                    (17, "seven-teen"),
+                    (86, "eighty-six"),
+                    (93, "ninety-three"),
+                ],
+                expected_return: Some((1,5,"five")),
+            },
+            TestCase {
+                name: "remove key from the end moves map inline",
+                initial_values: values[0..5].to_vec(),
+                remove_key: 93,
+                expected_inline_before: false,
+                expected_inline_after: true,
+                expected_values: vec![
+                    (10, "ten"),
+                    (5, "five"),
+                    (86, "eighty-six"),
+                    (17, "seven-teen"),
+                ],
+                expected_return: Some((3, 93, "ninety-three")),
+            },
+            TestCase {
+                name: "remove non-existing returns None when inline",
+                initial_values: values[0..3].to_vec(),
+                remove_key: 94,
+                expected_inline_before: true,
+                expected_inline_after: true,
+                expected_values: vec![(10, "ten"), (5, "five"), (86, "eighty-six")],
+                expected_return: None,
+            },
+            TestCase {
+                name: "remove non-existing returns None when on the heap",
+                initial_values: values[0..5].to_vec(),
+                remove_key: 94,
+                expected_inline_before: false,
+                expected_inline_after: false,
+                expected_values: vec![
+                    (10, "ten"),
+                    (5, "five"),
+                    (86, "eighty-six"),
+                    (93, "ninety-three"),
+                    (17, "seven-teen"),
+                ],
+                expected_return: None,
+            },
+        ];
+
+        for test_case in test_cases {
+            // remove
+            let mut small_map = SmallMap::<usize, &str, 4>::new();
+
+            for (k, v) in test_case.initial_values.clone() {
+                small_map.insert(k, v);
+            }
+            assert_eq!(
+                test_case.expected_inline_before,
+                small_map.is_inline(),
+                "inline state before remove() from SmallMap does not match expected in test '{}'",
+                test_case.name
+            );
+
+            let actual_return_remove = small_map.remove(&test_case.remove_key);
+            assert_eq!(
+                test_case.expected_inline_after,
+                small_map.is_inline(),
+                "inline state after remove() from SmallMap does not match expected in test '{}'",
+                test_case.name
+            );
+            assert_eq!(
+                test_case.expected_return.map(|(_i, _k, v)| v),
+                actual_return_remove,
+                "return of remove() from SmallMap does not match expected return in test '{}'",
+                test_case.name
+            );
+            assert_eq!(
+                test_case.expected_values,
+                small_map.into_iter().collect::<Vec<_>>(),
+                "values in SmallMap do not match expected values in test after remove() '{}'",
+                test_case.name
+            );
+
+            // swap remove full
+            let mut small_map = SmallMap::<usize, &str, 4>::new();
+            for (k, v) in test_case.initial_values {
+                small_map.insert(k, v);
+            }
+            assert_eq!(
+                test_case.expected_inline_before,
+                small_map.is_inline(),
+                "inline state before swap_remove_full() from SmallMap does not match expected in test '{}'",
+                test_case.name
+            );
+
+            let actual_return_swap_remove_full = small_map.swap_remove_full(&test_case.remove_key);
+
+            assert_eq!(
+                test_case.expected_inline_after,
+                small_map.is_inline(),
+                "inline state after swap_remove_full() from SmallMap does not match expected in test '{}'",
+                test_case.name
+            );
+            assert_eq!(
+                test_case.expected_return,
+                actual_return_swap_remove_full,
+                "return of swap_remove_full() from SmallMap does not match expected return in test '{}'",
+                test_case.name
+            );
+            assert_eq!(
+                test_case.expected_values,
+                small_map.into_iter().collect::<Vec<_>>(),
+                "values in SmallMap do not match expected values in test after swap_remove_full() '{}'",
+                test_case.name
+            );
+        }
     }
 
     #[test]
@@ -1047,5 +1409,91 @@ mod test {
     )]
     fn new_fails_on_zero_capacity() {
         SmallMap::<usize, usize, 0>::new();
+    }
+
+    #[test]
+    fn binary_search_test() {
+        fn find_key(k: i32, target: i32) -> Ordering {
+            match k {
+                x if x == target => Ordering::Equal,
+                x if x < target => Ordering::Less,
+                _ => Ordering::Greater,
+            }
+        }
+        struct TestCase {
+            name: &'static str,
+            map: SmallMap<i32, &'static str, 5>,
+            key_to_find: i32,
+            expected: Result<usize, usize>,
+        }
+
+        let test_cases = [
+            TestCase {
+                name: "key exists - middle",
+                map: smallmap! { 0 => "", 1 => "", 2 => "", 7 => "", 9 => "", 255 => ""},
+                key_to_find: 7,
+                expected: Ok(3),
+            },
+            TestCase {
+                name: "key exists - first",
+                map: smallmap! { 0 => "", 1 => "", 2 => "", 7 => "", 9 => "", 255 => ""},
+                key_to_find: 0,
+                expected: Ok(0),
+            },
+            TestCase {
+                name: "key exists - last",
+                map: smallmap! { 0 => "", 1 => "", 2 => "", 7 => "", 9 => "", 255 => ""},
+                key_to_find: 255,
+                expected: Ok(5),
+            },
+            TestCase {
+                name: "key doesn't exist - middle",
+                map: smallmap! { 0 => "", 1 => "", 2 => "", 7 => "", 9 => "", 255 => ""},
+                key_to_find: 8,
+                expected: Err(4),
+            },
+            TestCase {
+                name: "key doesn't exist - first",
+                map: smallmap! { 0 => "", 1 => "", 2 => "", 7 => "", 9 => "", 255 => ""},
+                key_to_find: -1,
+                expected: Err(0),
+            },
+            TestCase {
+                name: "key doesn't exist - last",
+                map: smallmap! { 0 => "", 1 => "", 2 => "", 7 => "", 9 => "", 255 => ""},
+                key_to_find: 65000,
+                expected: Err(6),
+            },
+            TestCase {
+                name: "key doesn't exist - empty map",
+                map: smallmap! {},
+                key_to_find: 65000,
+                expected: Err(0),
+            },
+        ];
+
+        for test_case in test_cases {
+            let actual = test_case
+                .map
+                .binary_search_by(|(&k, _)| find_key(k, test_case.key_to_find));
+            assert_eq!(
+                test_case.expected, actual,
+                "inline test fails '{}'",
+                test_case.name
+            );
+
+            let heap_map: SmallMap<_, _, 0> = SmallMap::from_iter(test_case.map);
+            assert!(
+                !heap_map.is_inline() || heap_map.is_empty(),
+                "map is not on the heap for test '{}'",
+                test_case.name
+            );
+            let actual = heap_map.binary_search_by(|(&k, _)| find_key(k, test_case.key_to_find));
+            assert_eq!(
+                test_case.expected, actual,
+                "heap test fails '{}'",
+                test_case.name
+            );
+        }
     }
 }

@@ -3,6 +3,7 @@ use std::fmt::Debug;
 use std::fmt::Formatter;
 
 use ::core::hash::Hash;
+use indexmap::Equivalent;
 use smallvec::SmallVec;
 
 use crate::small_map;
@@ -96,7 +97,9 @@ where
 {
     /// Inserts the specified value into this set.
     ///
-    /// If the value already exists, this is a no-op.
+    /// If an equivalent item already exists in the set, it returns `false`
+    /// leaving the original value in the set and without altering its insertion
+    /// order. Otherwise, it inserts the new item and returns `true`.
     ///
     /// If a new value is added that causes the size of the `SmallSet` to exceed
     /// the inline capacity, all existing data and the new value is moved to the
@@ -105,15 +108,57 @@ where
     /// Computational complexity:
     ///  - inline: O(n)
     ///  - heap: O(1)
-    pub fn insert(&mut self, value: T) {
-        self.data.insert(value, ());
+    pub fn insert(&mut self, value: T) -> bool {
+        self.data.insert(value, ()).is_some()
     }
 
     pub fn from_keys(map: SmallMap<T, (), C>) -> SmallSet<T, C> {
         SmallSet { data: map }
     }
+
+    /// Get a value by index, if it is present, else `None`.
+    ///
+    /// Computational complexity: O(1)
+    pub fn get_index(&self, index: usize) -> Option<&T> {
+        self.data.get_index(index).map(|(k, _v)| k)
+    }
+
+    /// Return the item index, if it exists in the set, else `None`.
+    ///
+    /// Computational complexity:
+    ///  - inline: O(n)
+    ///  - heap: O(1)
+    pub fn get_index_of<Q: ?Sized>(&self, key: &Q) -> Option<usize>
+    where
+        Q: Hash + Equivalent<T>,
+    {
+        self.data.get_index_of(key)
+    }
+
+    /// Remove the key-value pair equivalent to `key` and return
+    /// its value.
+    ///
+    /// **NOTE:** This is equivalent to `.swap_remove(key)`, if you need to
+    /// preserve the order of the keys in the map, use `.shift_remove(key)`
+    /// instead.
+    ///
+    /// Computes in **O(1)** time (average).
+    pub fn remove<Q: ?Sized>(&mut self, key: &Q) -> bool
+    where
+        Q: Hash + Equivalent<T>,
+    {
+        self.data.remove(key).is_some()
+    }
 }
 
+impl<T, const C: usize> Hash for SmallSet<T, C>
+where
+    T: Hash + Eq,
+{
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.data.hash(state);
+    }
+}
 impl<T, const C: usize> Eq for SmallSet<T, C> where T: Hash + Eq {}
 impl<T, const C: usize> PartialEq for SmallSet<T, C>
 where
