@@ -1,3 +1,4 @@
+RUST_NIGHTLY_VERSION  := nightly-2022-09-22
 SHELL := /bin/bash -eu
 
 .PHONY: test
@@ -11,7 +12,7 @@ lint:
 	cargo doc --all --no-deps --document-private-items --all-features
 
 fmt:
-	cargo +nightly fmt -- --config-path ./rustfmt-nightly.toml
+	cargo +$(RUST_NIGHTLY_VERSION) fmt -- --config-path ./rustfmt-nightly.toml
 
 .PHONY: clean
 clean:
