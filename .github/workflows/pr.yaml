@@ -13,7 +13,7 @@ jobs:
       - uses: actions-rs/toolchain@v1.0.7
         with:
           override: true
-          components: rustfmt, clippy, nextest
+          components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v1
         with:
           sharedKey: debug-build
