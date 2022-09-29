@@ -22,4 +22,4 @@ indexmap = { version = "1.9.1", optional = true }
 maplit = { version = "1.0.2", optional = true }
 
 [dev-dependencies]
-criterion = { version = "0.3", features = ["html_reports"] }
+criterion = { version = "0.4", features = ["html_reports"] }
