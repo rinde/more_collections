@@ -38,3 +38,4 @@ jobs:
         with:
           sharedKey: debug-build-nightly
       - run: make lint
+
