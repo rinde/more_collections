@@ -145,7 +145,7 @@ macro_rules! multimap_mutators_impl {
 
         // TODO add get_mut() --> only if it is possible to keep internal `len` consistent
 
-        crate::insert!($values_class $values_ctx);
+        $crate::insert!($values_class $values_ctx);
 
         /// Remove the key and all associated values from the multimap.
         ///
@@ -213,7 +213,7 @@ macro_rules! multimap_mutators_impl {
             $($values_ref)*,
         {
             if let Some(values) = self.inner.get_mut(key) {
-                let value = crate::values_remove!($values_class, values, value);
+                let value = $crate::values_remove!($values_class, values, value);
                 if value.is_some() {
                     if values.is_empty() {
                         self.inner.remove(key);
@@ -234,7 +234,7 @@ macro_rules! multimap_mutators_impl {
             $($values_ref)*,
         {
             if let Some(values) = self.inner.get(key) {
-                crate::values_contains!($values_class, values, value)
+                $crate::values_contains!($values_class, values, value)
             } else {
                 false
             }
@@ -355,10 +355,10 @@ macro_rules! insert {
     };
 
     (vec_equal $values_ctx:expr) => {
-        crate::vec_insert!($values_ctx);
+        $crate::vec_insert!($values_ctx);
     };
     (vec_equivalent $values_ctx:expr) => {
-        crate::vec_insert!($values_ctx);
+        $crate::vec_insert!($values_ctx);
     };
 }
 
