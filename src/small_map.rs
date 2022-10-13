@@ -649,7 +649,7 @@ macro_rules! smallmap {
             $(map.insert($key, $value);)*
             map
         } else {
-            $crate::SmallMap::from_map($crate::fastindexmap![$($key => $value,)*])
+            $crate::SmallMap::from_map($crate::fastindexmap! {$($key => $value,)*})
         }
     });
 }
