@@ -280,6 +280,7 @@ dependencies = [
  "criterion",
  "indexmap",
  "maplit",
+ "more_collections",
 ]
 
 [[package]]

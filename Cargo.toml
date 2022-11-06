@@ -12,6 +12,7 @@ categories = ["data-structures"]
 include = ["LICENSE", "README.md", "**/*.rs", "Cargo.toml"]
 
 [features]
+all = ["hashsetmultimap", "hashvecmultimap", "indexsetmultimap", "indexvecmultimap"]
 hashsetmultimap = ["maplit"]
 hashvecmultimap = []
 indexsetmultimap = ["indexmap"]
@@ -23,3 +24,6 @@ maplit = { version = "1.0.2", optional = true }
 
 [dev-dependencies]
 criterion = { version = "0.4", features = ["html_reports"] }
+indexmap = { version = "1.9.1" }
+maplit = { version = "1.0.2" }
+more_collections = { path=".", features = ["all"]}
