@@ -40,7 +40,9 @@
 //! [`Vec`]: std::vec::Vec
 
 mod multimap;
+mod multiset;
 
 pub use multimap::*;
+pub use multiset::*;
 
 // TODO follow all guidelines here https://rust-lang.github.io/api-guidelines/checklist.html
