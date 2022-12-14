@@ -29,7 +29,7 @@ use smallvec::SmallVec;
 /// # Example
 ///
 /// ```
-/// use fast_hash_collections::SmallMap;
+/// use more_collections::SmallMap;
 ///
 /// let mut map = SmallMap::<usize, String, 3>::new();
 /// // The map can hold up to three items inline
