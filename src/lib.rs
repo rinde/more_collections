@@ -40,7 +40,11 @@
 //! [`Vec`]: std::vec::Vec
 
 mod multimap;
+mod small_map;
+mod small_set;
 
 pub use multimap::*;
+pub use small_map::*;
+pub use small_set::*;
 
 // TODO follow all guidelines here https://rust-lang.github.io/api-guidelines/checklist.html
