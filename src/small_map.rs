@@ -1,16 +1,17 @@
 use std::cmp::Ordering;
+use std::collections::hash_map::RandomState;
 use std::fmt;
 use std::fmt::Debug;
 use std::fmt::Formatter;
+use std::hash::BuildHasher;
 use std::mem;
 use std::ops::Index;
 use std::ops::IndexMut;
 
 use ::core::hash::Hash;
 use indexmap::Equivalent;
+use indexmap::IndexMap;
 use smallvec::SmallVec;
-
-use crate::FastIndexMap;
 
 /// A map-like container that can store a specified number of elements inline.
 ///
@@ -44,14 +45,14 @@ use crate::FastIndexMap;
 /// assert!(!map.is_inline());
 /// ```
 #[derive(Default, Clone)]
-pub struct SmallMap<K, V, const C: usize> {
-    data: MapData<K, V, C>,
+pub struct SmallMap<K, V, const C: usize, S = RandomState> {
+    data: MapData<K, V, C, S>,
 }
 
 #[derive(Debug, Clone)]
-enum MapData<K, V, const C: usize> {
+enum MapData<K, V, const C: usize, S = RandomState> {
     Inline(SmallVec<[(K, V); C]>),
-    Heap(FastIndexMap<K, V>),
+    Heap(IndexMap<K, V, S>),
 }
 
 impl<K, V, const C: usize> SmallMap<K, V, C> {
@@ -66,6 +67,16 @@ impl<K, V, const C: usize> SmallMap<K, V, C> {
         }
     }
 
+    // Helper method for macro, don't use directly.
+    #[doc(hidden)]
+    pub const fn from_const_unchecked(inline: SmallVec<[(K, V); C]>) -> Self {
+        Self {
+            data: MapData::Inline(inline),
+        }
+    }
+}
+
+impl<K, V, const C: usize, S> SmallMap<K, V, C, S> {
     /// The number of key-values stored in the map.
     pub fn len(&self) -> usize {
         match &self.data {
@@ -113,17 +124,13 @@ impl<K, V, const C: usize> SmallMap<K, V, C> {
             MapData::Heap(map) => Keys::Heap(map.keys()),
         }
     }
-
-    // Helper method for macro, don't use directly.
-    #[doc(hidden)]
-    pub const fn from_const_unchecked(inline: SmallVec<[(K, V); C]>) -> Self {
-        Self {
-            data: MapData::Inline(inline),
-        }
-    }
 }
 
-impl<K: Hash + Eq, V, const C: usize> SmallMap<K, V, C> {
+impl<K, V, const C: usize, S> SmallMap<K, V, C, S>
+where
+    K: Hash + Eq,
+    S: BuildHasher,
+{
     /// Return a reference to the value stored for `key`, if it is present,
     /// else `None`.
     ///
@@ -219,7 +226,7 @@ impl<K: Hash + Eq, V, const C: usize> SmallMap<K, V, C> {
     /// Computational complexity:
     ///  - inline: O(n)
     ///  - heap: O(1)
-    pub fn entry(&mut self, key: K) -> Entry<'_, K, V, C> {
+    pub fn entry(&mut self, key: K) -> Entry<'_, K, V, C, S> {
         let index = self.get_index_of(&key);
         match index {
             Some(index) => Entry::Occupied(self, index),
@@ -231,7 +238,7 @@ impl<K: Hash + Eq, V, const C: usize> SmallMap<K, V, C> {
     ///
     /// If the map len is smaller or equal the inline capacity, the data will be
     /// moved inline.
-    pub fn from_map(map: FastIndexMap<K, V>) -> Self {
+    pub fn from_map(map: IndexMap<K, V, S>) -> Self {
         if map.len() <= C {
             Self {
                 data: MapData::Inline(SmallVec::from_vec(map.into_iter().collect())),
@@ -240,41 +247,6 @@ impl<K: Hash + Eq, V, const C: usize> SmallMap<K, V, C> {
             Self {
                 data: MapData::Heap(map),
             }
-        }
-    }
-
-    /// Inserts the specified key-value pair into this map.
-    ///
-    /// If a value for the specified `key` already exists, the new value will
-    /// overwrite the existing value. The iteration order of the key-value pair
-    /// will remain in the original position.
-    ///
-    /// If a new key is added that causes the size of the `SmallMap` to exceed
-    /// the inline capacity, all existing data and the new key-value pair is
-    /// moved to the heap.
-    ///
-    /// Computational complexity:
-    ///  - inline: O(n)
-    ///  - heap: O(1)
-    pub fn insert(&mut self, key: K, value: V) -> Option<V> {
-        match &mut self.data {
-            MapData::Inline(sv) => {
-                let existing_index = sv.iter().position(|(k, _v)| &key == k);
-                if let Some(existing_index) = existing_index {
-                    let ret = mem::replace(&mut sv[existing_index], (key, value));
-                    Some(ret.1)
-                } else if sv.len() + 1 > C {
-                    // Move to heap
-                    let mut map = sv.drain(0..sv.len()).collect::<FastIndexMap<_, _>>();
-                    let ret = map.insert(key, value);
-                    self.data = MapData::Heap(map);
-                    ret
-                } else {
-                    sv.push((key, value));
-                    None
-                }
-            }
-            MapData::Heap(map) => map.insert(key, value),
         }
     }
 
@@ -372,7 +344,48 @@ impl<K: Hash + Eq, V, const C: usize> SmallMap<K, V, C> {
     }
 }
 
-impl<K, V, const C: usize> Hash for SmallMap<K, V, C>
+impl<K, V, const C: usize, S> SmallMap<K, V, C, S>
+where
+    K: Hash + Eq,
+    S: BuildHasher + Default,
+{
+    /// Inserts the specified key-value pair into this map.
+    ///
+    /// If a value for the specified `key` already exists, the new value will
+    /// overwrite the existing value. The iteration order of the key-value pair
+    /// will remain in the original position.
+    ///
+    /// If a new key is added that causes the size of the `SmallMap` to exceed
+    /// the inline capacity, all existing data and the new key-value pair is
+    /// moved to the heap.
+    ///
+    /// Computational complexity:
+    ///  - inline: O(n)
+    ///  - heap: O(1)
+    pub fn insert(&mut self, key: K, value: V) -> Option<V> {
+        match &mut self.data {
+            MapData::Inline(sv) => {
+                let existing_index = sv.iter().position(|(k, _v)| &key == k);
+                if let Some(existing_index) = existing_index {
+                    let ret = mem::replace(&mut sv[existing_index], (key, value));
+                    Some(ret.1)
+                } else if sv.len() + 1 > C {
+                    // Move to heap
+                    let mut map = sv.drain(0..sv.len()).collect::<IndexMap<_, _, _>>();
+                    let ret = map.insert(key, value);
+                    self.data = MapData::Heap(map);
+                    ret
+                } else {
+                    sv.push((key, value));
+                    None
+                }
+            }
+            MapData::Heap(map) => map.insert(key, value),
+        }
+    }
+}
+
+impl<K, V, const C: usize, S> Hash for SmallMap<K, V, C, S>
 where
     K: Hash + Eq,
     V: Hash + Eq,
@@ -384,13 +397,13 @@ where
         });
     }
 }
-impl<K, V, const C: usize> Eq for SmallMap<K, V, C>
+impl<K, V, const C: usize, S> Eq for SmallMap<K, V, C, S>
 where
     K: Hash + Eq,
     V: Eq,
 {
 }
-impl<K, V, const C: usize> PartialEq for SmallMap<K, V, C>
+impl<K, V, const C: usize, S> PartialEq for SmallMap<K, V, C, S>
 where
     K: Hash + Eq,
     V: Eq,
@@ -400,16 +413,17 @@ where
     }
 }
 
-impl<K, V, const C: usize> Default for MapData<K, V, C> {
+impl<K, V, const C: usize, S> Default for MapData<K, V, C, S> {
     fn default() -> Self {
         MapData::Inline(SmallVec::new())
     }
 }
 
-impl<K, V, const C: usize> Index<usize> for SmallMap<K, V, C>
+impl<K, V, const C: usize, S> Index<usize> for SmallMap<K, V, C, S>
 where
     K: Eq + Hash,
     V: Eq,
+    S: BuildHasher,
 {
     type Output = V;
 
@@ -420,10 +434,11 @@ where
     }
 }
 
-impl<K, V, const C: usize> IndexMut<usize> for SmallMap<K, V, C>
+impl<K, V, const C: usize, S> IndexMut<usize> for SmallMap<K, V, C, S>
 where
     K: Eq + Hash,
     V: Eq,
+    S: BuildHasher,
 {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         self.get_index_mut(index)
@@ -432,11 +447,12 @@ where
     }
 }
 
-impl<K, V, Q: ?Sized, const C: usize> Index<&Q> for SmallMap<K, V, C>
+impl<K, V, Q: ?Sized, const C: usize, S> Index<&Q> for SmallMap<K, V, C, S>
 where
     K: Eq + Hash,
     V: Eq,
     Q: Hash + Equivalent<K>,
+    S: BuildHasher,
 {
     type Output = V;
 
@@ -445,11 +461,12 @@ where
     }
 }
 
-impl<K, V, Q: ?Sized, const C: usize> IndexMut<&Q> for SmallMap<K, V, C>
+impl<K, V, Q: ?Sized, const C: usize, S> IndexMut<&Q> for SmallMap<K, V, C, S>
 where
     K: Eq + Hash,
     V: Eq,
     Q: Hash + Equivalent<K>,
+    S: BuildHasher,
 {
     fn index_mut(&mut self, key: &Q) -> &mut Self::Output {
         self.get_mut(key).expect("SmallMap: index out of bounds")
@@ -506,7 +523,7 @@ impl<K, V> ExactSizeIterator for IterMut<'_, K, V> {
     }
 }
 
-impl<K, V, const C: usize> IntoIterator for SmallMap<K, V, C> {
+impl<K, V, const C: usize, S> IntoIterator for SmallMap<K, V, C, S> {
     type Item = (K, V);
 
     type IntoIter = IntoIter<K, V, C>;
@@ -569,9 +586,10 @@ impl<K, V, const C: usize> ExactSizeIterator for IntoIter<K, V, C> {
     }
 }
 
-impl<K, V, const C: usize> FromIterator<(K, V)> for SmallMap<K, V, C>
+impl<K, V, const C: usize, S> FromIterator<(K, V)> for SmallMap<K, V, C, S>
 where
     K: Hash + Eq,
+    S: BuildHasher + Default,
 {
     fn from_iter<I: IntoIterator<Item = (K, V)>>(iterable: I) -> Self {
         let iter = iterable.into_iter();
@@ -583,7 +601,7 @@ where
             // IndexMap _after_ it was moved into the SmallVec.
             if vec.len() > C {
                 Self {
-                    data: MapData::Heap(FastIndexMap::from_iter(vec)),
+                    data: MapData::Heap(IndexMap::from_iter(vec)),
                 }
             } else {
                 Self {
@@ -592,18 +610,22 @@ where
             }
         } else {
             Self {
-                data: MapData::Heap(FastIndexMap::from_iter(iter)),
+                data: MapData::Heap(IndexMap::from_iter(iter)),
             }
         }
     }
 }
 
-pub enum Entry<'a, K, V, const C: usize> {
-    Occupied(&'a mut SmallMap<K, V, C>, usize),
-    Vacant(&'a mut SmallMap<K, V, C>, K),
+pub enum Entry<'a, K, V, const C: usize, S> {
+    Occupied(&'a mut SmallMap<K, V, C, S>, usize),
+    Vacant(&'a mut SmallMap<K, V, C, S>, K),
 }
 
-impl<'a, K: Hash + Eq, V, const C: usize> Entry<'a, K, V, C> {
+impl<'a, K, V, const C: usize, S> Entry<'a, K, V, C, S>
+where
+    K: Hash + Eq,
+    S: BuildHasher,
+{
     /// Modifies the entry if it is occupied. Otherwise this is a no-op.
     pub fn and_modify<F>(self, f: F) -> Self
     where
@@ -617,7 +639,13 @@ impl<'a, K: Hash + Eq, V, const C: usize> Entry<'a, K, V, C> {
             x => x,
         }
     }
+}
 
+impl<'a, K, V, const C: usize, S> Entry<'a, K, V, C, S>
+where
+    K: Hash + Eq,
+    S: BuildHasher + Default,
+{
     /// Inserts the given default value in the entry if it is vacant. Otherwise
     /// this is a no-op.
     pub fn or_insert(self, default: V) {
@@ -627,7 +655,7 @@ impl<'a, K: Hash + Eq, V, const C: usize> Entry<'a, K, V, C> {
     }
 }
 
-impl<K, V, const C: usize> Debug for SmallMap<K, V, C>
+impl<K, V, const C: usize, S> Debug for SmallMap<K, V, C, S>
 where
     K: Debug,
     V: Debug,
@@ -649,7 +677,7 @@ macro_rules! smallmap {
             $(map.insert($key, $value);)*
             map
         } else {
-            $crate::SmallMap::from_map($crate::fastindexmap! {$($key => $value,)*})
+            $crate::SmallMap::from_map(indexmap::indexmap! {$($key => $value,)*})
         }
     });
 }
@@ -658,13 +686,13 @@ macro_rules! smallmap {
 #[macro_export]
 macro_rules! smallmap_inline {
     ($($key:expr => $value:expr),*$(,)*) => ({
-        let vec = $crate::smallvec_inline!( $(($key, $value),)*);
+        let vec = smallvec::smallvec_inline!( $(($key, $value),)*);
         debug_assert_eq!(
             vec.len(),
             vec
                 .iter()
                 .map(|(k, _v)| k)
-                .collect::<$crate::FastHashSet<_>>()
+                .collect::<std::collections::HashSet<_>>()
                 .len(),
             "smallmap_inline! cannot be initialized with duplicate keys"
         );
@@ -675,7 +703,7 @@ macro_rules! smallmap_inline {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::fastindexmap;
+    use indexmap::indexmap;
 
     #[test]
     fn test_len_and_inline_capacity() {
@@ -739,7 +767,7 @@ mod test {
 
     #[test]
     fn from_map_stores_data_inline_or_on_heap_depending_on_c_and_input_len() {
-        let input = fastindexmap! { 0 => "zero", 3 => "three",  900 => "nine-hundred"};
+        let input = indexmap! { 0 => "zero", 3 => "three",  900 => "nine-hundred"};
 
         let heap_map = SmallMap::<_, _, 2>::from_map(input.clone());
         assert!(!heap_map.is_inline());
