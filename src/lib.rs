@@ -40,11 +40,11 @@
 //! [`Vec`]: std::vec::Vec
 
 mod multimap;
-#[cfg(all(feature = "indexmap", feature = "small_vec", feature = "smallmap"))]
+#[cfg(all(feature = "indexmap", feature = "smallvec", feature = "smallmap"))]
 mod small_map;
 #[cfg(all(
     feature = "indexmap",
-    feature = "small_vec",
+    feature = "smallvec",
     feature = "smallmap",
     feature = "smallset"
 ))]
@@ -52,12 +52,12 @@ mod small_set;
 
 pub use multimap::*;
 
-#[cfg(all(feature = "indexmap", feature = "small_vec", feature = "smallmap"))]
+#[cfg(all(feature = "indexmap", feature = "smallvec", feature = "smallmap"))]
 pub use small_map::*;
 
 #[cfg(all(
     feature = "indexmap",
-    feature = "small_vec",
+    feature = "smallvec",
     feature = "smallmap",
     feature = "smallset"
 ))]
