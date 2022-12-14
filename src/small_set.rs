@@ -1,3 +1,4 @@
+use std::collections::hash_map::RandomState;
 use std::fmt;
 use std::fmt::Debug;
 use std::fmt::Formatter;
@@ -5,6 +6,7 @@ use std::fmt::Formatter;
 use ::core::hash::Hash;
 use indexmap::Equivalent;
 use smallvec::SmallVec;
+use std::hash::BuildHasher;
 
 use crate::small_map;
 use crate::SmallMap;
@@ -25,7 +27,7 @@ use crate::SmallMap;
 /// # Example
 ///
 /// ```
-/// use fast_hash_collections::SmallSet;
+/// use more_collections::SmallSet;
 ///
 /// let mut set = SmallSet::<usize, 3>::new();
 /// // The set can hold up to three items inline
@@ -41,8 +43,8 @@ use crate::SmallMap;
 /// assert!(!set.is_inline());
 /// ```
 #[derive(Default, Clone)]
-pub struct SmallSet<T, const C: usize> {
-    data: SmallMap<T, (), C>,
+pub struct SmallSet<T, const C: usize, S = RandomState> {
+    data: SmallMap<T, (), C, S>,
 }
 
 impl<T, const C: usize> SmallSet<T, C> {
@@ -53,6 +55,16 @@ impl<T, const C: usize> SmallSet<T, C> {
         }
     }
 
+    // Helper method for macro, don't use directly.
+    #[doc(hidden)]
+    pub const fn from_const_unchecked(inline: SmallVec<[(T, ()); C]>) -> Self {
+        Self {
+            data: SmallMap::from_const_unchecked(inline),
+        }
+    }
+}
+
+impl<T, const C: usize, S> SmallSet<T, C, S> {
     /// The number of values stored in the set.
     pub fn len(&self) -> usize {
         self.data.len()
@@ -81,19 +93,12 @@ impl<T, const C: usize> SmallSet<T, C> {
             inner: self.data.iter(),
         }
     }
-
-    // Helper method for macro, don't use directly.
-    #[doc(hidden)]
-    pub const fn from_const_unchecked(inline: SmallVec<[(T, ()); C]>) -> Self {
-        Self {
-            data: SmallMap::from_const_unchecked(inline),
-        }
-    }
 }
 
-impl<T, const C: usize> SmallSet<T, C>
+impl<T, const C: usize, S> SmallSet<T, C, S>
 where
     T: Hash + Eq,
+    S: BuildHasher + Default,
 {
     /// Inserts the specified value into this set.
     ///
@@ -111,8 +116,14 @@ where
     pub fn insert(&mut self, value: T) -> bool {
         self.data.insert(value, ()).is_some()
     }
+}
 
-    pub fn from_keys(map: SmallMap<T, (), C>) -> SmallSet<T, C> {
+impl<T, const C: usize, S> SmallSet<T, C, S>
+where
+    T: Hash + Eq,
+    S: BuildHasher,
+{
+    pub fn from_keys(map: SmallMap<T, (), C, S>) -> Self {
         SmallSet { data: map }
     }
 
@@ -151,7 +162,7 @@ where
     }
 }
 
-impl<T, const C: usize> Hash for SmallSet<T, C>
+impl<T, const C: usize, S> Hash for SmallSet<T, C, S>
 where
     T: Hash + Eq,
 {
@@ -159,8 +170,8 @@ where
         self.data.hash(state);
     }
 }
-impl<T, const C: usize> Eq for SmallSet<T, C> where T: Hash + Eq {}
-impl<T, const C: usize> PartialEq for SmallSet<T, C>
+impl<T, const C: usize, S> Eq for SmallSet<T, C, S> where T: Hash + Eq {}
+impl<T, const C: usize, S> PartialEq for SmallSet<T, C, S>
 where
     T: Hash + Eq,
 {
@@ -187,9 +198,10 @@ impl<'a, T> ExactSizeIterator for Iter<'a, T> {
     }
 }
 
-impl<T, const C: usize> FromIterator<T> for SmallSet<T, C>
+impl<T, const C: usize, S> FromIterator<T> for SmallSet<T, C, S>
 where
     T: Hash + Eq,
+    S: BuildHasher + Default,
 {
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
         Self {
@@ -198,7 +210,7 @@ where
     }
 }
 
-impl<T, const C: usize> Debug for SmallSet<T, C>
+impl<T, const C: usize, S> Debug for SmallSet<T, C, S>
 where
     T: Hash + Eq + Debug,
 {
@@ -226,7 +238,7 @@ macro_rules! smallset_inline {
             vec
                 .iter()
                 .map(|(k, _v)| k)
-                .collect::<$crate::FastHashSet<_>>()
+                .collect::<std::collections::HashSet<_>>()
                 .len(),
             "smallset_inline! cannot be initialized with duplicate keys"
         );
