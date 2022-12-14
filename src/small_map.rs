@@ -44,7 +44,7 @@ use smallvec::SmallVec;
 /// assert_eq!(4, map.len());
 /// assert!(!map.is_inline());
 /// ```
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct SmallMap<K, V, const C: usize, S = RandomState> {
     data: MapData<K, V, C, S>,
 }
@@ -381,6 +381,14 @@ where
                 }
             }
             MapData::Heap(map) => map.insert(key, value),
+        }
+    }
+}
+
+impl<K, V, const C: usize, S> Default for SmallMap<K, V, C, S> {
+    fn default() -> Self {
+        Self {
+            data: Default::default(),
         }
     }
 }
