@@ -21,7 +21,7 @@ smallmap = ["indexmap", "smallvec"]
 smallset = ["indexmap", "smallvec", "smallmap"]
 
 [dependencies]
-indexmap = { version = "1.9.1", optional = true }
+indexmap = { version = "1.9.2", optional = true }
 maplit = { version = "1.0.2", optional = true }
 smallvec = {version = "1.10.0", features = ["const_generics", "const_new", "union"], optional = true }
 
