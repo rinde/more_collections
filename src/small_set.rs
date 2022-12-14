@@ -93,6 +93,14 @@ impl<T, const C: usize, S> SmallSet<T, C, S> {
             inner: self.data.iter(),
         }
     }
+
+    // Helper method for macro, don't use directly.
+    #[doc(hidden)]
+    pub const fn from_const_unchecked_with_hasher(inline: SmallVec<[(T, ()); C]>) -> Self {
+        Self {
+            data: SmallMap::from_const_unchecked_with_hasher(inline),
+        }
+    }
 }
 
 impl<T, const C: usize, S> SmallSet<T, C, S>
