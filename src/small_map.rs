@@ -124,6 +124,14 @@ impl<K, V, const C: usize, S> SmallMap<K, V, C, S> {
             MapData::Heap(map) => Keys::Heap(map.keys()),
         }
     }
+
+    // Helper method for macro, don't use directly.
+    #[doc(hidden)]
+    pub const fn from_const_unchecked_with_hasher(inline: SmallVec<[(K, V); C]>) -> Self {
+        Self {
+            data: MapData::Inline(inline),
+        }
+    }
 }
 
 impl<K, V, const C: usize, S> SmallMap<K, V, C, S>
