@@ -40,7 +40,27 @@
 //! [`Vec`]: std::vec::Vec
 
 mod multimap;
+#[cfg(all(feature = "indexmap", feature = "smallvec", feature = "smallmap"))]
+mod small_map;
+#[cfg(all(
+    feature = "indexmap",
+    feature = "smallvec",
+    feature = "smallmap",
+    feature = "smallset"
+))]
+mod small_set;
 
 pub use multimap::*;
+
+#[cfg(all(feature = "indexmap", feature = "smallvec", feature = "smallmap"))]
+pub use small_map::*;
+
+#[cfg(all(
+    feature = "indexmap",
+    feature = "smallvec",
+    feature = "smallmap",
+    feature = "smallset"
+))]
+pub use small_set::*;
 
 // TODO follow all guidelines here https://rust-lang.github.io/api-guidelines/checklist.html
