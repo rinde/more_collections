@@ -10,6 +10,10 @@
 
 Additional Rust collections not found in [std::collections](https://doc.rust-lang.org/std/collections/).
 
+## Small* collections
+
+Built on top of the excellent [smallvec](https://github.com/servo/rust-smallvec) crate, `SmallMap` and `SmallSet` are a `Map` and `Set` respectively that are inlined if they contain fewer values than a (statically chosen) capacity `C`, otherwise they are heap allocated and backed by an `IndexMap`. 
+
 ## Multimaps 
 
 | Completion | Name                 | Behaves as                 |

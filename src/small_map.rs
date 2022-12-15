@@ -718,8 +718,9 @@ macro_rules! smallmap_inline {
 
 #[cfg(test)]
 mod test {
-    use super::*;
     use indexmap::indexmap;
+
+    use super::*;
 
     #[test]
     fn test_len_and_inline_capacity() {
