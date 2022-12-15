@@ -1,5 +1,13 @@
 //! More collection types.
 //!
+//! # Small* collections
+//!
+//! Built on top of the excellent [smallvec](https://github.com/servo/rust-smallvec)
+//! crate, [SmallMap] and [SmallSet] are a `Map` and `Set` respectively that
+//! are inlined if they contain fewer values than a (statically chosen)
+//! capacity `C`, otherwise they are heap allocated and backed by an
+//! `IndexMap`.
+//!
 //! # Multimap
 //!
 //! A collection that maps keys to values, similar to [`HashMap`], but where
@@ -51,10 +59,8 @@ mod small_map;
 mod small_set;
 
 pub use multimap::*;
-
 #[cfg(all(feature = "indexmap", feature = "smallvec", feature = "smallmap"))]
 pub use small_map::*;
-
 #[cfg(all(
     feature = "indexmap",
     feature = "smallvec",
