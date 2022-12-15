@@ -2,11 +2,11 @@ use std::collections::hash_map::RandomState;
 use std::fmt;
 use std::fmt::Debug;
 use std::fmt::Formatter;
+use std::hash::BuildHasher;
 
 use ::core::hash::Hash;
 use indexmap::Equivalent;
 use smallvec::SmallVec;
-use std::hash::BuildHasher;
 
 use crate::small_map;
 use crate::SmallMap;
