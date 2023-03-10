@@ -1,5 +1,8 @@
 #[macro_use]
 mod gen_macros;
 
-mod hash_multiset;
-mod index_multiset;
+pub mod hash_multiset;
+pub mod index_multiset;
+
+pub use hash_multiset::HashMultiset;
+pub use index_multiset::IndexMultiset;

@@ -24,12 +24,18 @@
 //! The multimap API is based on the second form, `len() == 3` and `keys_len()
 //! == 2` for the above example.
 //!
-//! | Name               | Behaves as                          | Keys order          | Values order        | May contain duplicates |
-//! | ------------------ | ----------------------------------- | ------------------- | ------------------- | ---------------------- |
-//! | [HashSetMultimap]  | [`HashMap`]`<K,`[`HashSet`]`<V>>`   | Arbitrary order     | Arbitrary order     | No                     |
-//! | [HashVecMultimap]  | [`HashMap`]`<K,`[`Vec`]`<V>>`       | Arbitrary order     | Insertion order[^1] | Yes                    |
-//! | [IndexSetMultimap] | [`IndexMap`]`<K,`[`IndexSet`]`<V>>` | Insertion order[^1] | Insertion order[^1] | No                     |
-//! | [IndexVecMultimap] | [`IndexMap`]`<K, `[`Vec`]`<V>>`     | Insertion order[^1] | Insertion order[^1] | Yes                    |
+//! | Name               | Behaves as                          | Keys order
+//! | Values order        | May contain duplicates | | ------------------ |
+//! ----------------------------------- | ------------------- |
+//! ------------------- | ---------------------- | | [HashSetMultimap]  |
+//! [`HashMap`]`<K,`[`HashSet`]`<V>>`   | Arbitrary order     | Arbitrary order
+//! | No                     | | [HashVecMultimap]  |
+//! [`HashMap`]`<K,`[`Vec`]`<V>>`       | Arbitrary order     | Insertion
+//! order[^1] | Yes                    | | [IndexSetMultimap] |
+//! [`IndexMap`]`<K,`[`IndexSet`]`<V>>` | Insertion order[^1] | Insertion
+//! order[^1] | No                     | | [IndexVecMultimap] | [`IndexMap`]`<K,
+//! `[`Vec`]`<V>>`     | Insertion order[^1] | Insertion order[^1] | Yes
+//! |
 //!
 //! [^1]: Insertion order is preserved, unless `remove()` or `swap_remove()`
 //! is called. See more in the [IndexMap](https://docs.rs/indexmap/1.7.0/indexmap/map/struct.IndexMap.html#order) documentation.

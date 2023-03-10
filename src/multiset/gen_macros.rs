@@ -47,7 +47,8 @@ macro_rules! multiset_base2_impl {
             }
         }
 
-        /// Returns the number of unique elements the multiset can hold without reallocating.
+        /// Returns the number of unique elements the multiset can hold without
+        /// reallocating.
         #[inline]
         pub fn capacity(&self) -> usize {
             self.inner.capacity()
@@ -83,7 +84,7 @@ macro_rules! multiset_base2_impl {
 #[doc(hidden)]
 #[macro_export]
 macro_rules! multiset_mutators_impl {
-    ($inner_ty:ty, ($($elements_ref:tt)*)) => {
+    ($inner_ty_full:ty, $inner_ty:tt, ($($elements_ref:tt)*)) => {
 
         // TODO this method will have to be split out as it won't be needed in all implementations
         /// Reserve capacity for `additional` more unique elements.
@@ -115,7 +116,8 @@ macro_rules! multiset_mutators_impl {
             self.inner.get(element).copied().unwrap_or_default()
         }
 
-        /// Returns `true` if the multiset contains anelement for the specified element.
+        /// Returns `true` if the multiset contains an element for the
+        /// specified element.
         #[inline]
         pub fn contains<Q: ?Sized>(&self, element: &Q) -> bool
         where
@@ -124,10 +126,18 @@ macro_rules! multiset_mutators_impl {
             self.inner.get(element).is_some()
         }
 
-        // TODO add get_mut() --> only if it is possible to keep internal `len` consistent
+        // TODO add get_mut() --> only if it is possible to keep internal `len`
+        // consistent
 
-        pub fn insert() {
-            // TODO implement insert
+        // TODO consider creating insert_n() and remove_n() variants
+
+        /// Inserts the element in the multiset. Returns the number of
+        /// occurences of this element *including* this newly inserted element.
+        pub fn insert(&mut self, element: T) -> usize {
+            self.len += 1;
+            *self.inner.entry(element)
+                .and_modify(|counter| *counter += 1)
+                .or_insert(1)
         }
 
         /// Remove the element from the multiset.
@@ -183,15 +193,80 @@ macro_rules! multiset_mutators_impl {
         /// Multiset specific methods
         //////////////////////////////////////
 
+        // TODO fix this
+        // pub fn from_tuples<I, C>(iterable: I) -> Self
+        // where
+        //     I: IntoIterator<Item = (T, C)>,
+        //     C: Into<usize>
+        // {
+        //     let map = iterable.into_iter()
+        //         .map(|(element, count)| (element, count.into()))
+        //         .collect::<$inner_ty<T, usize>>();
+        //     Self {
+        //         len: map.iter().map(|(_,c)| c).sum(),
+        //         inner: map,
+        //     }
+        // }
+
         /// Return a borrow of the underlying map.
-        pub fn as_map(&self) -> &$inner_ty {
+        pub fn as_map(&self) -> &$inner_ty_full {
             &self.inner
         }
 
         /// Return the underlying map, the multiset cannot be used after
         /// calling this.
-        pub fn into_map(self) -> $inner_ty {
+        pub fn into_map(self) -> $inner_ty_full {
             self.inner
+        }
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! multiset_common_traits_impl {
+    ($type:tt, $inner_ty:tt, ($($elements:tt)*)) => {
+
+        impl<T> Extend<T> for $type<T>
+        where
+            $($elements)*
+        {
+            fn extend<I: IntoIterator<Item = T>>(&mut self, iterable: I) {
+                let iter = iterable.into_iter();
+                let reserve = (iter.size_hint().0 + 1) / 2;
+                self.reserve(reserve);
+                iter.for_each(move |element| {
+                    self.insert(element);
+                })
+            }
+        }
+
+        // impl<T, C> Extend<(T,C)> for $type<T>
+        // where
+        //     $($elements)*,
+        //     C: Into<usize>
+        // {
+        //     fn extend<I: IntoIterator<Item = (T,C)>>(&mut self, iterable: I) {
+        //         let iter = iterable.into_iter();
+        //         let reserve = (iter.size_hint().0 + 1) / 2;
+        //         self.reserve(reserve);
+        //         iter.for_each(move |element| {
+        //             self.insert(element);
+        //         })
+        //     }
+        // }
+
+        impl<T> std::iter::FromIterator<T> for $type<T>
+        where $($elements)*
+        {
+            fn from_iter<I: IntoIterator<Item = T>>(iterable: I) -> Self {
+                let iter = iterable.into_iter();
+                let (low, _) = iter.size_hint();
+                // Expecting that about 50% of the incoming values are
+                // duplicates and reserving that amount of capacity.
+                let mut multiset = Self::with_capacity_and_hasher(low / 2, <_>::default());
+                multiset.extend(iter);
+                multiset
+            }
         }
     };
 }

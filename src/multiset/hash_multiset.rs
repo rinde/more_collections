@@ -26,6 +26,9 @@ where
 {
     multiset_mutators_impl! {
         HashMap<T, usize, S>,
+        HashMap,
         (T: Borrow<Q>, Q: Hash + Eq)
     }
 }
+
+multiset_common_traits_impl!(HashMultiset, HashMap, (T: Hash + Eq));

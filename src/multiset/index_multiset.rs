@@ -1,8 +1,9 @@
-use indexmap::Equivalent;
-use indexmap::IndexMap;
 use std::collections::hash_map::RandomState;
 use std::hash::BuildHasher;
 use std::hash::Hash;
+
+use indexmap::Equivalent;
+use indexmap::IndexMap;
 
 /// Multiset implementation that behaves like `HashMap<T, usize>`.
 #[derive(Debug, Clone)]
@@ -26,6 +27,9 @@ where
 {
     multiset_mutators_impl! {
         IndexMap<T, usize, S>,
+        IndexMap,
         (Q: Hash + Equivalent<T>)
     }
 }
+
+multiset_common_traits_impl!(IndexMultiset, IndexMap, (T: Hash + Eq));
