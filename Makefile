@@ -1,4 +1,4 @@
-RUST_NIGHTLY_VERSION  := nightly-2022-09-22
+RUST_NIGHTLY_VERSION  := nightly-2023-03-10
 SHELL := /bin/bash -eu
 
 .PHONY: test
