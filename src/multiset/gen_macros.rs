@@ -129,15 +129,37 @@ macro_rules! multiset_mutators_impl {
         // TODO add get_mut() --> only if it is possible to keep internal `len`
         // consistent
 
-        // TODO consider creating insert_n() and remove_n() variants
-
         /// Inserts the element in the multiset. Returns the number of
         /// occurences of this element *including* this newly inserted element.
         pub fn insert(&mut self, element: T) -> usize {
-            self.len += 1;
-            *self.inner.entry(element)
-                .and_modify(|counter| *counter += 1)
-                .or_insert(1)
+            self.insert_n(element, 1)
+        }
+
+        /// Inserts the element in the multiset `n` times. Returns the number
+        /// of occurences of this element *including* the newly inserted
+        /// elements.
+        pub fn insert_n(&mut self, element: T, occurences: usize) -> usize {
+            if occurences > 0 {
+                self.len += occurences;
+                *self.inner.entry(element)
+                .and_modify(|counter| *counter += occurences)
+                .or_insert(occurences)
+            } else {
+                self.count(&element)
+            }
+        }
+
+        /// Remove a single occurence of the element from the multiset.
+        ///
+        /// If the multiset contains the element, one occurence will be
+        /// removed. The original number of occurences is returned and if this
+        /// is the last occurence of `element`, the `element` is also returned.
+        #[inline]
+        pub fn remove<Q: ?Sized>(&mut self, element: &Q) -> Option<(usize, Option<T>)>
+        where
+            $($elements_ref)*
+        {
+            self.remove_n( element, 1)
         }
 
         /// Remove the element from the multiset.
@@ -148,19 +170,19 @@ macro_rules! multiset_mutators_impl {
         /// original number of occurences is returned and if all occurrences of
         /// `element` are removed, the `element` is also returned.
         #[inline]
-        pub fn remove<Q: ?Sized>(&mut self, element: &Q, occurrences:usize ) -> Option<(usize, Option<T>)>
+        pub fn remove_n<Q: ?Sized>(&mut self, element: &Q, occurrences:usize ) -> Option<(usize, Option<T>)>
         where
             $($elements_ref)*
         {
             if let Some(count) = self.inner.get_mut(element) {
-               if *count == occurrences {
-                    self.len -= *count;
-                    Some((occurrences, self.inner.remove_entry(element).map(|(k,_v)|k)))
-                } else {
+               if *count <= occurrences {
                     let subtracted = std::cmp::min(*count,occurrences);
-                    let original_count = *count;
-                    (*count) -= subtracted;
                     self.len -= subtracted;
+                    Some((*count, self.inner.remove_entry(element).map(|(k,_v)|k)))
+                } else {
+                    let original_count = *count;
+                    (*count) -= occurrences;
+                    self.len -= occurrences;
                    Some((original_count, None))
                 }
             } else {
