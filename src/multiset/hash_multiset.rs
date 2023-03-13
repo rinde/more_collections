@@ -25,6 +25,7 @@ where
     S: BuildHasher + Default,
 {
     multiset_mutators_impl! {
+        HashMultiset,
         HashMap<T, usize, S>,
         HashMap,
         (T: Borrow<Q>, Q: Hash + Eq)

@@ -31,21 +31,21 @@ macro_rules! general_multiset_tests {
             assert_eq!(&expected, multiset.as_map());
         }
 
-        // #[test]
-        // fn from_tuples() {
-        //     let elements = vec![("A", 3u8), ("B", 2), ("A", 1), ("C", 7)];
-        //     let multiset = $type::from_tuples(elements);
-        //     println!("{multiset:?}");
-        //     assert_eq!(10, multiset.len());
-        //     assert_eq!(3, multiset.unique_len());
-        //     // let expected = $map_macro! {
-        //     //     0 => 2,
-        //     //     1 => 1,
-        //     //     7 => 3,
-        //     //     9 => 1,
-        //     // };
-        //     // assert_eq!(&expected, multiset.as_map());
-        // }
+        #[test]
+        fn from_tuples() {
+            let elements = vec![("A", 3u8), ("B", 2), ("A", 1), ("C", 7)];
+            let multiset: $type<_, std::collections::hash_map::RandomState> =
+                $type::from_tuples(elements);
+            println!("{multiset:?}");
+            assert_eq!(10, multiset.len());
+            assert_eq!(3, multiset.unique_len());
+            let expected = $map_macro! {
+                "A" => 1,
+                "B" => 2,
+                "C" => 7,
+            };
+            assert_eq!(&expected, multiset.as_map());
+        }
     };
 }
 

@@ -26,6 +26,7 @@ where
     S: BuildHasher + Default,
 {
     multiset_mutators_impl! {
+        IndexMultiset,
         IndexMap<T, usize, S>,
         IndexMap,
         (Q: Hash + Equivalent<T>)

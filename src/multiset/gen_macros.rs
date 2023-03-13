@@ -84,7 +84,7 @@ macro_rules! multiset_base2_impl {
 #[doc(hidden)]
 #[macro_export]
 macro_rules! multiset_mutators_impl {
-    ($inner_ty_full:ty, $inner_ty:tt, ($($elements_ref:tt)*)) => {
+    ($type:ty, $inner_ty_full:ty, $inner_ty:tt, ($($elements_ref:tt)*)) => {
 
         // TODO this method will have to be split out as it won't be needed in all implementations
         /// Reserve capacity for `additional` more unique elements.
@@ -189,24 +189,44 @@ macro_rules! multiset_mutators_impl {
         //     });
         // }
 
-        //////////////////////////////////////
-        /// Multiset specific methods
-        //////////////////////////////////////
+        /////////////////////////////////////
+        // Multiset specific methods
+        /////////////////////////////////////
 
-        // TODO fix this
-        // pub fn from_tuples<I, C>(iterable: I) -> Self
-        // where
-        //     I: IntoIterator<Item = (T, C)>,
-        //     C: Into<usize>
-        // {
-        //     let map = iterable.into_iter()
-        //         .map(|(element, count)| (element, count.into()))
-        //         .collect::<$inner_ty<T, usize>>();
-        //     Self {
-        //         len: map.iter().map(|(_,c)| c).sum(),
-        //         inner: map,
-        //     }
-        // }
+        /// Create a new multiset from an iterator of tuples containing the
+        /// item counts. If there are duplicate items, the _last_ entry will be
+        /// used for the count.
+        ///
+        /// # Example
+        /// ```
+        /// # use std::collections::hash_map::RandomState;
+        ///
+        #[doc=concat!("# use more_collections::", stringify!($type), ";")]
+        #[doc=concat!("let multiset: ",
+            stringify!($type),
+            "<_, RandomState> = ",
+            stringify!($type),
+            "::from_tuples(vec!["
+        )]
+        ///     ("A", 3u8), ("B", 2), ("A", 1), ("C", 7)
+        /// ]);
+        ///
+        /// assert_eq!(1, multiset.count("A"));
+        /// ```
+        pub fn from_tuples<I, C>(iterable: I) -> Self
+        where
+            I: IntoIterator<Item = (T, C)>,
+            C: Into<usize>,
+        {
+            let map = iterable
+                .into_iter()
+                .map(|(element, count)| (element, count.into()))
+                .collect::<$inner_ty<T, usize, S>>();
+            Self {
+                len: map.iter().map(|(_, c)| c).sum(),
+                inner: map,
+            }
+        }
 
         /// Return a borrow of the underlying map.
         pub fn as_map(&self) -> &$inner_ty_full {
