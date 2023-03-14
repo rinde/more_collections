@@ -318,7 +318,7 @@ mod test {
     }
 
     #[test]
-    fn insert_tests() {
+    fn insert_and_insert_full_tests() {
         // Test cases:
         // | Value               | Memory       | Insertion position |
         // | ------------------- | ------------ | ------------------ |
