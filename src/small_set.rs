@@ -124,6 +124,25 @@ where
     pub fn insert(&mut self, value: T) -> bool {
         self.data.insert(value, ()).is_some()
     }
+
+    /// Inserts the specified value into this set, and get their index.
+    ///
+    /// If an equivalent item already exists in the set, it returns the index of
+    /// the existing item and `false`, leaving the original value in the set and
+    /// without altering its insertion order. Otherwise, it inserts the new
+    /// item and returns the index of the inserted item and `true`.
+    ///
+    /// If a new value is added that causes the size of the `SmallSet` to exceed
+    /// the inline capacity, all existing data and the new value is moved to the
+    /// heap.
+    ///
+    /// Computational complexity:
+    ///  - inline: O(n)
+    ///  - heap: O(1)
+    pub fn insert_full(&mut self, value: T) -> (usize, bool) {
+        let (index, value) = self.data.insert_full(value, ());
+        (index, value.is_some())
+    }
 }
 
 impl<T, const C: usize, S> SmallSet<T, C, S>
@@ -317,6 +336,7 @@ mod test {
             expected_inline_before: bool,
             expected_inline_after: bool,
             expected_values: Vec<usize>,
+            expected_return: (usize, bool),
         }
         let test_cases = [
             TestCase {
@@ -326,6 +346,7 @@ mod test {
                 expected_inline_before: true,
                 expected_inline_after: true,
                 expected_values: vec![10, 5, 7],
+                expected_return: (2, false),
             },
             TestCase {
                 name: "new key/value, move to heap",
@@ -334,6 +355,7 @@ mod test {
                 expected_inline_before: true,
                 expected_inline_after: false,
                 expected_values: vec![10, 5, 86, 7],
+                expected_return: (3, false),
             },
             TestCase {
                 name: "new key/value, stay on heap",
@@ -342,6 +364,7 @@ mod test {
                 expected_inline_before: false,
                 expected_inline_after: false,
                 expected_values: vec![10, 5, 86, 93, 7],
+                expected_return: (4, false),
             },
             TestCase {
                 name: "overwrite existing key/value, stay inline",
@@ -350,6 +373,7 @@ mod test {
                 expected_inline_before: true,
                 expected_inline_after: true,
                 expected_values: vec![10, 5, 86],
+                expected_return: (1, true),
             },
             TestCase {
                 name: "overwrite existing key/value, stay on heap",
@@ -358,35 +382,53 @@ mod test {
                 expected_inline_before: false,
                 expected_inline_after: false,
                 expected_values: vec![10, 5, 86, 93],
+                expected_return: (0, true),
             },
         ];
 
         for test_case in test_cases {
-            let mut small_set = SmallSet::<usize, 3>::new();
-
+            let mut small_set_1 = SmallSet::<usize, 3>::new();
             for v in test_case.initial_values {
-                small_set.insert(v);
+                small_set_1.insert(v);
             }
+            let mut small_set_2 = small_set_1.clone();
+
+            for set in [&small_set_1, &small_set_2] {
+                assert_eq!(
+                    test_case.expected_inline_before,
+                    set.is_inline(),
+                    "inline state before insertion in SmallSet does not match expected in test '{}'",
+                    test_case.name
+                );
+            }
+
+            let actual_return_1 = small_set_1.insert(test_case.insert_value);
+            let actual_return_2 = small_set_2.insert_full(test_case.insert_value);
             assert_eq!(
-                test_case.expected_inline_before,
-                small_set.is_inline(),
-                "inline state before insertion in SmallSet does not match expected in test '{}'",
+                test_case.expected_return.1, actual_return_1,
+                "return of insertion in SmallMap does not match expected return in test '{}'",
+                test_case.name
+            );
+            assert_eq!(
+                test_case.expected_return, actual_return_2,
+                "return of insertion_full in SmallMap does not match expected return in test '{}'",
                 test_case.name
             );
 
-            small_set.insert(test_case.insert_value);
-            assert_eq!(
-                test_case.expected_inline_after,
-                small_set.is_inline(),
-                "inline state after insertion in SmallSet does not match expected in test '{}'",
-                test_case.name
-            );
-            assert_eq!(
-                test_case.expected_values,
-                small_set.iter().copied().collect::<Vec<_>>(),
-                "values in SmallSet do not match expected values in test '{}'",
-                test_case.name
-            );
+            for set in [small_set_1, small_set_2] {
+                assert_eq!(
+                    test_case.expected_inline_after,
+                    set.is_inline(),
+                    "inline state after insertion in SmallSet does not match expected in test '{}'",
+                    test_case.name
+                );
+                assert_eq!(
+                    test_case.expected_values,
+                    set.iter().copied().collect::<Vec<_>>(),
+                    "values in SmallSet do not match expected values in test '{}'",
+                    test_case.name
+                );
+            }
         }
     }
 
