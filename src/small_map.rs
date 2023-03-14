@@ -371,24 +371,42 @@ where
     ///  - inline: O(n)
     ///  - heap: O(1)
     pub fn insert(&mut self, key: K, value: V) -> Option<V> {
+        self.insert_full(key, value).1
+    }
+
+    /// Inserts the specified key-value pair into this map, and get their
+    /// index.
+    ///
+    /// If a value for the specified `key` already exists, the new value will
+    /// overwrite the existing value. The iteration order of the key-value pair
+    /// will remain in the original position.
+    ///
+    /// If a new key is added that causes the size of the `SmallMap` to exceed
+    /// the inline capacity, all existing data and the new key-value pair is
+    /// moved to the heap.
+    ///
+    /// Computational complexity:
+    ///  - inline: O(n)
+    ///  - heap: O(1)
+    pub fn insert_full(&mut self, key: K, value: V) -> (usize, Option<V>) {
         match &mut self.data {
             MapData::Inline(sv) => {
                 let existing_index = sv.iter().position(|(k, _v)| &key == k);
                 if let Some(existing_index) = existing_index {
                     let ret = mem::replace(&mut sv[existing_index], (key, value));
-                    Some(ret.1)
+                    (existing_index, Some(ret.1))
                 } else if sv.len() + 1 > C {
                     // Move to heap
                     let mut map = sv.drain(0..sv.len()).collect::<IndexMap<_, _, _>>();
-                    let ret = map.insert(key, value);
+                    let ret = map.insert_full(key, value);
                     self.data = MapData::Heap(map);
                     ret
                 } else {
                     sv.push((key, value));
-                    None
+                    (sv.len() - 1, None)
                 }
             }
-            MapData::Heap(map) => map.insert(key, value),
+            MapData::Heap(map) => map.insert_full(key, value),
         }
     }
 }
@@ -658,12 +676,17 @@ where
     K: Hash + Eq,
     S: BuildHasher + Default,
 {
-    /// Inserts the given default value in the entry if it is vacant. Otherwise
-    /// this is a no-op.
-    pub fn or_insert(self, default: V) {
-        if let Entry::Vacant(map, key) = self {
-            map.insert(key, default);
-        };
+    /// Inserts the given default value in the entry if it is vacant and returns
+    /// a mutable reference to it. Otherwise a mutable reference to an
+    /// already existent value is returned.
+    pub fn or_insert(self, default: V) -> &'a mut V {
+        match self {
+            Entry::Vacant(map, key) => {
+                let (index, _) = map.insert_full(key, default);
+                &mut map[index]
+            }
+            Entry::Occupied(map, index) => &mut map[index],
+        }
     }
 }
 
@@ -966,7 +989,7 @@ mod test {
     }
 
     #[test]
-    fn insert_tests() {
+    fn insert_and_insert_full_tests() {
         // Test cases:
         // | Key/Value           | Memory       | Insertion position |
         // | ------------------- | ------------ | ------------------ |
@@ -989,7 +1012,7 @@ mod test {
             expected_inline_before: bool,
             expected_inline_after: bool,
             expected_values: Vec<(usize, &'static str)>,
-            expected_return: Option<&'static str>,
+            expected_return: (usize, Option<&'static str>),
         }
         let test_cases = [
             TestCase {
@@ -999,7 +1022,7 @@ mod test {
                 expected_inline_before: true,
                 expected_inline_after: true,
                 expected_values: vec![(10, "ten"), (5, "five"), (7, "seven")],
-                expected_return: None,
+                expected_return: (2, None),
             },
             TestCase {
                 name: "new key/value, move to heap",
@@ -1008,7 +1031,7 @@ mod test {
                 expected_inline_before: true,
                 expected_inline_after: false,
                 expected_values: vec![(10, "ten"), (5, "five"), (86, "eighty-six"), (7, "seven")],
-                expected_return: None,
+                expected_return: (3, None),
             },
             TestCase {
                 name: "new key/value, stay on heap",
@@ -1023,7 +1046,7 @@ mod test {
                     (93, "ninety-three"),
                     (7, "seven"),
                 ],
-                expected_return: None,
+                expected_return: (4, None),
             },
             TestCase {
                 name: "overwrite existing key/value, stay inline",
@@ -1032,7 +1055,7 @@ mod test {
                 expected_inline_before: true,
                 expected_inline_after: true,
                 expected_values: vec![(10, "ten"), (5, "fivefivefive"), (86, "eighty-six")],
-                expected_return: Some("five"),
+                expected_return: (1, Some("five")),
             },
             TestCase {
                 name: "overwrite existing key/value, stay on heap",
@@ -1046,43 +1069,56 @@ mod test {
                     (86, "eighty-six"),
                     (93, "ninety-three"),
                 ],
-                expected_return: Some("ten"),
+                expected_return: (0, Some("ten")),
             },
         ];
 
         for test_case in test_cases {
-            let mut small_map = SmallMap::<usize, &str, 3>::new();
+            let mut small_map_1 = test_case
+                .initial_values
+                .into_iter()
+                .collect::<SmallMap<_, _, 3>>();
 
-            for (k, v) in test_case.initial_values {
-                small_map.insert(k, v);
+            let mut small_map_2 = small_map_1.clone();
+
+            for sm in [&small_map_1, &small_map_2] {
+                assert_eq!(
+                    test_case.expected_inline_before,
+                    sm.is_inline(),
+                    "inline state before insertion in SmallMap does not match expected in test '{}'",
+                    test_case.name
+                );
             }
-            assert_eq!(
-                test_case.expected_inline_before,
-                small_map.is_inline(),
-                "inline state before insertion in SmallMap does not match expected in test '{}'",
-                test_case.name
-            );
 
-            let actual_return =
-                small_map.insert(test_case.insert_key_value.0, test_case.insert_key_value.1);
+            let actual_return_1 =
+                small_map_1.insert(test_case.insert_key_value.0, test_case.insert_key_value.1);
+            let actual_return_2 =
+                small_map_2.insert_full(test_case.insert_key_value.0, test_case.insert_key_value.1);
 
             assert_eq!(
-                test_case.expected_inline_after,
-                small_map.is_inline(),
-                "inline state after insertion in SmallMap does not match expected in test '{}'",
-                test_case.name
-            );
-            assert_eq!(
-                test_case.expected_return, actual_return,
+                test_case.expected_return.1, actual_return_1,
                 "return of insertion in SmallMap does not match expected return in test '{}'",
                 test_case.name
             );
             assert_eq!(
-                test_case.expected_values,
-                small_map.into_iter().collect::<Vec<_>>(),
-                "values in SmallMap do not match expected values in test '{}'",
+                test_case.expected_return, actual_return_2,
+                "return of insertion in SmallMap does not match expected return in test '{}'",
                 test_case.name
             );
+            for sm in [small_map_1, small_map_2] {
+                assert_eq!(
+                    test_case.expected_inline_after,
+                    sm.is_inline(),
+                    "inline state after insertion in SmallMap does not match expected in test '{}'",
+                    test_case.name
+                );
+                assert_eq!(
+                    test_case.expected_values,
+                    sm.into_iter().collect::<Vec<_>>(),
+                    "values in SmallMap do not match expected values in test '{}'",
+                    test_case.name
+                );
+            }
         }
     }
 
@@ -1336,12 +1372,15 @@ mod test {
             assert_eq!(inline, map.is_inline());
 
             // not existing -> insert new
-            map.entry("0").or_insert(777);
+            assert_eq!(&777, map.entry("0").or_insert(777));
             assert_eq!(Some(&777), map.get(&"0"));
 
             // existing -> no-op
-            map.entry("1").or_insert(777);
-            assert_eq!(Some(&111), map.get(&"1"));
+            let ret = map.entry("1").or_insert(999);
+            assert_eq!(&111, ret);
+            *ret += 1;
+
+            assert_eq!(Some(&112), map.get(&"1"));
         }
         test::<1>(false);
         test::<3>(true);
