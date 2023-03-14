@@ -438,7 +438,6 @@ impl<K, V, const C: usize, S> Default for MapData<K, V, C, S> {
 impl<K, V, const C: usize, S> Index<usize> for SmallMap<K, V, C, S>
 where
     K: Eq + Hash,
-    V: Eq,
     S: BuildHasher,
 {
     type Output = V;
@@ -453,7 +452,6 @@ where
 impl<K, V, const C: usize, S> IndexMut<usize> for SmallMap<K, V, C, S>
 where
     K: Eq + Hash,
-    V: Eq,
     S: BuildHasher,
 {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
@@ -466,7 +464,6 @@ where
 impl<K, V, Q: ?Sized, const C: usize, S> Index<&Q> for SmallMap<K, V, C, S>
 where
     K: Eq + Hash,
-    V: Eq,
     Q: Hash + Equivalent<K>,
     S: BuildHasher,
 {
@@ -480,7 +477,6 @@ where
 impl<K, V, Q: ?Sized, const C: usize, S> IndexMut<&Q> for SmallMap<K, V, C, S>
 where
     K: Eq + Hash,
-    V: Eq,
     Q: Hash + Equivalent<K>,
     S: BuildHasher,
 {
