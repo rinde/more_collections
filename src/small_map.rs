@@ -1157,6 +1157,15 @@ mod test {
         assert_eq!(map1, map2);
     }
 
+    #[test]
+    fn small_map_partial_eq_only_requires_partial_eq_bound() {
+        #[derive(Hash, Debug, PartialEq)]
+        struct PartialEqType(usize);
+        let map1: SmallMap<PartialEqType, PartialEqType, 2> = smallmap! {};
+        let map2: SmallMap<PartialEqType, PartialEqType, 2> = smallmap! {};
+        assert_eq!(map1, map2)
+    }
+
     // Type for testing equivalence to String
     struct MyType(usize);
 
