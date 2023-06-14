@@ -1,3 +1,7 @@
+# 0.6.1
+ - Bugfix: [Correct partial eq bounds](https://github.com/rinde/more_collections/pull/18) by [Fabian Braun](https://github.com/fabian-braun).
+ - Bump `IndexMap` dependency to 1.9.3
+
 # 0.6.0
  - `SmallSet`: add `insert_full()`
  - `SmallMap`: add `insert_full()` and return value for `entry().or_insert()`
@@ -8,7 +12,7 @@
 
 # 0.5.0
  - add `SmallMap` and `SmallSet` implementations
- - bump `IndexMap` depdendency to 1.9.2
+ - bump `IndexMap` dependency to 1.9.2
 
 # 0.4.0
  - bump `IndexMap` dependency to 1.9.1
