@@ -439,8 +439,8 @@ where
 }
 impl<K, V, const C: usize, S> PartialEq for SmallMap<K, V, C, S>
 where
-    K: Hash + Eq,
-    V: Eq,
+    K: Hash + PartialEq,
+    V: PartialEq,
 {
     fn eq(&self, other: &Self) -> bool {
         self.iter().eq(other.iter())
