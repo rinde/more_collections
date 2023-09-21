@@ -42,7 +42,7 @@ where
         IndexSet::with_hasher(S::default()),
         set,
         (Q: Hash + Equivalent<K>),
-        (R: Hash + Equivalent<V>)
+        (K: Hash + Equivalent<V>)
     }
 }
 

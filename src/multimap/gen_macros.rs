@@ -283,6 +283,21 @@ macro_rules! index_multimap_impl {
                 self.inner.get_index_of(key)
             }
         }
+
+        /// Get a key-value pair by index, if it is present, else None.
+        pub fn get_index<Q: ?Sized>(&self, index: usize) -> Option<(&K, &$values)>
+        where
+            $($keys_ref)*,
+            $($values_ref)*,
+        {
+            if index >= self.inner.len() {
+                None
+            } else {
+                self.inner.get_index(index)
+            }
+        }
+
+
     };
 }
 
