@@ -42,7 +42,7 @@ where
         Vec::new(),
         vec,
         (Q: Hash + Equivalent<K>),
-        (K: Equivalent<V>)
+        (R: Equivalent<V>)
     }
 }
 
