@@ -209,7 +209,7 @@ where
                     None
                 }
             }
-            MapData::Heap(map) => map.get_index_mut(index).map(|(k, v)| (&*k, v)),
+            MapData::Heap(map) => map.get_index_mut(index).map(|(k, v)| (k, v)),
         }
     }
 
@@ -823,7 +823,7 @@ mod test {
 
     #[test]
     fn remove_tests() {
-        let values = vec![
+        let values = [
             (10, "ten"),
             (5, "five"),
             (86, "eighty-six"),
@@ -999,7 +999,7 @@ mod test {
         // | overwrites existing | Stay inline  | Same as existing   |
         // | overwrites existing | Stay on heap | Same as existing   |
 
-        let values = vec![
+        let values = [
             (10, "ten"),
             (5, "five"),
             (86, "eighty-six"),
