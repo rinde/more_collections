@@ -1,4 +1,4 @@
-RUST_NIGHTLY_VERSION  := nightly-2023-03-10
+RUST_NIGHTLY_VERSION  := nightly-2023-09-27
 SHELL := /bin/bash -eu
 
 .PHONY: test
@@ -25,3 +25,7 @@ build:
 .PHONY: build-release
 build-release:
 	cargo build --release
+
+bumpdeps:
+	cargo install cargo-edit
+	cargo upgrade
