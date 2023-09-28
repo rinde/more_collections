@@ -14,6 +14,9 @@ lint:
 fmt:
 	cargo +$(RUST_NIGHTLY_VERSION) fmt -- --config-path ./rustfmt-nightly.toml
 
+install-nightly:
+	rustup toolchain install $(RUST_NIGHTLY_VERSION)
+
 .PHONY: clean
 clean:
 	rm -rf target
