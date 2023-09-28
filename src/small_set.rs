@@ -328,7 +328,7 @@ mod test {
         // | already existing    | Stay inline  | Same as existing   |
         // | already existing    | Stay on heap | Same as existing   |
 
-        let values = vec![10, 5, 86, 93];
+        let values = [10, 5, 86, 93];
         struct TestCase {
             name: &'static str,
             initial_values: Vec<usize>,
