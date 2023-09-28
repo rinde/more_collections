@@ -1,4 +1,4 @@
-RUST_NIGHTLY_VERSION  := nightly-2023-03-10
+RUST_NIGHTLY_VERSION  := nightly-2023-09-27
 SHELL := /bin/bash -eu
 
 .PHONY: test
@@ -14,6 +14,9 @@ lint:
 fmt:
 	cargo +$(RUST_NIGHTLY_VERSION) fmt -- --config-path ./rustfmt-nightly.toml
 
+install-nightly:
+	rustup toolchain install $(RUST_NIGHTLY_VERSION)
+
 .PHONY: clean
 clean:
 	rm -rf target
@@ -25,3 +28,7 @@ build:
 .PHONY: build-release
 build-release:
 	cargo build --release
+
+bumpdeps:
+	cargo install cargo-edit
+	cargo upgrade
