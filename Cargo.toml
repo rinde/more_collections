@@ -1,7 +1,7 @@
 [package]
 edition = "2021"
 name = "more_collections"
-version = "0.6.1"
+version = "0.7.0"
 authors = ["Rinde van Lon <rindevanlon@gmail.com>"]
 description = "Additional collections not found in std::collections"
 repository = "https://github.com/rinde/more_collections/"

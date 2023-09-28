@@ -1,3 +1,7 @@
+# 0.7.0
+ - Add `get_index()` to `Index*Multimap`s by [@jankeu](https://github.com/jankeu)
+ - Update Rust version and dependencies by [@jankeu](https://github.com/jankeu)
+
 # 0.6.1
  - Bugfix: [Correct partial eq bounds](https://github.com/rinde/more_collections/pull/18) by [Fabian Braun](https://github.com/fabian-braun).
  - Bump `IndexMap` dependency to 1.9.3
