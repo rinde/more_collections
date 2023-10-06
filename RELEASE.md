@@ -1,3 +1,7 @@
+# 0.8.0
+ - Add `or_insert()` to `Entry` of `SmallMap`
+ - Bump deps
+
 # 0.7.0
  - Add `get_index()` to `Index*Multimap`s by [@jankeu](https://github.com/jankeu)
  - Update Rust version and dependencies by [@jankeu](https://github.com/jankeu)
