@@ -690,6 +690,36 @@ where
     }
 }
 
+impl<'a, K, V, const C: usize, S> Entry<'a, K, V, C, S>
+where
+    K: Hash + Eq,
+    V: Default,
+    S: BuildHasher + Default,
+{
+    /// Ensures a value is in the entry by inserting the default value if empty,
+    /// and returns a mutable reference to the value in the entry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use more_collections::SmallMap;
+    ///
+    /// let mut map: SmallMap<&str, Option<u32>, 2> = SmallMap::new();
+    /// map.entry("lalaland").or_default();
+    ///
+    /// assert_eq!(map["lalaland"], None);
+    /// ```
+    pub fn or_default(self) -> &'a mut V {
+        match self {
+            Entry::Vacant(map, key) => {
+                let (index, _) = map.insert_full(key, Default::default());
+                &mut map[index]
+            }
+            Entry::Occupied(map, index) => &mut map[index],
+        }
+    }
+}
+
 impl<K, V, const C: usize, S> Debug for SmallMap<K, V, C, S>
 where
     K: Debug,
