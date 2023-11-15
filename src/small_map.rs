@@ -625,22 +625,23 @@ where
         let iter = iterable.into_iter();
         let (lower_bound, _) = iter.size_hint();
         if lower_bound <= C {
-            let vec = SmallVec::<[(K, V); C]>::from_iter(iter);
-            // If the lower bound of the size hint is off, such that the actual vector
-            // length exceeds the inline capacity, then the data will be moved to an
-            // IndexMap _after_ it was moved into the SmallVec.
-            if vec.len() > C {
+            let mut map = Self {
+                data: MapData::Inline(Default::default()),
+            };
+            iter.for_each(|(key, value)| {
+                map.insert(key, value);
+            });
+            map
+        } else {
+            let mut index_map = IndexMap::from_iter(iter);
+            if index_map.len() <= C {
                 Self {
-                    data: MapData::Heap(IndexMap::from_iter(vec)),
+                    data: MapData::Inline(index_map.drain(0..index_map.len()).collect()),
                 }
             } else {
                 Self {
-                    data: MapData::Inline(vec),
+                    data: MapData::Heap(index_map),
                 }
-            }
-        } else {
-            Self {
-                data: MapData::Heap(IndexMap::from_iter(iter)),
             }
         }
     }
@@ -1513,6 +1514,25 @@ mod test {
 
         let output = map.into_iter().collect::<Vec<_>>();
         assert_eq!(data, output);
+    }
+
+    #[test]
+    fn from_iterator_duplicate_keys() {
+        // input fits inline, should stay inline
+        let data = vec![(0, ()), (1, ()), (0, ())];
+        let map = SmallMap::<_, _, 3>::from_iter(data);
+
+        assert_eq!(2, map.len());
+        assert_eq!(vec![0, 1], map.keys().copied().collect::<Vec<_>>());
+        assert!(map.is_inline());
+
+        // input doesn't fit inline, but because of duplicates it should move inline
+        let data = vec![(0, ()), (1, ()), (0, ()), (1, ())];
+        let map = SmallMap::<_, _, 3>::from_iter(data);
+
+        assert_eq!(2, map.len());
+        assert_eq!(vec![0, 1], map.keys().copied().collect::<Vec<_>>());
+        assert!(map.is_inline());
     }
 
     #[test]
