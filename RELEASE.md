@@ -1,3 +1,6 @@
+# 0.8.1
+ - Fix bug such that `SmallMap::from_iter()` removes duplicate keys, also when inline
+
 # 0.8.0
  - Add `or_insert()` to `Entry` of `SmallMap`
  - Bump deps
