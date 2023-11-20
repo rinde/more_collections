@@ -207,6 +207,7 @@ where
     }
 }
 
+#[derive(Clone)]
 pub struct Iter<'a, T> {
     inner: small_map::Iter<'a, T, ()>,
 }

@@ -1,3 +1,6 @@
+# 0.9.0
+ - Add `Clone` to `iter()`, `keys()`, and `values()` for all multimaps.
+
 # 0.8.1
  - Fix bug such that `SmallMap::from_iter()` removes duplicate keys, also when inline
 

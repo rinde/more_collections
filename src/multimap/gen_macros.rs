@@ -624,6 +624,7 @@ macro_rules! impl_iter {
         /// An iterator over the entries of a multimap.
         ///
         /// This struct is created by the `iter` method on multimap.
+        #[derive(Clone)]
         pub struct Iter<'a, $($generic_ids)*> where K: 'a, V: 'a{
             outer: $outer_iter,
             inner: Option<(&'a K, $inner_iter)>,
@@ -667,6 +668,7 @@ macro_rules! impl_iter {
         /// An iterator over the values of a multimap.
         ///
         /// This `struct` is created by the `values` method on multimap.
+        #[derive(Clone)]
         pub struct Values<'a, $($generic_ids)*>{
             inner: Iter<'a, $($generic_ids)*>,
         }
@@ -717,6 +719,7 @@ macro_rules! impl_keys {
         /// An iterator over the keys of a multimap.
         ///
         /// This `struct` is created by the `keys` method on multimap.
+        #[derive(Clone)]
         pub struct Keys<'a, $($generic_ids)*> {
             inner: $inner_iter,
         }

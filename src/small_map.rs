@@ -503,6 +503,7 @@ where
     }
 }
 
+#[derive(Clone)]
 pub enum Iter<'a, K, V> {
     Inline(std::slice::Iter<'a, (K, V)>),
     Heap(indexmap::map::Iter<'a, K, V>),
@@ -566,6 +567,7 @@ impl<K, V, const C: usize, S> IntoIterator for SmallMap<K, V, C, S> {
     }
 }
 
+#[derive(Clone)]
 pub enum Keys<'a, K, V> {
     Inline(std::slice::Iter<'a, (K, V)>),
     Heap(indexmap::map::Keys<'a, K, V>),
