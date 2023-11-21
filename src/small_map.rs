@@ -243,6 +243,18 @@ where
         }
     }
 
+    /// Return `true` if an equivalent to `key` exists in the map.
+    ///
+    /// Computational complexity:
+    ///  - inline: O(n)
+    ///  - heap: O(1)
+    pub fn contains_key<Q: ?Sized>(&self, key: &Q) -> bool
+    where
+        Q: Hash + Equivalent<K>,
+    {
+        self.get_index_of(key).is_some()
+    }
+
     /// Convert the specified map and turn it into a `SmallMap`.
     ///
     /// If the map len is smaller or equal the inline capacity, the data will be
@@ -529,6 +541,17 @@ impl<'a, K, V> ExactSizeIterator for Iter<'a, K, V> {
         }
     }
 }
+
+impl<'a, K, V> DoubleEndedIterator for Iter<'a, K, V> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        match self {
+            Iter::Inline(iter) => iter.next_back().map(|(k, v)| (k, v)),
+            Iter::Heap(iter) => iter.next_back(),
+        }
+    }
+}
+
+impl<'a, K, V> FusedIterator for Iter<'a, K, V> {}
 
 pub enum IterMut<'a, K, V> {
     Inline(std::slice::IterMut<'a, (K, V)>),
