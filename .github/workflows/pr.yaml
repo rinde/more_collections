@@ -25,15 +25,13 @@ jobs:
       - uses: arduino/setup-protoc@v1
         with:
           version: '3.x'
+      - run: |
+          echo "RUST_TOOLCHAIN_NIGHTLY=$(cat ./rust-toolchain-nightly)" >> $GITHUB_ENV
       - uses: actions-rs/toolchain@v1.0.7
         with:
-          toolchain: nightly-2022-09-22
-          override: true
+          toolchain: ${{ env.RUST_TOOLCHAIN_NIGHTLY }}
           components: rustfmt
       - uses: actions-rs/toolchain@v1.0.7
-        with:
-          override: true
-          components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v1
         with:
           sharedKey: debug-build-nightly

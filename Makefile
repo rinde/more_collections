@@ -1,4 +1,4 @@
-RUST_NIGHTLY_VERSION  := nightly-2023-11-21
+RUST_NIGHTLY_VERSION  := $(shell cat rust-toolchain-nightly)
 SHELL := /bin/bash -eu
 
 .PHONY: test
