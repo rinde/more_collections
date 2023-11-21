@@ -23,11 +23,11 @@ clean:
 
 .PHONY: build
 build:
-	cargo build
+	cargo build --workspace --all-features
 
 .PHONY: build-release
 build-release:
-	cargo build --release
+	cargo build --release --workspace --all-features
 
 bumpdeps:
 	cargo install cargo-edit
