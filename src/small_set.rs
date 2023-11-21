@@ -380,13 +380,7 @@ where
     type Item = &'a T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        // self.iter.filter(|item| !self.other.contains(*item)).next()
-        while let Some(item) = self.iter.next() {
-            if !self.other.contains(item) {
-                return Some(item);
-            }
-        }
-        None
+        self.iter.find(|item| !self.other.contains(*item))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -400,12 +394,7 @@ where
     S: BuildHasher,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
-        while let Some(item) = self.iter.next_back() {
-            if !self.other.contains(item) {
-                return Some(item);
-            }
-        }
-        None
+        self.iter.rfind(|item| !self.other.contains(*item))
     }
 }
 
@@ -488,12 +477,7 @@ where
     type Item = &'a T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        while let Some(item) = self.iter.next() {
-            if self.other.contains(item) {
-                return Some(item);
-            }
-        }
-        None
+        self.iter.find(|item| self.other.contains(*item))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -507,12 +491,7 @@ where
     S: BuildHasher,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
-        while let Some(item) = self.iter.next_back() {
-            if self.other.contains(item) {
-                return Some(item);
-            }
-        }
-        None
+        self.iter.rfind(|item| self.other.contains(*item))
     }
 }
 
