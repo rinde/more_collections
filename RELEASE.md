@@ -1,5 +1,6 @@
 # 0.10.0
- - Add `IntoIterator` implementation to `SmallSet`
+ - `SmallMap` add `contains_key()`, `DoubleEndedIterator` for `Iter`.
+ - `SmallSet` add `IntoIterator`, `difference()`, `symmetric_difference()`, `intersection()`, `union()`,  `contains()`, and `DoubleEndedIterator` for `Iter`.
  - bump `indexmap` to 2.1.0
  - bump `smallvec` to 1.11.2
 
