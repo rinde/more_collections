@@ -16,8 +16,8 @@ use crate::SmallMap;
 /// A set-like container that can store a specified number of elements inline.
 ///
 /// `SmallSet` shares most of its API with, and behaves like,
-/// [IndexSet](indexmap::IndexSet). It can store a limited amount of data
-/// inline, backed by [SmallVec](smallvec::SmallVec). If the data exceeds the
+/// [`IndexSet`](indexmap::IndexSet). It can store a limited amount of data
+/// inline, backed by [`SmallVec`]. If the data exceeds the
 /// limit `C`, `SmallSet` will move _all_ its data over to the heap in the form
 /// of an `IndexSet`. For performance reasons, transitions between heap and
 /// inline storage should generally be avoided.

@@ -3,7 +3,7 @@
 //! # Small* collections
 //!
 //! Built on top of the excellent [smallvec](https://github.com/servo/rust-smallvec)
-//! crate, [SmallMap] and [SmallSet] are a `Map` and `Set` respectively that
+//! crate, [`SmallMap`] and [`SmallSet`] are a `Map` and `Set` respectively that
 //! are inlined if they contain fewer values than a (statically chosen)
 //! capacity `C`, otherwise they are heap allocated and backed by an
 //! `IndexMap`.
@@ -27,13 +27,13 @@
 //! | Name               | Behaves as                          | Keys order
 //! | Values order        | May contain duplicates | | ------------------ |
 //! ----------------------------------- | ------------------- |
-//! ------------------- | ---------------------- | | [HashSetMultimap]  |
+//! ------------------- | ---------------------- | | [`HashSetMultimap`]  |
 //! [`HashMap`]`<K,`[`HashSet`]`<V>>`   | Arbitrary order     | Arbitrary order
-//! | No                     | | [HashVecMultimap]  |
+//! | No                     | | [`HashVecMultimap`]  |
 //! [`HashMap`]`<K,`[`Vec`]`<V>>`       | Arbitrary order     | Insertion
-//! order[^1] | Yes                    | | [IndexSetMultimap] |
+//! order[^1] | Yes                    | | [`IndexSetMultimap`] |
 //! [`IndexMap`]`<K,`[`IndexSet`]`<V>>` | Insertion order[^1] | Insertion
-//! order[^1] | No                     | | [IndexVecMultimap] | [`IndexMap`]`<K,
+//! order[^1] | No                     | | [`IndexVecMultimap`] | [`IndexMap`]`<K,
 //! `[`Vec`]`<V>>`     | Insertion order[^1] | Insertion order[^1] | Yes
 //! |
 //!

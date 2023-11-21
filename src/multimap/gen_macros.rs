@@ -61,7 +61,7 @@ macro_rules! multimap_base2_impl {
         ///
         /// Note that the number of elements in the multimap may not be the
         /// same as the number of keys in the multimap. See
-        /// [Self::keys_len()].
+        /// [`Self::keys_len()`].
         pub fn len(&self) -> usize {
             self.len
         }
@@ -75,7 +75,7 @@ macro_rules! multimap_base2_impl {
         ///
         /// Note that the number of keys in the multimap may not be the
         /// same as the number of elements in the multimap. See
-        /// [Self::len()].
+        /// [`Self::len()`].
         pub fn keys_len(&self) -> usize {
             self.inner.len()
         }

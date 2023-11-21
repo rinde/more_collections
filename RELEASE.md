@@ -1,6 +1,8 @@
 # 0.10.0
  - `SmallMap` add `contains_key()`, `DoubleEndedIterator` for `Iter`.
  - `SmallSet` add `IntoIterator`, `difference()`, `symmetric_difference()`, `intersection()`, `union()`,  `contains()`, and `DoubleEndedIterator` for `Iter`.
+ - bump `indexmap` to 2.1.0
+ - bump `smallvec` to 1.11.2
 
 # 0.9.0
  - Add `Clone` to `iter()`, `keys()`, and `values()` for all multimaps.

@@ -17,8 +17,8 @@ use smallvec::SmallVec;
 /// A map-like container that can store a specified number of elements inline.
 ///
 /// `SmallMap` shares most of its API with, and behaves like
-/// [IndexMap](indexmap::IndexMap). It can store a limited amount of data
-/// inline, backed by [SmallVec]. If the data exceeds the limit `C`, `SmallMap`
+/// [`IndexMap`]. It can store a limited amount of data
+/// inline, backed by [`SmallVec`]. If the data exceeds the limit `C`, `SmallMap`
 /// will move _all_ its data over to the heap in the form of an `IndexMap`. For
 /// performance reasons, transitions between heap and inline storage should
 /// generally be avoided.

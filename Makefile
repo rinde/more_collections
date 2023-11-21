@@ -1,4 +1,4 @@
-RUST_NIGHTLY_VERSION  := nightly-2023-10-05
+RUST_NIGHTLY_VERSION  := $(shell cat rust-toolchain-nightly)
 SHELL := /bin/bash -eu
 
 .PHONY: test
@@ -8,7 +8,7 @@ test:
 
 lint: 
 	cargo fmt -- --check
-	cargo clippy --workspace --all-features --tests --benches -- -D clippy::style -D clippy::perf -D warnings
+	cargo clippy --workspace --all-features --tests --benches -- -D warnings
 	cargo doc --all --no-deps --document-private-items --all-features
 
 fmt:
@@ -23,11 +23,11 @@ clean:
 
 .PHONY: build
 build:
-	cargo build
+	cargo build --workspace --all-features
 
 .PHONY: build-release
 build-release:
-	cargo build --release
+	cargo build --release --workspace --all-features
 
 bumpdeps:
 	cargo install cargo-edit
