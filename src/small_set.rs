@@ -7,6 +7,7 @@ use std::hash::BuildHasher;
 use ::core::hash::Hash;
 use indexmap::Equivalent;
 use smallvec::SmallVec;
+use std::iter::Chain;
 use std::iter::FusedIterator;
 
 use crate::small_map;
@@ -188,6 +189,85 @@ where
     {
         self.data.remove(key).is_some()
     }
+
+    /// Return an iterator over the values that are in `self` but not `other`.
+    ///
+    /// Values are produced in the same order that they appear in `self`.
+    pub fn difference<'a, const C2: usize, S2>(
+        &'a self,
+        other: &'a SmallSet<T, C2, S2>,
+    ) -> Difference<'a, T, C2, S2>
+    where
+        S2: BuildHasher,
+    {
+        Difference {
+            iter: self.iter(),
+            other,
+        }
+    }
+
+    /// Return an iterator over the values that are in `self` or `other`,
+    /// but not in both.
+    ///
+    /// Values from `self` are produced in their original order, followed by
+    /// values from `other` in their original order.
+    pub fn symmetric_difference<'a, const C2: usize, S2>(
+        &'a self,
+        other: &'a SmallSet<T, C2, S2>,
+    ) -> SymmetricDifference<'a, T, C, S, C2, S2>
+    where
+        S2: BuildHasher,
+    {
+        let diff1 = self.difference(other);
+        let diff2 = other.difference(self);
+        SymmetricDifference {
+            iter: diff1.chain(diff2),
+        }
+    }
+
+    /// Return an iterator over the values that are in both `self` and `other`.
+    ///
+    /// Values are produced in the same order that they appear in `self`.
+    pub fn intersection<'a, const C2: usize, S2>(
+        &'a self,
+        other: &'a SmallSet<T, C2, S2>,
+    ) -> Intersection<'a, T, C2, S2>
+    where
+        S2: BuildHasher,
+    {
+        Intersection {
+            iter: self.iter(),
+            other,
+        }
+    }
+
+    /// Return an iterator over all values that are in `self` or `other`.
+    ///
+    /// Values from `self` are produced in their original order, followed by
+    /// values that are unique to `other` in their original order.
+    pub fn union<'a, const C2: usize, S2>(
+        &'a self,
+        other: &'a SmallSet<T, C2, S2>,
+    ) -> Union<'a, T, C, S>
+    where
+        S2: BuildHasher,
+    {
+        Union {
+            iter: self.iter().chain(other.difference(self)),
+        }
+    }
+
+    /// Return `true` if an equivalent to `value` exists in the set.
+    ///
+    /// Computational complexity:
+    ///  - inline: O(n)
+    ///  - heap: O(1)
+    pub fn contains<Q: ?Sized>(&self, value: &Q) -> bool
+    where
+        Q: Hash + Equivalent<T>,
+    {
+        self.data.contains_key(value)
+    }
 }
 
 impl<T, const C: usize, S> Hash for SmallSet<T, C, S>
@@ -224,6 +304,12 @@ impl<'a, T> Iterator for Iter<'a, T> {
 impl<'a, T> ExactSizeIterator for Iter<'a, T> {
     fn len(&self) -> usize {
         self.inner.len()
+    }
+}
+
+impl<'a, T> DoubleEndedIterator for Iter<'a, T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.inner.next_back().map(|(t, _)| t)
     }
 }
 
@@ -278,6 +364,215 @@ where
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.debug_set().entries(self.iter()).finish()
     }
+}
+
+#[derive(Clone)]
+pub struct Difference<'a, T, const C: usize, S> {
+    iter: Iter<'a, T>,
+    other: &'a SmallSet<T, C, S>,
+}
+
+impl<'a, T, const C: usize, S> Iterator for Difference<'a, T, C, S>
+where
+    T: Eq + Hash,
+    S: BuildHasher,
+{
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        // self.iter.filter(|item| !self.other.contains(*item)).next()
+        while let Some(item) = self.iter.next() {
+            if !self.other.contains(item) {
+                return Some(item);
+            }
+        }
+        None
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (0, self.iter.size_hint().1)
+    }
+}
+
+impl<T, const C: usize, S> DoubleEndedIterator for Difference<'_, T, C, S>
+where
+    T: Eq + Hash,
+    S: BuildHasher,
+{
+    fn next_back(&mut self) -> Option<Self::Item> {
+        while let Some(item) = self.iter.next_back() {
+            if !self.other.contains(item) {
+                return Some(item);
+            }
+        }
+        None
+    }
+}
+
+impl<T, const C: usize, S> FusedIterator for Difference<'_, T, C, S>
+where
+    T: Eq + Hash,
+    S: BuildHasher,
+{
+}
+
+#[derive(Clone)]
+pub struct SymmetricDifference<'a, T, const C1: usize, S1, const C2: usize, S2> {
+    iter: Chain<Difference<'a, T, C2, S2>, Difference<'a, T, C1, S1>>,
+}
+
+impl<'a, T, const C1: usize, S1, const C2: usize, S2> Iterator
+    for SymmetricDifference<'a, T, C1, S1, C2, S2>
+where
+    T: Eq + Hash,
+    S1: BuildHasher,
+    S2: BuildHasher,
+{
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next()
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
+
+    fn fold<B, F>(self, init: B, f: F) -> B
+    where
+        F: FnMut(B, Self::Item) -> B,
+    {
+        self.iter.fold(init, f)
+    }
+}
+
+impl<'a, T, const C1: usize, S1, const C2: usize, S2> DoubleEndedIterator
+    for SymmetricDifference<'a, T, C1, S1, C2, S2>
+where
+    T: Eq + Hash,
+    S1: BuildHasher,
+    S2: BuildHasher,
+{
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.iter.next_back()
+    }
+
+    fn rfold<B, F>(self, init: B, f: F) -> B
+    where
+        F: FnMut(B, Self::Item) -> B,
+    {
+        self.iter.rfold(init, f)
+    }
+}
+
+impl<'a, T, const C1: usize, S1, const C2: usize, S2> FusedIterator
+    for SymmetricDifference<'a, T, C1, S1, C2, S2>
+where
+    T: Eq + Hash,
+    S1: BuildHasher,
+    S2: BuildHasher,
+{
+}
+
+#[derive(Clone)]
+pub struct Intersection<'a, T, const C: usize, S> {
+    iter: Iter<'a, T>,
+    other: &'a SmallSet<T, C, S>,
+}
+
+impl<'a, T, const C: usize, S> Iterator for Intersection<'a, T, C, S>
+where
+    T: Eq + Hash,
+    S: BuildHasher,
+{
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while let Some(item) = self.iter.next() {
+            if self.other.contains(item) {
+                return Some(item);
+            }
+        }
+        None
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (0, self.iter.size_hint().1)
+    }
+}
+
+impl<'a, T, const C: usize, S> DoubleEndedIterator for Intersection<'a, T, C, S>
+where
+    T: Eq + Hash,
+    S: BuildHasher,
+{
+    fn next_back(&mut self) -> Option<Self::Item> {
+        while let Some(item) = self.iter.next_back() {
+            if self.other.contains(item) {
+                return Some(item);
+            }
+        }
+        None
+    }
+}
+
+impl<'a, T, const C: usize, S> FusedIterator for Intersection<'a, T, C, S>
+where
+    T: Eq + Hash,
+    S: BuildHasher,
+{
+}
+
+#[derive(Clone)]
+pub struct Union<'a, T, const C: usize, S> {
+    iter: Chain<Iter<'a, T>, Difference<'a, T, C, S>>,
+}
+
+impl<'a, T, const C: usize, S> Iterator for Union<'a, T, C, S>
+where
+    T: Eq + Hash,
+    S: BuildHasher,
+{
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next()
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
+
+    fn fold<B, F>(self, init: B, f: F) -> B
+    where
+        F: FnMut(B, Self::Item) -> B,
+    {
+        self.iter.fold(init, f)
+    }
+}
+
+impl<'a, T, const C: usize, S> DoubleEndedIterator for Union<'a, T, C, S>
+where
+    T: Eq + Hash,
+    S: BuildHasher,
+{
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.iter.next_back()
+    }
+
+    fn rfold<B, F>(self, init: B, f: F) -> B
+    where
+        F: FnMut(B, Self::Item) -> B,
+    {
+        self.iter.rfold(init, f)
+    }
+}
+
+impl<'a, T, const C: usize, S> FusedIterator for Union<'a, T, C, S>
+where
+    T: Eq + Hash,
+    S: BuildHasher,
+{
 }
 
 /// Create a [`SmallSet`] with with the specified values.
