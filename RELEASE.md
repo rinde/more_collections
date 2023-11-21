@@ -1,3 +1,6 @@
+# 0.10.0
+ - Add `IntoIterator` implementation to `SmallSet`
+
 # 0.9.0
  - Add `Clone` to `iter()`, `keys()`, and `values()` for all multimaps.
 
