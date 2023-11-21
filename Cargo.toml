@@ -30,3 +30,28 @@ criterion = { version = "0.5.1", features = ["html_reports"] }
 indexmap = { version = "2.0.2" }
 maplit = { version = "1.0.2" }
 more_collections = { path=".", features = ["all"]}
+
+[lints.rust]
+# missing_debug_implementations = "warn"
+nonstandard-style = "deny"
+
+[lints.rustdoc]
+broken_intra_doc_links = "deny"
+private_intra_doc_links = "allow"
+
+[lints.clippy]
+correctness = "deny"
+suspicious = "warn"
+complexity = "warn"
+perf = "deny"
+cargo = "warn"
+style = "warn"
+todo = "deny"
+doc_link_with_quotes = "warn"
+doc_markdown = "warn"
+cloned_instead_of_copied = "warn"
+checked_conversions = "warn"
+filter_map_next = "warn"
+manual_instant_elapsed = "warn"
+cast_possible_wrap = "warn"
+cast_lossless = "warn"
