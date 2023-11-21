@@ -243,6 +243,18 @@ where
         }
     }
 
+    /// Return `true` if an equivalent to `key` exists in the map.
+    ///
+    /// Computational complexity:
+    ///  - inline: O(n)
+    ///  - heap: O(1)
+    pub fn contains_key<Q: ?Sized>(&self, key: &Q) -> bool
+    where
+        Q: Hash + Equivalent<K>,
+    {
+        self.get_index_of(key).is_some()
+    }
+
     /// Convert the specified map and turn it into a `SmallMap`.
     ///
     /// If the map len is smaller or equal the inline capacity, the data will be
@@ -529,6 +541,17 @@ impl<'a, K, V> ExactSizeIterator for Iter<'a, K, V> {
         }
     }
 }
+
+impl<'a, K, V> DoubleEndedIterator for Iter<'a, K, V> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        match self {
+            Iter::Inline(iter) => iter.next_back().map(|(k, v)| (k, v)),
+            Iter::Heap(iter) => iter.next_back(),
+        }
+    }
+}
+
+impl<'a, K, V> FusedIterator for Iter<'a, K, V> {}
 
 pub enum IterMut<'a, K, V> {
     Inline(std::slice::IterMut<'a, (K, V)>),
@@ -1370,21 +1393,29 @@ mod test {
     }
 
     #[test]
-    fn get_index_of_test() {
+    fn get_index_of_and_contains_test() {
         fn test<const C: usize>(inline: bool) {
             let map: SmallMap<&'static str, usize, C> =
                 smallmap! {"2" => 222, "1" => 111, "3" => 333};
             assert_eq!(inline, map.is_inline());
 
             assert_eq!(None, map.get_index_of(&"0"));
+            assert!(!map.contains_key(&"0"));
             assert_eq!(None, map.get_index_of(&MyType(0)));
+            assert!(!map.contains_key(&MyType(0)));
 
             assert_eq!(Some(1), map.get_index_of(&"1"));
+            assert!(map.contains_key(&"1"));
             assert_eq!(Some(1), map.get_index_of(&MyType(1)));
+            assert!(map.contains_key(&MyType(1)));
             assert_eq!(Some(0), map.get_index_of(&"2"));
+            assert!(map.contains_key(&"2"));
             assert_eq!(Some(0), map.get_index_of(&MyType(2)));
+            assert!(map.contains_key(&MyType(2)));
             assert_eq!(Some(2), map.get_index_of(&"3"));
+            assert!(map.contains_key(&"3"));
             assert_eq!(Some(2), map.get_index_of(&MyType(3)));
+            assert!(map.contains_key(&MyType(3)));
         }
         test::<1>(false);
         test::<3>(true);
