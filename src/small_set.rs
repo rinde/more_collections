@@ -807,4 +807,160 @@ mod test {
         let expected = "{0, 1, 2}";
         assert_eq!(expected, actual);
     }
+
+    #[test]
+    fn test_difference() {
+        fn test<const C1: usize, const C2: usize>(inline_a: bool, inline_b: bool) {
+            let set_a: SmallSet<&'static str, C1> = smallset! {"2", "1", "3", "b"};
+            let set_b: SmallSet<&'static str, C2> = smallset! {"2", "d", "1", "3", "a"};
+            assert_eq!(inline_a, set_a.is_inline());
+            assert_eq!(inline_b, set_b.is_inline());
+
+            let diff_a = set_a.difference(&set_b).copied().collect::<Vec<_>>();
+            assert_eq!(vec!["b"], diff_a);
+            let diff_b = set_b.difference(&set_a).copied().collect::<Vec<_>>();
+            assert_eq!(vec!["d", "a"], diff_b);
+            let diff_b_reverse = set_b.difference(&set_a).copied().rev().collect::<Vec<_>>();
+            assert_eq!(vec!["a", "d"], diff_b_reverse);
+
+            assert_eq!(0, set_a.difference(&set_a).count());
+        }
+        test::<1, 1>(false, false);
+        test::<1, 5>(false, true);
+        test::<4, 5>(true, true);
+        test::<4, 4>(true, false);
+    }
+
+    #[test]
+    fn test_symmetric_difference() {
+        fn test<const C1: usize, const C2: usize>(inline_a: bool, inline_b: bool) {
+            let set_a: SmallSet<&'static str, C1> = smallset! {"2", "1", "3", "b"};
+            let set_b: SmallSet<&'static str, C2> = smallset! {"2", "d", "1", "3", "a"};
+            assert_eq!(inline_a, set_a.is_inline());
+            assert_eq!(inline_b, set_b.is_inline());
+
+            let diff_a = set_a
+                .symmetric_difference(&set_b)
+                .copied()
+                .collect::<Vec<_>>();
+            assert_eq!(vec!["b", "d", "a"], diff_a);
+            let diff_b = set_b
+                .symmetric_difference(&set_a)
+                .copied()
+                .collect::<Vec<_>>();
+            assert_eq!(vec!["d", "a", "b"], diff_b);
+            let diff_b_reverse = set_b
+                .symmetric_difference(&set_a)
+                .copied()
+                .rev()
+                .collect::<Vec<_>>();
+            assert_eq!(vec!["b", "a", "d"], diff_b_reverse);
+
+            assert_eq!(0, set_a.symmetric_difference(&set_a).count());
+        }
+        test::<1, 1>(false, false);
+        test::<1, 5>(false, true);
+        test::<4, 5>(true, true);
+        test::<4, 4>(true, false);
+    }
+
+    #[test]
+    fn test_intersection() {
+        fn test<const C1: usize, const C2: usize>(inline_a: bool, inline_b: bool) {
+            let set_a: SmallSet<&'static str, C1> = smallset! {"2", "1", "3", "b"};
+            let set_b: SmallSet<&'static str, C2> = smallset! {"1", "d", "3", "2", "a"};
+            assert_eq!(inline_a, set_a.is_inline());
+            assert_eq!(inline_b, set_b.is_inline());
+
+            let diff_a = set_a.intersection(&set_b).copied().collect::<Vec<_>>();
+            assert_eq!(vec!["2", "1", "3"], diff_a);
+            let diff_b = set_b.intersection(&set_a).copied().collect::<Vec<_>>();
+            assert_eq!(vec!["1", "3", "2"], diff_b);
+            let diff_b_reverse = set_b
+                .intersection(&set_a)
+                .copied()
+                .rev()
+                .collect::<Vec<_>>();
+            assert_eq!(vec!["2", "3", "1"], diff_b_reverse);
+
+            assert_eq!(
+                vec!["2", "1", "3", "b"],
+                set_a.intersection(&set_a).copied().collect::<Vec<_>>()
+            );
+        }
+        test::<1, 1>(false, false);
+        test::<1, 5>(false, true);
+        test::<4, 5>(true, true);
+        test::<4, 4>(true, false);
+    }
+
+    #[test]
+    fn test_union() {
+        fn test<const C1: usize, const C2: usize>(inline_a: bool, inline_b: bool) {
+            let set_a: SmallSet<&'static str, C1> = smallset! {"2", "1", "3", "b"};
+            let set_b: SmallSet<&'static str, C2> = smallset! {"1", "d", "3", "2", "a"};
+            assert_eq!(inline_a, set_a.is_inline());
+            assert_eq!(inline_b, set_b.is_inline());
+
+            let diff_a = set_a.union(&set_b).copied().collect::<Vec<_>>();
+            assert_eq!(vec!["2", "1", "3", "b", "d", "a"], diff_a);
+            let diff_b = set_b.union(&set_a).copied().collect::<Vec<_>>();
+            assert_eq!(vec!["1", "d", "3", "2", "a", "b"], diff_b);
+            let diff_b_reverse = set_b.union(&set_a).copied().rev().collect::<Vec<_>>();
+            assert_eq!(vec!["b", "a", "2", "3", "d", "1"], diff_b_reverse);
+
+            assert_eq!(
+                vec!["2", "1", "3", "b"],
+                set_a.union(&set_a).copied().collect::<Vec<_>>()
+            );
+        }
+        test::<1, 1>(false, false);
+        test::<1, 5>(false, true);
+        test::<4, 5>(true, true);
+        test::<4, 4>(true, false);
+    }
+
+    #[test]
+    fn get_index_of_and_contains_test() {
+        fn test<const C: usize>(inline: bool) {
+            let set: SmallSet<&'static str, C> = smallset! {"2", "1", "3"};
+            assert_eq!(inline, set.is_inline());
+
+            assert_eq!(None, set.get_index_of(&"0"));
+            assert!(!set.contains(&"0"));
+            assert_eq!(None, set.get_index_of(&MyType(0)));
+            assert!(!set.contains(&MyType(0)));
+
+            assert_eq!(Some(1), set.get_index_of(&"1"));
+            assert!(set.contains(&"1"));
+            assert_eq!(Some(1), set.get_index_of(&MyType(1)));
+            assert!(set.contains(&MyType(1)));
+            assert_eq!(Some(0), set.get_index_of(&"2"));
+            assert!(set.contains(&"2"));
+            assert_eq!(Some(0), set.get_index_of(&MyType(2)));
+            assert!(set.contains(&MyType(2)));
+            assert_eq!(Some(2), set.get_index_of(&"3"));
+            assert!(set.contains(&"3"));
+            assert_eq!(Some(2), set.get_index_of(&MyType(3)));
+            assert!(set.contains(&MyType(3)));
+        }
+        test::<1>(false);
+        test::<3>(true);
+    }
+
+    // Type for testing equivalence to String
+    struct MyType(usize);
+
+    // Hash needs to be equivalent to String::hash
+    impl Hash for MyType {
+        fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+            self.0.to_string().hash(state);
+        }
+    }
+
+    impl Equivalent<&'static str> for MyType {
+        fn equivalent(&self, key: &&'static str) -> bool {
+            &self.0.to_string() == key
+        }
+    }
 }
