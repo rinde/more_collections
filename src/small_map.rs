@@ -4,6 +4,7 @@ use std::fmt;
 use std::fmt::Debug;
 use std::fmt::Formatter;
 use std::hash::BuildHasher;
+use std::iter::FusedIterator;
 use std::mem;
 use std::ops::Index;
 use std::ops::IndexMut;
@@ -617,6 +618,8 @@ impl<K, V, const C: usize> ExactSizeIterator for IntoIter<K, V, C> {
         }
     }
 }
+
+impl<K, V, const C: usize> FusedIterator for IntoIter<K, V, C> {}
 
 impl<K, V, const C: usize, S> FromIterator<(K, V)> for SmallMap<K, V, C, S>
 where

@@ -7,6 +7,7 @@ use std::hash::BuildHasher;
 use ::core::hash::Hash;
 use indexmap::Equivalent;
 use smallvec::SmallVec;
+use std::iter::FusedIterator;
 
 use crate::small_map;
 use crate::SmallMap;
@@ -226,6 +227,38 @@ impl<'a, T> ExactSizeIterator for Iter<'a, T> {
     }
 }
 
+impl<T, const C: usize, S> IntoIterator for SmallSet<T, C, S> {
+    type Item = T;
+
+    type IntoIter = IntoIter<T, C>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        IntoIter {
+            inner: self.data.into_iter(),
+        }
+    }
+}
+
+pub struct IntoIter<T, const C: usize> {
+    inner: small_map::IntoIter<T, (), C>,
+}
+
+impl<T, const C: usize> Iterator for IntoIter<T, C> {
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next().map(|(k, _)| k)
+    }
+}
+
+impl<T, const C: usize> ExactSizeIterator for IntoIter<T, C> {
+    fn len(&self) -> usize {
+        self.inner.len()
+    }
+}
+
+impl<T, const C: usize> FusedIterator for IntoIter<T, C> {}
+
 impl<T, const C: usize, S> FromIterator<T> for SmallSet<T, C, S>
 where
     T: Hash + Eq,
@@ -311,11 +344,24 @@ mod test {
 
     #[test]
     fn iter_iterates_in_insertion_order() {
-        let set: SmallSet<_, 5> = smallset! { 0, 1, 2, 5, 2};
-        assert_eq!(4, set.len());
-        let actual = set.iter().copied().collect::<Vec<_>>();
-        let expected = vec![0, 1, 2, 5];
-        assert_eq!(expected, actual);
+        fn test<const C: usize>(inline: bool) {
+            let inline_map: SmallSet<_, C> = smallset! {
+                1, 0, 4
+            };
+            assert_eq!(inline, inline_map.is_inline());
+            assert_eq!(
+                vec![&1, &0, &4],
+                inline_map.iter().collect::<Vec<_>>(),
+                "iter() does not return values in the correct order"
+            );
+            assert_eq!(
+                vec![1, 0, 4],
+                inline_map.into_iter().collect::<Vec<_>>(),
+                "into_iter() does not return values in the correct order"
+            );
+        }
+        test::<1>(false);
+        test::<3>(true);
     }
 
     #[test]
