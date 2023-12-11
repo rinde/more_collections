@@ -14,6 +14,13 @@ Additional Rust collections not found in [std::collections](https://doc.rust-lan
 
 Built on top of the excellent [smallvec](https://github.com/servo/rust-smallvec) crate, `SmallMap` and `SmallSet` are a `Map` and `Set` respectively that are inlined if they contain fewer values than a (statically chosen) capacity `C`, otherwise they are heap allocated and backed by an `IndexMap`. 
 
+| Completion | Name           | Behaves as       |
+| ---------- | -------------- | ---------------- |
+| 🟩🟩🟨⬜️⬜️      | SmallMap       | `IndexMap<K, V>` |
+| 🟩🟩🟨⬜️⬜️      | SmallSet       | `IndexSet<T>`    |
+| ⬜️⬜️⬜️⬜️⬜️      | SmallSortedMap | `BTreeMap<K, V>` |
+| ⬜️⬜️⬜️⬜️⬜️      | SmallSortedSet | `BTreeSet<T>`    |
+
 ## Multimaps 
 
 | Completion | Name                 | Behaves as                 |
@@ -37,6 +44,8 @@ Built on top of the excellent [smallvec](https://github.com/servo/rust-smallvec)
 | ⬜️⬜️⬜️⬜️⬜️      | HashMultiset  | `HashMap<K,usize>`  |
 | ⬜️⬜️⬜️⬜️⬜️      | BTreeMultiset | `BTreeMap<K,usize>` |
 | ⬜️⬜️⬜️⬜️⬜️      | EnumMultiset  | `EnumMap<K,usize>`  |
+
+Some work is already done [in this PR](https://github.com/rinde/more_collections/pull/8).
 
 ## Multimaps overview
 
