@@ -64,7 +64,7 @@ pub mod small_map;
 ))]
 pub mod small_set;
 
-mod vec_map;
+pub mod vec_map;
 
 // TODO add feature
 pub use vec_map::*;

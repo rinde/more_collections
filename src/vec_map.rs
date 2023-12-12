@@ -9,14 +9,14 @@ use bitvec::order::Lsb0;
 use bitvec::prelude::BitVec;
 use bitvec::slice::IterOnes;
 
-// TODO better name?
-pub trait Indexable: Copy {
+/// A key that can be used in a map.
+pub trait CopyKey: Copy {
     fn as_index(&self) -> usize;
 
     fn from_index(index: usize) -> Self;
 }
 
-/// A [`Vec`]-backed map..
+/// A [`Vec`]-backed map.
 ///
 /// Iteration order follows the natural ordering of [`Indexable`].
 #[derive(Clone, Eq, PartialEq)]
@@ -40,7 +40,7 @@ impl<K, V: Clone> VecMap<K, V> {
     }
 }
 
-impl<K: Indexable, V> VecMap<K, V> {
+impl<K: CopyKey, V> VecMap<K, V> {
     pub const fn new() -> Self {
         Self {
             data: vec![],
@@ -149,6 +149,13 @@ impl<K: Indexable, V> VecMap<K, V> {
         }
     }
 
+    pub fn iter2(&self) -> Iter2<'_, K, V> {
+        Iter2 {
+            inner: self.data.iter().enumerate(),
+            _marker: PhantomData,
+        }
+    }
+
     /// Returns an iterator over the keys of the map following the natural order
     /// of the keys.
     pub fn keys(&self) -> Keys<'_, K> {
@@ -173,11 +180,33 @@ pub struct Keys<'a, K> {
     _marker: PhantomData<K>,
 }
 
-impl<'a, K: Indexable> Iterator for Keys<'a, K> {
+impl<'a, K: CopyKey> Iterator for Keys<'a, K> {
     type Item = K;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.inner.next().map(|t| K::from_index(t))
+    }
+}
+
+#[derive(Clone)]
+pub struct Iter2<'a, K, V> {
+    inner: Enumerate<core::slice::Iter<'a, Option<V>>>,
+    _marker: PhantomData<K>,
+}
+
+impl<'a, K: CopyKey, V> Iterator for Iter2<'a, K, V> {
+    type Item = (K, &'a V);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while let Some((i, v)) = self.inner.next() {
+            if let Some(v) = v {
+                return Some((K::from_index(i), v));
+            }
+        }
+        None
+        // // .skip_while(|(_i, x)| x.is_none())
+        // .next()
+        // .map(|(i, v)| (K::from_index(i), v.as_ref().unwrap()))
     }
 }
 
@@ -189,7 +218,7 @@ pub struct Iter<'a, K, V> {
     _marker: PhantomData<K>,
 }
 
-impl<'a, K: Indexable, V> Iterator for Iter<'a, K, V> {
+impl<'a, K: CopyKey, V> Iterator for Iter<'a, K, V> {
     type Item = (K, &'a V);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -200,13 +229,13 @@ impl<'a, K: Indexable, V> Iterator for Iter<'a, K, V> {
     }
 }
 
-impl<'a, K: Indexable, V> ExactSizeIterator for Iter<'a, K, V> {
+impl<'a, K: CopyKey, V> ExactSizeIterator for Iter<'a, K, V> {
     fn len(&self) -> usize {
         self.len
     }
 }
 
-impl<'a, K: Indexable, V> DoubleEndedIterator for Iter<'a, K, V> {
+impl<'a, K: CopyKey, V> DoubleEndedIterator for Iter<'a, K, V> {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.inner.next_back().map(|i| {
             self.len -= 1;
@@ -215,9 +244,9 @@ impl<'a, K: Indexable, V> DoubleEndedIterator for Iter<'a, K, V> {
     }
 }
 
-impl<'a, K: Indexable, V> FusedIterator for Iter<'a, K, V> {}
+impl<'a, K: CopyKey, V> FusedIterator for Iter<'a, K, V> {}
 
-impl<'a, K: Indexable + fmt::Debug, V: fmt::Debug> fmt::Debug for Iter<'a, K, V> {
+impl<'a, K: CopyKey + fmt::Debug, V: fmt::Debug> fmt::Debug for Iter<'a, K, V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // TODO why can't we use iter.clone()
         let iter: Iter<'a, K, V> = Iter {
@@ -230,7 +259,7 @@ impl<'a, K: Indexable + fmt::Debug, V: fmt::Debug> fmt::Debug for Iter<'a, K, V>
     }
 }
 
-impl<K: Indexable, V> IntoIterator for VecMap<K, V> {
+impl<K: CopyKey, V> IntoIterator for VecMap<K, V> {
     type Item = (K, V);
 
     type IntoIter = IntoIter<K, V>;
@@ -251,7 +280,7 @@ pub struct IntoIter<K, V> {
     _marker: PhantomData<K>,
 }
 
-impl<K: Indexable, V> Iterator for IntoIter<K, V> {
+impl<K: CopyKey, V> Iterator for IntoIter<K, V> {
     type Item = (K, V);
 
     // TODO should this use the bitset when the data is less dense?
@@ -266,19 +295,19 @@ impl<K: Indexable, V> Iterator for IntoIter<K, V> {
     }
 }
 
-impl<K: Indexable, V> ExactSizeIterator for IntoIter<K, V> {
+impl<K: CopyKey, V> ExactSizeIterator for IntoIter<K, V> {
     fn len(&self) -> usize {
         self.len
     }
 }
 
-impl<K: Indexable, V> Default for VecMap<K, V> {
+impl<K: CopyKey, V> Default for VecMap<K, V> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<K: Indexable, V> Index<K> for VecMap<K, V> {
+impl<K: CopyKey, V> Index<K> for VecMap<K, V> {
     type Output = V;
 
     fn index(&self, key: K) -> &Self::Output {
@@ -294,12 +323,12 @@ impl<K: Indexable, V> Index<K> for VecMap<K, V> {
 }
 
 #[derive(Debug)]
-pub enum Entry<'a, K: Indexable, V> {
+pub enum Entry<'a, K: CopyKey, V> {
     Vacant(K, &'a mut VecMap<K, V>),
     Occupied(&'a mut V),
 }
 
-impl<'a, K: Indexable, V> Entry<'a, K, V> {
+impl<'a, K: CopyKey, V> Entry<'a, K, V> {
     /// Inserts the given default value in the entry if it is vacant.
     ///
     /// Returns a mutable reference to the existing value if it is occupied, or
@@ -364,7 +393,7 @@ impl<'a, K: Indexable, V> Entry<'a, K, V> {
     }
 }
 
-impl<K: Indexable, V: Clone> FromIterator<(K, V)> for VecMap<K, V> {
+impl<K: CopyKey, V: Clone> FromIterator<(K, V)> for VecMap<K, V> {
     fn from_iter<I: IntoIterator<Item = (K, V)>>(iter: I) -> Self {
         let iter = iter.into_iter();
         let (lower_bound, _) = iter.size_hint();
@@ -377,7 +406,7 @@ impl<K: Indexable, V: Clone> FromIterator<(K, V)> for VecMap<K, V> {
     }
 }
 
-impl<K: Indexable + fmt::Debug, V: fmt::Debug> fmt::Debug for VecMap<K, V> {
+impl<K: CopyKey + fmt::Debug, V: fmt::Debug> fmt::Debug for VecMap<K, V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_map().entries(self.iter()).finish()
     }
@@ -405,11 +434,13 @@ macro_rules! vecmap {
 macro_rules! impl_indexable{
     ( $( $Int: ty )+ ) => {
         $(
-            impl Indexable for $Int {
+            impl CopyKey for $Int {
+                #[inline]
                 fn as_index(&self) -> usize {
                     *self as usize
                 }
 
+                #[inline]
                 fn from_index(index:usize) -> $Int {
                     index as $Int
                 }
@@ -627,5 +658,55 @@ mod test {
         assert_eq!(Some((9, &"nine")), iter.next_back());
         assert_eq!(0, iter.len());
         assert_eq!(None, iter.next_back());
+    }
+
+    #[test]
+    fn test_iter2() {
+        let map = vecmap! { 9u16 => "nine", 17 => "seventeen", 2 => "two"};
+
+        // forward
+        let mut iter = map.iter2();
+        // assert_eq!(3, iter.len());
+        assert_eq!(Some((2, &"two")), iter.next());
+        // assert_eq!(2, iter.len());
+        assert_eq!(Some((9, &"nine")), iter.next());
+        // assert_eq!(1, iter.len());
+        assert_eq!(Some((17, &"seventeen")), iter.next());
+        // assert_eq!(0, iter.len());
+        assert_eq!(None, iter.next());
+
+        // back, forward, back
+        // let mut iter = map.iter2();
+        // // assert_eq!(3, iter.len());
+        // assert_eq!(Some((17, &"seventeen")), iter.next_back());
+        // // assert_eq!(2, iter.len());
+        // assert_eq!(Some((2, &"two")), iter.next());
+        // // assert_eq!(1, iter.len());
+        // assert_eq!(Some((9, &"nine")), iter.next_back());
+        // assert_eq!(0, iter.len());
+        // assert_eq!(None, iter.next_back());
+    }
+
+    #[derive(Copy, Clone)]
+    enum TestEnum {
+        A,
+        B,
+    }
+
+    impl CopyKey for TestEnum {
+        fn as_index(&self) -> usize {
+            match self {
+                Self::A => 0,
+                Self::B => 1,
+            }
+        }
+
+        fn from_index(index: usize) -> Self {
+            match index {
+                0 => Self::A,
+                1 => Self::B,
+                _ => panic!(),
+            }
+        }
     }
 }
