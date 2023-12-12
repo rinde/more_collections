@@ -114,7 +114,8 @@ fn benchmark_get(c: &mut Criterion) {
                     b.iter_batched_ref(
                         || VecMap::from_iter(initial_data.data.clone()),
                         |x| {
-                            x.get(*input);
+                            let res = x.get(*input);
+                            black_box(res);
                         },
                         BatchSize::SmallInput,
                     )
@@ -127,7 +128,8 @@ fn benchmark_get(c: &mut Criterion) {
                     b.iter_batched_ref(
                         || IndexMap::from_iter(initial_data.data.clone()),
                         |x: &mut IndexMap<usize, String>| {
-                            x.get(input);
+                            let res = x.get(input);
+                            black_box(res);
                         },
                         BatchSize::SmallInput,
                     )
@@ -140,7 +142,8 @@ fn benchmark_get(c: &mut Criterion) {
                     b.iter_batched_ref(
                         || HashMap::from_iter(initial_data.data.clone()),
                         |x: &mut HashMap<usize, String>| {
-                            x.get(input);
+                            let res = x.get(input);
+                            black_box(res);
                         },
                         BatchSize::SmallInput,
                     )
@@ -153,7 +156,8 @@ fn benchmark_get(c: &mut Criterion) {
                     b.iter_batched_ref(
                         || BTreeMap::from_iter(initial_data.data.clone()),
                         |x| {
-                            x.get(input);
+                            let res = x.get(input);
+                            black_box(res);
                         },
                         BatchSize::SmallInput,
                     )
