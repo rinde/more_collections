@@ -64,6 +64,11 @@ pub mod small_map;
 ))]
 pub mod small_set;
 
+mod vec_map;
+
+// TODO add feature
+pub use vec_map::*;
+
 pub use multimap::*;
 #[cfg(all(feature = "indexmap", feature = "smallvec", feature = "smallmap"))]
 pub use small_map::SmallMap;
