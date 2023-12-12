@@ -10,14 +10,10 @@ use bitvec::prelude::BitVec;
 use bitvec::slice::IterOnes;
 
 // TODO better name?
-pub trait Indexable: Copy + From<usize> {
+pub trait Indexable: Copy {
     fn as_index(&self) -> usize;
-}
 
-impl Indexable for usize {
-    fn as_index(&self) -> usize {
-        *self
-    }
+    fn from_index(index: usize) -> Self;
 }
 
 /// A [`Vec`]-backed map..
@@ -181,7 +177,7 @@ impl<'a, K: Indexable> Iterator for Keys<'a, K> {
     type Item = K;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next().map(|t| K::from(t))
+        self.inner.next().map(|t| K::from_index(t))
     }
 }
 
@@ -199,7 +195,7 @@ impl<'a, K: Indexable, V> Iterator for Iter<'a, K, V> {
     fn next(&mut self) -> Option<Self::Item> {
         self.inner.next().map(|i| {
             self.len -= 1;
-            (K::from(i), self.values[i].as_ref().unwrap())
+            (K::from_index(i), self.values[i].as_ref().unwrap())
         })
     }
 }
@@ -214,7 +210,7 @@ impl<'a, K: Indexable, V> DoubleEndedIterator for Iter<'a, K, V> {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.inner.next_back().map(|i| {
             self.len -= 1;
-            (K::from(i), self.values[i].as_ref().unwrap())
+            (K::from_index(i), self.values[i].as_ref().unwrap())
         })
     }
 }
@@ -263,7 +259,7 @@ impl<K: Indexable, V> Iterator for IntoIter<K, V> {
         loop {
             match self.inner.next() {
                 Some((_, None)) => continue,
-                Some((i, Some(v))) => return Some((K::from(i), v)),
+                Some((i, Some(v))) => return Some((K::from_index(i), v)),
                 None => return None,
             }
         }
@@ -392,7 +388,7 @@ macro_rules! vecmap {
     (@single $($x:tt)*) => (());
     (@count $($rest:expr),*) => (<[()]>::len(&[$($crate::vecmap!(@single $rest)),*]));
 
-    ($($key:expr => $value:expr,)+) => { $crate::vectripmap!($($key => $value),+) };
+    ($($key:expr => $value:expr,)+) => { $crate::vecmap!($($key => $value),+) };
     ($($key:expr => $value:expr),*) => {
         {
             let _cap = $crate::vecmap!(@count $($key),*);
@@ -404,6 +400,25 @@ macro_rules! vecmap {
         }
     };
 }
+
+#[macro_export]
+macro_rules! impl_indexable{
+    ( $( $Int: ty )+ ) => {
+        $(
+            impl Indexable for $Int {
+                fn as_index(&self) -> usize {
+                    *self as usize
+                }
+
+                fn from_index(index:usize) -> $Int {
+                    index as $Int
+                }
+            }
+        )+
+    }
+}
+
+impl_indexable!(u8 u16 u32 u64 u128 usize);
 
 #[cfg(test)]
 mod test {
@@ -434,7 +449,7 @@ mod test {
         let mut map = VecMap::new();
 
         // insert in unallocated space
-        assert_eq!(None, map.insert(3, "hi"));
+        assert_eq!(None, map.insert(3usize, "hi"));
         assert_eq!(vec![None, None, None, Some("hi")], map.data);
         assert_eq!(bitvec![0, 0, 0, 1], map.keys);
 
@@ -451,7 +466,7 @@ mod test {
 
     #[test]
     fn test_remove() {
-        let mut map = vecmap! { 9 => "nine", 17 => "seventeen", 2 => "two"};
+        let mut map = vecmap! { 9usize => "nine", 17 => "seventeen", 2 => "two"};
         assert_eq!(vec![2, 9, 17], map.keys().collect::<Vec<_>>());
         assert_eq!(3, map.len());
 
@@ -471,7 +486,7 @@ mod test {
         let mut map = VecMap::new();
 
         // non existing
-        let return_value = map.entry(2).or_insert("hello");
+        let return_value = map.entry(2u8).or_insert("hello");
         assert_eq!("hello", *return_value);
         assert_eq!(vecmap! { 2 => "hello" }, map);
 
@@ -491,7 +506,7 @@ mod test {
         let mut map = VecMap::new();
 
         // non existing
-        let return_value = map.entry(2).or_insert_with(|| "hello");
+        let return_value = map.entry(2u16).or_insert_with(|| "hello");
         assert_eq!("hello", *return_value);
         assert_eq!(vecmap! { 2 => "hello" }, map);
 
@@ -511,7 +526,7 @@ mod test {
         let mut map = VecMap::new();
 
         // non existing
-        let return_value = map.entry(2).or_default();
+        let return_value = map.entry(2u32).or_default();
         assert_eq!("", *return_value);
         assert_eq!(vecmap! { 2 => "" }, map);
 
@@ -545,7 +560,7 @@ mod test {
 
     #[test]
     fn test_get() {
-        let map = vecmap! { 9 => "nine", 17 => "seventeen", 2 => "two"};
+        let map = vecmap! { 9u128 => "nine", 17 => "seventeen", 2 => "two"};
         assert_eq!(Some(&"nine"), map.get(9));
         assert_eq!(None, map.get(10));
         assert_eq!(None, map.get(10000));
@@ -553,7 +568,7 @@ mod test {
 
     #[test]
     fn test_get_mut() {
-        let mut map = vecmap! { 9 => "nine", 17 => "seventeen", 2 => "two"};
+        let mut map = vecmap! { 9u16 => "nine", 17 => "seventeen", 2 => "two"};
         assert_eq!(Some(&mut "nine"), map.get_mut(9));
         *map.get_mut(9).unwrap() = "negen";
         assert_eq!(Some(&"negen"), map.get(9));
@@ -564,7 +579,7 @@ mod test {
 
     #[test]
     fn test_len_and_is_empty() {
-        let numbers = [3, 9, 0, 15, 24, 2, 17, 7, 4];
+        let numbers = [3u64, 9, 0, 15, 24, 2, 17, 7, 4];
         let mut map = vecmap! {};
         assert_eq!(0, map.len());
         assert!(map.is_empty());
@@ -577,7 +592,7 @@ mod test {
 
     #[test]
     fn test_contains_key() {
-        let map = vecmap! { 9 => "nine", 17 => "seventeen", 2 => "two"};
+        let map = vecmap! { 9u128 => "nine", 17 => "seventeen", 2 => "two"};
 
         assert!(!map.contains_key(3));
         assert!(!map.contains_key(300));
@@ -589,7 +604,7 @@ mod test {
 
     #[test]
     fn test_iter() {
-        let map = vecmap! { 9 => "nine", 17 => "seventeen", 2 => "two"};
+        let map = vecmap! { 9u16 => "nine", 17 => "seventeen", 2 => "two"};
 
         // forward
         let mut iter = map.iter();
