@@ -181,7 +181,7 @@ fn benchmark_contains_key(c: &mut Criterion) {
         for k in test_insert_keys.clone() {
             let parameter_string = format!("{}-key:{:0>3}", initial_data.name, k);
             group.bench_with_input(
-                BenchmarkId::new(parameter_string.clone(), "VecMap1"),
+                BenchmarkId::new(parameter_string.clone(), "VecMap"),
                 &k,
                 |b, input| {
                     b.iter_batched_ref(
