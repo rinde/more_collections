@@ -645,6 +645,12 @@ mod test {
         assert_eq!(Some((9, &"nine")), iter.next_back());
         assert_eq!(0, iter.len());
         assert_eq!(None, iter.next_back());
+
+        let map: VecMap<usize, usize> = VecMap::with_capacity(40);
+        let mut iter = map.iter();
+        assert_eq!(0, iter.len());
+        assert_eq!(None, iter.next());
+        assert_eq!(0, iter.len());
     }
 
     #[derive(Copy, Clone)]
