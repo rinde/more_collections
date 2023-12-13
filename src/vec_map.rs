@@ -709,4 +709,31 @@ mod test {
             map.keys().collect::<Vec<_>>()
         );
     }
+
+    #[test]
+    fn test_capacity() {
+        let mut map: VecMap<usize, ()> = VecMap::new();
+        assert_eq!(0, map.capacity());
+        assert!(map.is_empty());
+
+        map.insert(0, ());
+        assert_eq!(1, map.len());
+        assert_eq!(1, map.capacity());
+
+        map.insert(100, ());
+        assert_eq!(2, map.len());
+        assert_eq!(101, map.capacity());
+
+        let mut map: VecMap<usize, ()> = VecMap::with_capacity(20);
+        assert_eq!(20, map.capacity());
+        assert!(map.is_empty());
+
+        map.insert(0, ());
+        assert_eq!(1, map.len());
+        assert_eq!(20, map.capacity());
+
+        map.insert(100, ());
+        assert_eq!(2, map.len());
+        assert_eq!(101, map.capacity());
+    }
 }
