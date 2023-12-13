@@ -174,6 +174,27 @@ impl<K: CopyKey, V> VecMap<K, V> {
     }
 }
 
+impl<K: CopyKey, V> Default for VecMap<K, V> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<K: CopyKey, V> Index<K> for VecMap<K, V> {
+    type Output = V;
+
+    fn index(&self, key: K) -> &Self::Output {
+        let index = key.as_index();
+        if index >= self.data.len() {
+            panic!("out of bounds");
+        } else {
+            self.data[index]
+                .as_ref()
+                .unwrap_or_else(|| panic!("doesn't exist"))
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Keys<'a, K> {
     inner: IterOnes<'a, u64, Lsb0>,
@@ -298,27 +319,6 @@ impl<K: CopyKey, V> Iterator for IntoIter<K, V> {
 impl<K: CopyKey, V> ExactSizeIterator for IntoIter<K, V> {
     fn len(&self) -> usize {
         self.len
-    }
-}
-
-impl<K: CopyKey, V> Default for VecMap<K, V> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<K: CopyKey, V> Index<K> for VecMap<K, V> {
-    type Output = V;
-
-    fn index(&self, key: K) -> &Self::Output {
-        let index = key.as_index();
-        if index >= self.data.len() {
-            panic!("out of bounds");
-        } else {
-            self.data[index]
-                .as_ref()
-                .unwrap_or_else(|| panic!("doesn't exist"))
-        }
     }
 }
 

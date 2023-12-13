@@ -36,6 +36,11 @@ Built on top of the excellent [smallvec](https://github.com/servo/rust-smallvec)
 | ⬜️⬜️⬜️⬜️⬜️      | EnumVecMultimap      | `EnumMap<K, Vec<V>>     `  |
 | ⬜️⬜️⬜️⬜️⬜️      | EnumEnumMultimap     | `EnumMap<K, EnumSet<V>>`   |
 
+## VecMap
+| Completion | Name   | Behaves as                                           |
+| ---------- | ------ | ---------------------------------------------------- |
+| 🟩🟨⬜️⬜️⬜️      | VecMap | Sorted IndexMap / BTreeMap, optimized for dense maps |
+
 ## Multisets
 
 | Completion | Name          | Behaves as          |
