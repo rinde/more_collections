@@ -26,7 +26,7 @@ pub trait IndexKey: Copy {
 /// resizing**. Therefore, if performance is essential, it is strongly
 /// recommended to initialize `VecMap` with `with_capacity()`.
 ///
-/// Iteration order follows the natural ordering of [`CopyKey`].
+/// Iteration order follows the natural ordering of [`IndexKey::as_index()`].
 #[derive(Clone, Eq, PartialEq)]
 pub struct VecMap<K, V> {
     data: Vec<Option<V>>,
@@ -298,7 +298,6 @@ pub struct IntoIter<K, V> {
 impl<K: IndexKey, V> Iterator for IntoIter<K, V> {
     type Item = (K, V);
 
-    // TODO should this use the bitset when the data is less dense?
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             match self.inner.next() {
@@ -677,7 +676,8 @@ mod test {
                 }
             }
         }
-        use TestEnum::{A, B};
+        use TestEnum::A;
+        use TestEnum::B;
         let mut map: VecMap<TestEnum, usize> = VecMap::with_capacity(40);
         map.insert(B, 20);
         map.insert(A, 17);
