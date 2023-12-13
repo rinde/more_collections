@@ -1,17 +1,16 @@
-
 # VecMap
+
+Below is an overview of the all methods and traits that are implemented for `VecMap`. The list uses `IndexMap` as a reference.
 
 ## Methods and traits
 
-| Method / trait         | VecMap                       |
+| Method                 | VecMap                       |
 | ---------------------- | ---------------------------- |
 | new()                  | ✅                            |
-| Clone                  | ✅                            |
 | into_entries()         | not planned                  |
 | as_entries()           | not planned                  |
 | as_entries_mut()       | not planned                  |
 | with_entries()         | not planned                  |
-| Debug                  | ✅                            |
 | with_capacity()        | ✅                            |
 | capacity()             |                              |
 | len()                  | ✅                            |
@@ -80,17 +79,24 @@
 | shift_remove_index()   | not planned (not applicable) |
 | move_index()           | not planned (not applicable) |
 | swap_indices()         | not planned (not applicable) |
-| Index<K>               | ✅                            |
-| IndexMut<K>            |                              |
-| Index<usize>           |                              |
-| IndexMut<usize>        |                              |
-| FromIterator<(K,V)>    | ✅                            |
-| From<[(K,V); N]>       |                              |
-| Extend<(K,V)>          |                              |
-| Default                | ✅                            |
-| PartialEq              | ✅                            |
-| Eq                     | ✅                            |
-| IntoIterator           | ✅                            |
+
+## Traits
+
+| Trait               | VecMap |
+| ------------------- | ------ |
+| Clone               | ✅      |
+| Debug               | ✅      |
+| Index<K>            | ✅      |
+| IndexMut<K>         |        |
+| Index<usize>        |        |
+| IndexMut<usize>     |        |
+| FromIterator<(K,V)> | ✅      |
+| From<[(K,V); N]>    |        |
+| Extend<(K,V)>       |        |
+| Default             | ✅      |
+| PartialEq           | ✅      |
+| Eq                  | ✅      |
+| IntoIterator        | ✅      |
 
 ## Entry
 

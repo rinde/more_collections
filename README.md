@@ -41,6 +41,8 @@ Built on top of the excellent [smallvec](https://github.com/servo/rust-smallvec)
 | ---------- | ------ | ---------------------------------------------------- |
 | 🟩🟨⬜️⬜️⬜️      | VecMap | Sorted IndexMap / BTreeMap, optimized for dense maps |
 
+[A detailed overivew](doc/vec_map.md).
+
 ## Multisets
 
 | Completion | Name          | Behaves as          |
