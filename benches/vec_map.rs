@@ -175,50 +175,50 @@ fn benchmark_contains_key(c: &mut Criterion) {
         .warm_up_time(Duration::from_millis(100));
     let test_insert_keys = vec![0, 50, 150];
 
-    let initial_states = test_cases();
+    let cases = test_cases();
 
-    for initial_data in initial_states {
+    for case in cases {
         for k in test_insert_keys.clone() {
-            let parameter_string = format!("{}-key:{:0>3}", initial_data.name, k);
+            let params = format!("{}-key:{:0>3}", case.name, k);
             group.bench_with_input(
-                BenchmarkId::new(parameter_string.clone(), "VecMap"),
+                BenchmarkId::new(params.clone(), "VecMap"),
                 &k,
                 |b, input| {
                     b.iter_batched_ref(
-                        || VecMap::from_iter(initial_data.data.clone()),
+                        || VecMap::from_iter(case.data.clone()),
                         |x| x.contains_key(*input),
                         BatchSize::SmallInput,
                     )
                 },
             );
             group.bench_with_input(
-                BenchmarkId::new(parameter_string.clone(), "IndexMap"),
+                BenchmarkId::new(params.clone(), "IndexMap"),
                 &k,
                 |b, input| {
                     b.iter_batched_ref(
-                        || IndexMap::from_iter(initial_data.data.clone()),
+                        || IndexMap::from_iter(case.data.clone()),
                         |x: &mut IndexMap<usize, String>| x.contains_key(input),
                         BatchSize::SmallInput,
                     )
                 },
             );
             group.bench_with_input(
-                BenchmarkId::new(parameter_string.clone(), "HashMap"),
+                BenchmarkId::new(params.clone(), "HashMap"),
                 &k,
                 |b, input| {
                     b.iter_batched_ref(
-                        || HashMap::from_iter(initial_data.data.clone()),
+                        || HashMap::from_iter(case.data.clone()),
                         |x: &mut HashMap<usize, String>| x.contains_key(input),
                         BatchSize::SmallInput,
                     )
                 },
             );
             group.bench_with_input(
-                BenchmarkId::new(parameter_string.clone(), "BTreeMap"),
+                BenchmarkId::new(params.clone(), "BTreeMap"),
                 &k,
                 |b, input| {
                     b.iter_batched_ref(
-                        || BTreeMap::from_iter(initial_data.data.clone()),
+                        || BTreeMap::from_iter(case.data.clone()),
                         |x| x.contains_key(input),
                         BatchSize::SmallInput,
                     )
@@ -234,7 +234,7 @@ struct TestCase {
     data: Vec<(usize, String)>,
 }
 
-fn test_cases() -> [TestCase; 4] {
+fn test_cases() -> [TestCase; 5] {
     [
         TestCase {
             name: "empty",
@@ -262,6 +262,15 @@ fn test_cases() -> [TestCase; 4] {
                 .map(|i| (i, "hello".to_string()))
                 .collect::<Vec<_>>(),
         },
+        TestCase {
+            name: "big_dense",
+            data: Uniform::new(0, 10_000)
+                .sample_iter(thread_rng())
+                .unique()
+                .take(9800)
+                .map(|i| (i, "hello".to_string()))
+                .collect::<Vec<_>>(),
+        },
     ]
 }
 
@@ -274,30 +283,11 @@ fn benchmark_iter(c: &mut Criterion) {
 
     let initial_states = test_cases();
 
-    for initial_data in initial_states {
-        let parameter_string = initial_data.name;
-        group.bench_function(BenchmarkId::new(parameter_string, "Vec"), |b| {
+    for case in initial_states {
+        let params = case.name;
+        group.bench_function(BenchmarkId::new(params, "VecMap2"), |b| {
             b.iter_batched_ref(
-                || Vec::from_iter(initial_data.data.clone()),
-                |x| {
-                    let result = x.iter().collect::<Vec<_>>();
-                    black_box(result);
-                },
-                BatchSize::SmallInput,
-            )
-        });
-        group.bench_function(BenchmarkId::new(parameter_string, "VecMap1"), |b| {
-            b.iter_batched_ref(
-                || VecMap::from_iter(initial_data.data.clone()),
-                |x| {
-                    let _ = x.iter().collect::<Vec<_>>();
-                },
-                BatchSize::SmallInput,
-            )
-        });
-        group.bench_function(BenchmarkId::new(parameter_string, "VecMap2"), |b| {
-            b.iter_batched_ref(
-                || VecMap::from_iter(initial_data.data.clone()),
+                || VecMap::from_iter(case.data.clone()),
                 |x| {
                     let result = x.iter2().collect::<Vec<_>>();
                     black_box(result);
@@ -305,35 +295,20 @@ fn benchmark_iter(c: &mut Criterion) {
                 BatchSize::SmallInput,
             )
         });
-        group.bench_function(BenchmarkId::new(parameter_string, "IndexMap"), |b| {
-            b.iter_batched_ref(
-                || IndexMap::from_iter(initial_data.data.clone()),
-                |x: &mut IndexMap<usize, String>| {
-                    let result = x.iter().collect::<Vec<_>>();
-                    black_box(result);
-                },
-                BatchSize::SmallInput,
-            )
+        bench_impl!(group, params, case, Vec, |x: &mut Vec<_>| {
+            black_box(x.iter().collect::<Vec<_>>());
         });
-        group.bench_function(BenchmarkId::new(parameter_string, "HashMap"), |b| {
-            b.iter_batched_ref(
-                || HashMap::from_iter(initial_data.data.clone()),
-                |x: &mut HashMap<usize, String>| {
-                    let result = x.iter().collect::<Vec<_>>();
-                    black_box(result);
-                },
-                BatchSize::SmallInput,
-            )
+        bench_impl!(group, params, case, VecMap, |x: &mut VecMap<_, _>| {
+            black_box(x.iter().collect::<Vec<_>>());
         });
-        group.bench_function(BenchmarkId::new(parameter_string, "BTreeMap"), |b| {
-            b.iter_batched_ref(
-                || BTreeMap::from_iter(initial_data.data.clone()),
-                |x| {
-                    let result = x.iter().collect::<Vec<_>>();
-                    black_box(result);
-                },
-                BatchSize::SmallInput,
-            )
+        bench_impl!(group, params, case, IndexMap, |x: &mut IndexMap<_, _>| {
+            black_box(x.iter().collect::<Vec<_>>());
+        });
+        bench_impl!(group, params, case, HashMap, |x: &mut HashMap<_, _>| {
+            black_box(x.iter().collect::<Vec<_>>());
+        });
+        bench_impl!(group, params, case, BTreeMap, |x| {
+            black_box(x.iter().collect::<Vec<_>>());
         });
     }
 }
@@ -346,3 +321,16 @@ criterion_group!(
     benchmark_iter
 );
 criterion_main!(benches);
+
+#[macro_export]
+macro_rules! bench_impl {
+    ($group:ident, $param:ident, $test_case:expr, $Collection:tt, $code:expr ) => {
+        $group.bench_function(BenchmarkId::new($param, stringify!($Collection)), |b| {
+            b.iter_batched_ref(
+                || $Collection::from_iter($test_case.data.clone()),
+                $code,
+                BatchSize::SmallInput,
+            )
+        });
+    };
+}
