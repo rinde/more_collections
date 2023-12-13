@@ -5,7 +5,7 @@ use std::marker::PhantomData;
 use std::ops::Index;
 
 /// A key that can be used in a map.
-pub trait CopyKey: Copy {
+pub trait IndexKey: Copy {
     fn as_index(&self) -> usize;
 
     fn from_index(index: usize) -> Self;
@@ -44,7 +44,7 @@ impl<K, V: Clone> VecMap<K, V> {
     }
 }
 
-impl<K: CopyKey, V> VecMap<K, V> {
+impl<K: IndexKey, V> VecMap<K, V> {
     pub const fn new() -> Self {
         Self {
             data: vec![],
@@ -174,13 +174,13 @@ fn as_k<K, V>(item: (K, &V)) -> K {
     item.0
 }
 
-impl<K: CopyKey, V> Default for VecMap<K, V> {
+impl<K: IndexKey, V> Default for VecMap<K, V> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<K: CopyKey, V> Index<K> for VecMap<K, V> {
+impl<K: IndexKey, V> Index<K> for VecMap<K, V> {
     type Output = V;
 
     fn index(&self, key: K) -> &Self::Output {
@@ -203,7 +203,7 @@ pub struct Keys<'a, K, V, F> {
 
 impl<'a, K, V, F> Iterator for Keys<'a, K, V, F>
 where
-    K: CopyKey,
+    K: IndexKey,
     F: Fn((K, &V)) -> K,
 {
     type Item = K;
@@ -220,7 +220,7 @@ pub struct Iter<'a, K, V> {
     _marker: PhantomData<K>,
 }
 
-impl<'a, K: CopyKey, V> Iterator for Iter<'a, K, V> {
+impl<'a, K: IndexKey, V> Iterator for Iter<'a, K, V> {
     type Item = (K, &'a V);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -236,13 +236,13 @@ impl<'a, K: CopyKey, V> Iterator for Iter<'a, K, V> {
     }
 }
 
-impl<'a, K: CopyKey, V> ExactSizeIterator for Iter<'a, K, V> {
+impl<'a, K: IndexKey, V> ExactSizeIterator for Iter<'a, K, V> {
     fn len(&self) -> usize {
         self.len
     }
 }
 
-impl<'a, K: CopyKey, V> DoubleEndedIterator for Iter<'a, K, V> {
+impl<'a, K: IndexKey, V> DoubleEndedIterator for Iter<'a, K, V> {
     fn next_back(&mut self) -> Option<Self::Item> {
         if self.len == 0 {
             return None;
@@ -260,9 +260,9 @@ impl<'a, K: CopyKey, V> DoubleEndedIterator for Iter<'a, K, V> {
     }
 }
 
-impl<'a, K: CopyKey, V> FusedIterator for Iter<'a, K, V> {}
+impl<'a, K: IndexKey, V> FusedIterator for Iter<'a, K, V> {}
 
-impl<'a, K: CopyKey + fmt::Debug, V: fmt::Debug> fmt::Debug for Iter<'a, K, V> {
+impl<'a, K: IndexKey + fmt::Debug, V: fmt::Debug> fmt::Debug for Iter<'a, K, V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // TODO why can't we use self.clone()
         let iter: Iter<'a, K, V> = Iter {
@@ -274,7 +274,7 @@ impl<'a, K: CopyKey + fmt::Debug, V: fmt::Debug> fmt::Debug for Iter<'a, K, V> {
     }
 }
 
-impl<K: CopyKey, V> IntoIterator for VecMap<K, V> {
+impl<K: IndexKey, V> IntoIterator for VecMap<K, V> {
     type Item = (K, V);
 
     type IntoIter = IntoIter<K, V>;
@@ -295,7 +295,7 @@ pub struct IntoIter<K, V> {
     _marker: PhantomData<K>,
 }
 
-impl<K: CopyKey, V> Iterator for IntoIter<K, V> {
+impl<K: IndexKey, V> Iterator for IntoIter<K, V> {
     type Item = (K, V);
 
     // TODO should this use the bitset when the data is less dense?
@@ -310,19 +310,19 @@ impl<K: CopyKey, V> Iterator for IntoIter<K, V> {
     }
 }
 
-impl<K: CopyKey, V> ExactSizeIterator for IntoIter<K, V> {
+impl<K: IndexKey, V> ExactSizeIterator for IntoIter<K, V> {
     fn len(&self) -> usize {
         self.len
     }
 }
 
 #[derive(Debug)]
-pub enum Entry<'a, K: CopyKey, V> {
+pub enum Entry<'a, K: IndexKey, V> {
     Vacant(K, &'a mut VecMap<K, V>),
     Occupied(&'a mut V),
 }
 
-impl<'a, K: CopyKey, V> Entry<'a, K, V> {
+impl<'a, K: IndexKey, V> Entry<'a, K, V> {
     /// Inserts the given default value in the entry if it is vacant.
     ///
     /// Returns a mutable reference to the existing value if it is occupied, or
@@ -387,7 +387,7 @@ impl<'a, K: CopyKey, V> Entry<'a, K, V> {
     }
 }
 
-impl<K: CopyKey, V: Clone> FromIterator<(K, V)> for VecMap<K, V> {
+impl<K: IndexKey, V: Clone> FromIterator<(K, V)> for VecMap<K, V> {
     fn from_iter<I: IntoIterator<Item = (K, V)>>(iter: I) -> Self {
         let iter = iter.into_iter();
         let (lower_bound, _) = iter.size_hint();
@@ -400,7 +400,7 @@ impl<K: CopyKey, V: Clone> FromIterator<(K, V)> for VecMap<K, V> {
     }
 }
 
-impl<K: CopyKey + fmt::Debug, V: fmt::Debug> fmt::Debug for VecMap<K, V> {
+impl<K: IndexKey + fmt::Debug, V: fmt::Debug> fmt::Debug for VecMap<K, V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_map().entries(self.iter()).finish()
     }
@@ -428,7 +428,7 @@ macro_rules! vecmap {
 macro_rules! impl_indexable{
     ( $( $Int: ty )+ ) => {
         $(
-            impl CopyKey for $Int {
+            impl IndexKey for $Int {
                 #[inline]
                 fn as_index(&self) -> usize {
                     *self as usize
@@ -659,7 +659,7 @@ mod test {
         B,
     }
 
-    impl CopyKey for TestEnum {
+    impl IndexKey for TestEnum {
         fn as_index(&self) -> usize {
             match self {
                 Self::A => 0,
