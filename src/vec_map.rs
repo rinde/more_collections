@@ -66,7 +66,7 @@ impl<K: IndexKey, V> VecMap<K, V> {
         let index = key.as_index();
         if index >= self.capacity() {
             self.data
-                .extend((0..(index - self.data.len() + 1)).map(|_| None));
+                .extend((0..=(index - self.data.len())).map(|_| None));
         }
 
         let existing = self.data[index].replace(value);
@@ -696,7 +696,7 @@ mod test {
             }
 
             fn from_index(index: usize) -> Self {
-                Self(index as u8)
+                Self(u8::try_from(index).unwrap())
             }
         }
         let mut map: VecMap<MyNewType, ()> = VecMap::with_capacity(40);

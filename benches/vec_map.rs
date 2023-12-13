@@ -48,7 +48,7 @@ fn benchmark_insert(c: &mut Criterion) {
                             x.insert(*input, "new value".to_string());
                         },
                         BatchSize::SmallInput,
-                    )
+                    );
                 },
             );
             group.bench_with_input(
@@ -61,7 +61,7 @@ fn benchmark_insert(c: &mut Criterion) {
                             x.insert(*input, "new value".to_string());
                         },
                         BatchSize::SmallInput,
-                    )
+                    );
                 },
             );
             group.bench_with_input(
@@ -74,7 +74,7 @@ fn benchmark_insert(c: &mut Criterion) {
                             x.insert(*input, "new value".to_string());
                         },
                         BatchSize::SmallInput,
-                    )
+                    );
                 },
             );
             group.bench_with_input(
@@ -87,7 +87,7 @@ fn benchmark_insert(c: &mut Criterion) {
                             x.insert(*input, "new value".to_string());
                         },
                         BatchSize::SmallInput,
-                    )
+                    );
                 },
             );
         }
@@ -118,7 +118,7 @@ fn benchmark_get(c: &mut Criterion) {
                             black_box(res);
                         },
                         BatchSize::SmallInput,
-                    )
+                    );
                 },
             );
             group.bench_with_input(
@@ -132,7 +132,7 @@ fn benchmark_get(c: &mut Criterion) {
                             black_box(res);
                         },
                         BatchSize::SmallInput,
-                    )
+                    );
                 },
             );
             group.bench_with_input(
@@ -146,7 +146,7 @@ fn benchmark_get(c: &mut Criterion) {
                             black_box(res);
                         },
                         BatchSize::SmallInput,
-                    )
+                    );
                 },
             );
             group.bench_with_input(
@@ -160,7 +160,7 @@ fn benchmark_get(c: &mut Criterion) {
                             black_box(res);
                         },
                         BatchSize::SmallInput,
-                    )
+                    );
                 },
             );
         }
@@ -188,7 +188,7 @@ fn benchmark_contains_key(c: &mut Criterion) {
                         || VecMap::from_iter(case.data.clone()),
                         |x| x.contains_key(*input),
                         BatchSize::SmallInput,
-                    )
+                    );
                 },
             );
             group.bench_with_input(
@@ -199,7 +199,7 @@ fn benchmark_contains_key(c: &mut Criterion) {
                         || IndexMap::from_iter(case.data.clone()),
                         |x: &mut IndexMap<usize, String>| x.contains_key(input),
                         BatchSize::SmallInput,
-                    )
+                    );
                 },
             );
             group.bench_with_input(
@@ -210,7 +210,7 @@ fn benchmark_contains_key(c: &mut Criterion) {
                         || HashMap::from_iter(case.data.clone()),
                         |x: &mut HashMap<usize, String>| x.contains_key(input),
                         BatchSize::SmallInput,
-                    )
+                    );
                 },
             );
             group.bench_with_input(
@@ -221,7 +221,7 @@ fn benchmark_contains_key(c: &mut Criterion) {
                         || BTreeMap::from_iter(case.data.clone()),
                         |x| x.contains_key(input),
                         BatchSize::SmallInput,
-                    )
+                    );
                 },
             );
         }
