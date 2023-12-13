@@ -160,16 +160,8 @@ impl<K: CopyKey, V> VecMap<K, V> {
     /// natural order of the keys.
     pub fn iter(&self) -> Iter<'_, K, V> {
         Iter {
-            inner: self.keys.iter_ones(),
-            values: &self.data,
-            len: self.len,
-            _marker: PhantomData,
-        }
-    }
-
-    pub fn iter2(&self) -> Iter2<'_, K, V> {
-        Iter2 {
             inner: self.data.iter().enumerate(),
+            len: self.len,
             _marker: PhantomData,
         }
     }
@@ -228,31 +220,8 @@ impl<'a, K: CopyKey> Iterator for Keys<'a, K> {
 }
 
 #[derive(Clone)]
-pub struct Iter2<'a, K, V> {
-    inner: Enumerate<core::slice::Iter<'a, Option<V>>>,
-    _marker: PhantomData<K>,
-}
-
-impl<'a, K: CopyKey, V> Iterator for Iter2<'a, K, V> {
-    type Item = (K, &'a V);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        while let Some((i, v)) = self.inner.next() {
-            if let Some(v) = v {
-                return Some((K::from_index(i), v));
-            }
-        }
-        None
-        // // .skip_while(|(_i, x)| x.is_none())
-        // .next()
-        // .map(|(i, v)| (K::from_index(i), v.as_ref().unwrap()))
-    }
-}
-
-#[derive(Clone, Copy)]
 pub struct Iter<'a, K, V> {
-    inner: IterOnes<'a, u64, Lsb0>,
-    values: &'a Vec<Option<V>>,
+    inner: Enumerate<core::slice::Iter<'a, Option<V>>>,
     len: usize,
     _marker: PhantomData<K>,
 }
@@ -261,10 +230,16 @@ impl<'a, K: CopyKey, V> Iterator for Iter<'a, K, V> {
     type Item = (K, &'a V);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next().map(|i| {
-            self.len -= 1;
-            (K::from_index(i), self.values[i].as_ref().unwrap())
-        })
+        if self.len == 0 {
+            return None;
+        }
+        while let Some((i, v)) = self.inner.next() {
+            if let Some(v) = v {
+                self.len -= 1;
+                return Some((K::from_index(i), v));
+            }
+        }
+        None
     }
 }
 
@@ -276,10 +251,16 @@ impl<'a, K: CopyKey, V> ExactSizeIterator for Iter<'a, K, V> {
 
 impl<'a, K: CopyKey, V> DoubleEndedIterator for Iter<'a, K, V> {
     fn next_back(&mut self) -> Option<Self::Item> {
-        self.inner.next_back().map(|i| {
-            self.len -= 1;
-            (K::from_index(i), self.values[i].as_ref().unwrap())
-        })
+        if self.len == 0 {
+            return None;
+        }
+        while let Some((i, v)) = self.inner.next_back() {
+            if let Some(v) = v {
+                self.len -= 1;
+                return Some((K::from_index(i), v));
+            }
+        }
+        None
     }
 }
 
@@ -287,10 +268,9 @@ impl<'a, K: CopyKey, V> FusedIterator for Iter<'a, K, V> {}
 
 impl<'a, K: CopyKey + fmt::Debug, V: fmt::Debug> fmt::Debug for Iter<'a, K, V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // TODO why can't we use iter.clone()
+        // TODO why can't we use self.clone()
         let iter: Iter<'a, K, V> = Iter {
-            inner: self.inner,
-            values: self.values,
+            inner: self.inner.clone(),
             len: self.len,
             _marker: PhantomData,
         };
@@ -676,33 +656,6 @@ mod test {
         assert_eq!(Some((9, &"nine")), iter.next_back());
         assert_eq!(0, iter.len());
         assert_eq!(None, iter.next_back());
-    }
-
-    #[test]
-    fn test_iter2() {
-        let map = vecmap! { 9u16 => "nine", 17 => "seventeen", 2 => "two"};
-
-        // forward
-        let mut iter = map.iter2();
-        // assert_eq!(3, iter.len());
-        assert_eq!(Some((2, &"two")), iter.next());
-        // assert_eq!(2, iter.len());
-        assert_eq!(Some((9, &"nine")), iter.next());
-        // assert_eq!(1, iter.len());
-        assert_eq!(Some((17, &"seventeen")), iter.next());
-        // assert_eq!(0, iter.len());
-        assert_eq!(None, iter.next());
-
-        // back, forward, back
-        // let mut iter = map.iter2();
-        // // assert_eq!(3, iter.len());
-        // assert_eq!(Some((17, &"seventeen")), iter.next_back());
-        // // assert_eq!(2, iter.len());
-        // assert_eq!(Some((2, &"two")), iter.next());
-        // // assert_eq!(1, iter.len());
-        // assert_eq!(Some((9, &"nine")), iter.next_back());
-        // assert_eq!(0, iter.len());
-        // assert_eq!(None, iter.next_back());
     }
 
     #[derive(Copy, Clone)]

@@ -285,31 +285,21 @@ fn benchmark_iter(c: &mut Criterion) {
 
     for case in initial_states {
         let params = case.name;
-        group.bench_function(BenchmarkId::new(params, "VecMap2"), |b| {
-            b.iter_batched_ref(
-                || VecMap::from_iter(case.data.clone()),
-                |x| {
-                    let result = x.iter2().collect::<Vec<_>>();
-                    black_box(result);
-                },
-                BatchSize::SmallInput,
-            )
-        });
-        bench_impl!(group, params, case, Vec, |x: &mut Vec<_>| {
-            black_box(x.iter().collect::<Vec<_>>());
-        });
+        // bench_impl!(group, params, case, Vec, |x: &mut Vec<_>| {
+        //     black_box(x.iter().collect::<Vec<_>>());
+        // });
         bench_impl!(group, params, case, VecMap, |x: &mut VecMap<_, _>| {
             black_box(x.iter().collect::<Vec<_>>());
         });
         bench_impl!(group, params, case, IndexMap, |x: &mut IndexMap<_, _>| {
             black_box(x.iter().collect::<Vec<_>>());
         });
-        bench_impl!(group, params, case, HashMap, |x: &mut HashMap<_, _>| {
-            black_box(x.iter().collect::<Vec<_>>());
-        });
-        bench_impl!(group, params, case, BTreeMap, |x| {
-            black_box(x.iter().collect::<Vec<_>>());
-        });
+        // bench_impl!(group, params, case, HashMap, |x: &mut HashMap<_, _>| {
+        //     black_box(x.iter().collect::<Vec<_>>());
+        // });
+        // bench_impl!(group, params, case, BTreeMap, |x| {
+        //     black_box(x.iter().collect::<Vec<_>>());
+        // });
     }
 }
 
