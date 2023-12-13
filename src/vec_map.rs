@@ -4,11 +4,6 @@ use std::iter::FusedIterator;
 use std::marker::PhantomData;
 use std::ops::Index;
 
-use bitvec::bitvec;
-use bitvec::order::Lsb0;
-use bitvec::prelude::BitVec;
-use bitvec::slice::IterOnes;
-
 /// A key that can be used in a map.
 pub trait CopyKey: Copy {
     fn as_index(&self) -> usize;
@@ -31,22 +26,18 @@ pub trait CopyKey: Copy {
 /// resizing**. Therefore, if performance is essential, it is strongly
 /// recommended to initialize `VecMap` with `with_capacity()`.
 ///
-/// Iteration order follows the natural ordering of [`Indexable`].
+/// Iteration order follows the natural ordering of [`CopyKey`].
 #[derive(Clone, Eq, PartialEq)]
 pub struct VecMap<K, V> {
     data: Vec<Option<V>>,
-    keys: BitVec<u64>,
     len: usize,
     _marker: PhantomData<K>,
 }
 
 impl<K, V: Clone> VecMap<K, V> {
     pub fn with_capacity(n: usize) -> Self {
-        let mut keys = BitVec::with_capacity(n);
-        keys.extend(bitvec![0; n]);
         Self {
             data: vec![None; n],
-            keys,
             len: 0,
             _marker: PhantomData,
         }
@@ -57,7 +48,6 @@ impl<K: CopyKey, V> VecMap<K, V> {
     pub const fn new() -> Self {
         Self {
             data: vec![],
-            keys: BitVec::EMPTY,
             len: 0,
             _marker: PhantomData,
         }
@@ -75,12 +65,10 @@ impl<K: CopyKey, V> VecMap<K, V> {
     pub fn insert(&mut self, key: K, value: V) -> Option<V> {
         let index = key.as_index();
         if index >= self.capacity() {
-            self.keys.resize(index + 1, false);
             self.data
                 .extend((0..(index - self.data.len() + 1)).map(|_| None));
         }
 
-        self.keys.set(index, true);
         let existing = self.data[index].replace(value);
         if existing.is_none() {
             self.len += 1;
@@ -96,7 +84,6 @@ impl<K: CopyKey, V> VecMap<K, V> {
         if index >= self.data.len() {
             None
         } else {
-            self.keys.set(index, false);
             let existing = self.data[index].take();
             if existing.is_some() {
                 self.len -= 1;
@@ -168,9 +155,9 @@ impl<K: CopyKey, V> VecMap<K, V> {
 
     /// Returns an iterator over the keys of the map following the natural order
     /// of the keys.
-    pub fn keys(&self) -> Keys<'_, K> {
+    pub fn keys(&self) -> Keys<'_, K, V, impl Fn((K, &V)) -> K> {
         Keys {
-            inner: self.keys.iter_ones(),
+            inner: self.iter().map(as_k),
             _marker: PhantomData,
         }
     }
@@ -178,10 +165,13 @@ impl<K: CopyKey, V> VecMap<K, V> {
     // TODO values()
 
     pub fn clear(&mut self) {
-        self.keys.clear();
         self.len = 0;
         self.data.clear();
     }
+}
+
+fn as_k<K, V>(item: (K, &V)) -> K {
+    item.0
 }
 
 impl<K: CopyKey, V> Default for VecMap<K, V> {
@@ -205,17 +195,21 @@ impl<K: CopyKey, V> Index<K> for VecMap<K, V> {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct Keys<'a, K> {
-    inner: IterOnes<'a, u64, Lsb0>,
+#[derive(Clone)]
+pub struct Keys<'a, K, V, F> {
+    inner: core::iter::Map<Iter<'a, K, V>, F>,
     _marker: PhantomData<K>,
 }
 
-impl<'a, K: CopyKey> Iterator for Keys<'a, K> {
+impl<'a, K, V, F> Iterator for Keys<'a, K, V, F>
+where
+    K: CopyKey,
+    F: Fn((K, &V)) -> K,
+{
     type Item = K;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next().map(|t| K::from_index(t))
+        self.inner.next()
     }
 }
 
@@ -233,13 +227,12 @@ impl<'a, K: CopyKey, V> Iterator for Iter<'a, K, V> {
         if self.len == 0 {
             return None;
         }
-        while let Some((i, v)) = self.inner.next() {
-            if let Some(v) = v {
+        self.inner.by_ref().find_map(|(i, v)| {
+            v.as_ref().map(|v| {
                 self.len -= 1;
-                return Some((K::from_index(i), v));
-            }
-        }
-        None
+                (K::from_index(i), v)
+            })
+        })
     }
 }
 
@@ -254,13 +247,16 @@ impl<'a, K: CopyKey, V> DoubleEndedIterator for Iter<'a, K, V> {
         if self.len == 0 {
             return None;
         }
-        while let Some((i, v)) = self.inner.next_back() {
-            if let Some(v) = v {
-                self.len -= 1;
-                return Some((K::from_index(i), v));
-            }
-        }
-        None
+
+        self.inner
+            .by_ref()
+            .filter_map(|(i, v)| {
+                v.as_ref().map(|v| {
+                    self.len -= 1;
+                    (K::from_index(i), v)
+                })
+            })
+            .next_back()
     }
 }
 
@@ -460,9 +456,6 @@ mod test {
         assert_eq!(3, map.data.len());
         assert_eq!(vec![None, None, None], map.data);
         assert!(map.is_empty());
-
-        assert_eq!(0, map.keys.count_ones());
-        assert_eq!(3, map.keys.count_zeros());
     }
 
     #[test]
@@ -470,7 +463,6 @@ mod test {
         let map: VecMap<usize, usize> = VecMap::new();
         assert!(map.is_empty());
         assert!(map.data.is_empty());
-        assert!(map.keys.is_empty());
     }
 
     #[test]
@@ -480,17 +472,14 @@ mod test {
         // insert in unallocated space
         assert_eq!(None, map.insert(3usize, "hi"));
         assert_eq!(vec![None, None, None, Some("hi")], map.data);
-        assert_eq!(bitvec![0, 0, 0, 1], map.keys);
 
         // insert in allocated space
         assert_eq!(None, map.insert(1, "hello"));
         assert_eq!(vec![None, Some("hello"), None, Some("hi")], map.data);
-        assert_eq!(bitvec![0, 1, 0, 1], map.keys);
 
         // overwrite existing item
         assert_eq!(Some("hi"), map.insert(3, "bye"));
         assert_eq!(vec![None, Some("hello"), None, Some("bye")], map.data);
-        assert_eq!(bitvec![0, 1, 0, 1], map.keys);
     }
 
     #[test]
