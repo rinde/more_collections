@@ -1,13 +1,20 @@
+#![warn(missing_docs, missing_debug_implementations)]
 use std::fmt;
 use std::iter::Enumerate;
 use std::iter::FusedIterator;
 use std::marker::PhantomData;
 use std::ops::Index;
 
-/// A key that can be used in a map.
+/// A key that can be used in a map without needing a hasher.
+///
+/// There needs to be a 1:1 correspondence between `IndexKey` and it's index.
+/// Typically this is used with a newtype. Default implementations exist for all
+/// unsigned integer types.
 pub trait IndexKey: Copy {
+    /// Returns the unique index that this key is associated with.
     fn as_index(&self) -> usize;
 
+    /// Converts the index back to the key.
     fn from_index(index: usize) -> Self;
 }
 
@@ -35,6 +42,8 @@ pub struct VecMap<K, V> {
 }
 
 impl<K, V: Clone> VecMap<K, V> {
+    /// Initializes [`VecMap`] with capacity to hold exactly `n` elements in the
+    /// index range of `0..n`.
     pub fn with_capacity(n: usize) -> Self {
         Self {
             data: vec![None; n],
@@ -45,6 +54,10 @@ impl<K, V: Clone> VecMap<K, V> {
 }
 
 impl<K: IndexKey, V> VecMap<K, V> {
+    /// Initializes an empty [`VecMap`].
+    ///
+    /// For performance reasons it's almost always better to avoid dynamic
+    /// resizing by using [`Self::with_capacity()`] instead.
     pub const fn new() -> Self {
         Self {
             data: vec![],
@@ -54,6 +67,9 @@ impl<K: IndexKey, V> VecMap<K, V> {
     }
 
     /// Returns the number of elements the map can hold without reallocating.
+    ///
+    /// The index range of items that the map can hold without reallocating is
+    /// `0..capacity`.
     pub fn capacity(&self) -> usize {
         self.data.len()
     }
@@ -164,6 +180,7 @@ impl<K: IndexKey, V> VecMap<K, V> {
 
     // TODO values()
 
+    /// Clears all data from the [`VecMap`] without changing the capacity.
     pub fn clear(&mut self) {
         self.len = 0;
         self.data.clear();
