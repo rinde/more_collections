@@ -18,10 +18,18 @@ pub trait CopyKey: Copy {
 
 /// A [`Vec`]-backed map.
 ///
-/// `VecMap` outperforms `HashMap`, `IndexMap`, and `BTreeMap` on:
-///  - get()
-///  - insert()
-/// And similar methods.
+/// It has faster random access performance and slower iteration speed compared
+/// to other maps. Makes most sense for relatively dense maps or if iteration is
+/// needed significantly less than random access. In case of doubt, benchmark it
+/// for your usecase.
+///
+/// # Performance
+///
+/// `VecMap` outperforms `HashMap`, `IndexMap`, and `BTreeMap` for random access
+/// (such as `get()`) and random modifications (such as `insert()`). For
+/// modifications this is only true **iff `VecMap` does not need to do any
+/// resizing**. Therefore, if performance is essential, it is strongly
+/// recommended to initialize `VecMap` with `with_capacity()`.
 ///
 /// Iteration order follows the natural ordering of [`Indexable`].
 #[derive(Clone, Eq, PartialEq)]
