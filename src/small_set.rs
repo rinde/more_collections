@@ -3,12 +3,12 @@ use std::fmt;
 use std::fmt::Debug;
 use std::fmt::Formatter;
 use std::hash::BuildHasher;
+use std::iter::Chain;
+use std::iter::FusedIterator;
 
 use ::core::hash::Hash;
 use indexmap::Equivalent;
 use smallvec::SmallVec;
-use std::iter::Chain;
-use std::iter::FusedIterator;
 
 use crate::small_map;
 use crate::SmallMap;
