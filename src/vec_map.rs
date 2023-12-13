@@ -18,6 +18,11 @@ pub trait CopyKey: Copy {
 
 /// A [`Vec`]-backed map.
 ///
+/// `VecMap` outperforms `HashMap`, `IndexMap`, and `BTreeMap` on:
+///  - get()
+///  - insert()
+/// And similar methods.
+///
 /// Iteration order follows the natural ordering of [`Indexable`].
 #[derive(Clone, Eq, PartialEq)]
 pub struct VecMap<K, V> {

@@ -33,9 +33,9 @@
 //! [`HashMap`]`<K,`[`Vec`]`<V>>`       | Arbitrary order     | Insertion
 //! order[^1] | Yes                    | | [`IndexSetMultimap`] |
 //! [`IndexMap`]`<K,`[`IndexSet`]`<V>>` | Insertion order[^1] | Insertion
-//! order[^1] | No                     | | [`IndexVecMultimap`] | [`IndexMap`]`<K,
-//! `[`Vec`]`<V>>`     | Insertion order[^1] | Insertion order[^1] | Yes
-//! |
+//! order[^1] | No                     | | [`IndexVecMultimap`] |
+//! [`IndexMap`]`<K, `[`Vec`]`<V>>`     | Insertion order[^1] | Insertion
+//! order[^1] | Yes |
 //!
 //! [^1]: Insertion order is preserved, unless `remove()` or `swap_remove()`
 //! is called. See more in the [IndexMap](https://docs.rs/indexmap/1.7.0/indexmap/map/struct.IndexMap.html#order) documentation.
@@ -67,8 +67,6 @@ pub mod small_set;
 pub mod vec_map;
 
 // TODO add feature
-pub use vec_map::*;
-
 pub use multimap::*;
 #[cfg(all(feature = "indexmap", feature = "smallvec", feature = "smallmap"))]
 pub use small_map::SmallMap;
@@ -79,5 +77,6 @@ pub use small_map::SmallMap;
     feature = "smallset"
 ))]
 pub use small_set::SmallSet;
+pub use vec_map::*;
 
 // TODO follow all guidelines here https://rust-lang.github.io/api-guidelines/checklist.html
