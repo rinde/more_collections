@@ -29,7 +29,7 @@ pub struct VecMap<K, V> {
 
 impl<K, V: Clone> VecMap<K, V> {
     pub fn with_capacity(n: usize) -> Self {
-        let mut keys = BitVec::EMPTY;
+        let mut keys = BitVec::with_capacity(n);
         keys.extend(bitvec![0; n]);
         Self {
             data: vec![None; n],
@@ -50,13 +50,18 @@ impl<K: CopyKey, V> VecMap<K, V> {
         }
     }
 
+    /// Returns the number of elements the map can hold without reallocating.
+    pub fn capacity(&self) -> usize {
+        self.data.len()
+    }
+
     /// Inserts a key-value pair into the map.
     ///
     /// If the key is present in the map, the value is updated and the old value
     /// is returned. Otherwise, [`None`] is returned.
     pub fn insert(&mut self, key: K, value: V) -> Option<V> {
         let index = key.as_index();
-        if index >= self.data.len() {
+        if index >= self.capacity() {
             self.keys.resize(index + 1, false);
             self.data
                 .extend((0..(index - self.data.len() + 1)).map(|_| None));
