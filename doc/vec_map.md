@@ -125,3 +125,40 @@ Below is an overview of the all methods and traits that are implemented for `Vec
 | Copy                | ✅           |             |             |             |             |             |             |             |             |
 | Debug               | ✅           |             |             |             |             |             |             |             |             |
 | Default             |             |             |             |             |             |             |             |             |             |
+
+## Serde support
+
+| Trait       | VecMap |
+| ----------- | ------ |
+| Serialize   |        |
+| Deserialize |        |
+
+## Rayon support
+
+| Method / trait                          | VecMap                       |
+| --------------------------------------- | ---------------------------- |
+| IntoParallelIterator for Self           |                              |
+| IntoParallelIterator for &mut Self      |                              |
+| ParallelDrainRange<usize> for &mut Self |                              |
+| par_keys()                              |                              |
+| par_values()                            |                              |
+| par_eq()                                |                              |
+| par_values_mut()                        |                              |
+| par_sort_keys()                         | not planned (not applicable) |
+| par_sort_by()                           | not planned (not applicable) |
+| par_sorted_by()                         | not planned (not applicable) |
+| par_sort_unstable_keys()                | not planned (not applicable) |
+| par_sort_unstable_by()                  | not planned (not applicable) |
+| par_sorted_unstable_by()                | not planned (not applicable) |
+| par_sort_by_cached_key()                | not planned (not applicable) |
+| FromParallelIterator<(K, V)>            |                              |
+| ParallelExtend<(K, V)>                  |                              |
+| ParallelExtend<(&'a K, &'a V)>          |                              |
+
+### Iterators 
+| Method / trait          | IntoParIter | ParIter | ParIterMut | ParDrain | ParKeys | ParValues | ParValuesMut |
+| ----------------------- | ----------- | ------- | ---------- | -------- | ------- | --------- | ------------ |
+| Debug                   |             |         |            |          |         |           |              |
+| Clone                   |             |         |            |          |         |           |              |
+| ParallelIterator        |             |         |            |          |         |           |              |
+| IndexedParallelIterator |             |         |            |          |         |           |              |
