@@ -653,26 +653,60 @@ mod test {
         assert_eq!(0, iter.len());
     }
 
-    #[derive(Copy, Clone)]
-    enum TestEnum {
-        A,
-        B,
+    #[test]
+    fn test_enum() {
+        #[derive(Copy, Clone, Eq, PartialEq, Debug)]
+        enum TestEnum {
+            A,
+            B,
+        }
+
+        impl IndexKey for TestEnum {
+            fn as_index(&self) -> usize {
+                match self {
+                    Self::A => 0,
+                    Self::B => 1,
+                }
+            }
+
+            fn from_index(index: usize) -> Self {
+                match index {
+                    0 => Self::A,
+                    1 => Self::B,
+                    _ => panic!(),
+                }
+            }
+        }
+        use TestEnum::{A, B};
+        let mut map: VecMap<TestEnum, usize> = VecMap::with_capacity(40);
+        map.insert(B, 20);
+        map.insert(A, 17);
+
+        assert_eq!(vec![(A, &17), (B, &20)], map.iter().collect::<Vec<_>>());
     }
 
-    impl IndexKey for TestEnum {
-        fn as_index(&self) -> usize {
-            match self {
-                Self::A => 0,
-                Self::B => 1,
-            }
-        }
+    #[test]
+    fn test_new_type() {
+        #[derive(Copy, Clone, Eq, PartialEq, Debug)]
+        struct MyNewType(u8);
 
-        fn from_index(index: usize) -> Self {
-            match index {
-                0 => Self::A,
-                1 => Self::B,
-                _ => panic!(),
+        impl IndexKey for MyNewType {
+            fn as_index(&self) -> usize {
+                self.0 as usize
+            }
+
+            fn from_index(index: usize) -> Self {
+                Self(index as u8)
             }
         }
+        let mut map: VecMap<MyNewType, ()> = VecMap::with_capacity(40);
+        map.insert(MyNewType(39), ());
+        map.insert(MyNewType(20), ());
+        map.insert(MyNewType(10), ());
+
+        assert_eq!(
+            vec![MyNewType(10), MyNewType(20), MyNewType(39)],
+            map.keys().collect::<Vec<_>>()
+        );
     }
 }
