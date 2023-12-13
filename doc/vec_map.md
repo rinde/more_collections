@@ -12,7 +12,7 @@ Below is an overview of the all methods and traits that are implemented for `Vec
 | as_entries_mut()       | not planned                  |
 | with_entries()         | not planned                  |
 | with_capacity()        | ✅                            |
-| capacity()             |                              |
+| capacity()             | ✅                            |
 | len()                  | ✅                            |
 | is_empty()             | ✅                            |
 | iter()                 | ✅                            |
