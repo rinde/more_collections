@@ -18,10 +18,10 @@ use smallvec::SmallVec;
 ///
 /// `SmallMap` shares most of its API with, and behaves like
 /// [`IndexMap`]. It can store a limited amount of data
-/// inline, backed by [`SmallVec`]. If the data exceeds the limit `C`, `SmallMap`
-/// will move _all_ its data over to the heap in the form of an `IndexMap`. For
-/// performance reasons, transitions between heap and inline storage should
-/// generally be avoided.
+/// inline, backed by [`SmallVec`]. If the data exceeds the limit `C`,
+/// `SmallMap` will move _all_ its data over to the heap in the form of an
+/// `IndexMap`. For performance reasons, transitions between heap and inline
+/// storage should generally be avoided.
 ///
 /// The `SmallMap` datastructure is meant for situations where the data does not
 /// exceed `C` _most of the time_ but it still needs to support cases where the
