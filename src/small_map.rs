@@ -1222,7 +1222,7 @@ mod test {
         struct PartialEqType(usize);
         let map1: SmallMap<usize, PartialEqType, 2> = smallmap! {};
         let map2: SmallMap<usize, PartialEqType, 2> = smallmap! {};
-        assert_eq!(map1, map2)
+        assert_eq!(map1, map2);
     }
 
     // Type for testing equivalence to String
