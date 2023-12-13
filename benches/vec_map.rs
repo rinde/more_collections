@@ -281,9 +281,9 @@ fn benchmark_iter(c: &mut Criterion) {
         .measurement_time(Duration::from_millis(1000))
         .warm_up_time(Duration::from_millis(100));
 
-    let initial_states = test_cases();
+    let cases = test_cases();
 
-    for case in initial_states {
+    for case in cases {
         let params = case.name;
         // bench_impl!(group, params, case, Vec, |x: &mut Vec<_>| {
         //     black_box(x.iter().collect::<Vec<_>>());
@@ -301,6 +301,25 @@ fn benchmark_iter(c: &mut Criterion) {
         //     black_box(x.iter().collect::<Vec<_>>());
         // });
     }
+
+    struct Case {
+        data: Vec<(usize, ())>,
+    }
+    let case = Case {
+        data: Uniform::new(0, 10_000)
+            .sample_iter(thread_rng())
+            .unique()
+            .take(9800)
+            .map(|i| (i, ()))
+            .collect::<Vec<_>>(),
+    };
+    let name = "big_dense_unit";
+    bench_impl!(group, name, case, VecMap, |x: &mut VecMap<_, _>| {
+        black_box(x.iter().collect::<Vec<_>>());
+    });
+    bench_impl!(group, name, case, IndexMap, |x: &mut IndexMap<_, _>| {
+        black_box(x.iter().collect::<Vec<_>>());
+    });
 }
 
 criterion_group!(
