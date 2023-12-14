@@ -16,7 +16,7 @@ Below is an overview of the all methods and traits that are implemented for `Vec
 | `len()`                  | ✅                            |
 | `is_empty()`             | ✅                            |
 | `iter()`                 | ✅                            |
-| `iter_mut()`             |                              |
+| `iter_mut()`             | ✅                            |
 | `keys()`                 | ✅                            |
 | `into_keys()`            |                              |
 | `values()`               |                              |
