@@ -8,6 +8,7 @@ use std::ops::Index;
 
 pub use crate::vec_map::iter::IntoIter;
 pub use crate::vec_map::iter::Iter;
+use crate::vec_map::iter::IterMut;
 pub use crate::vec_map::iter::Keys;
 
 /// A key that can be used in a map without needing a hasher.
@@ -174,6 +175,16 @@ impl<K: IndexKey, V> VecMap<K, V> {
         }
     }
 
+    /// Returns an iterator over the key-value pairs of the map, with the values
+    /// being mutable, following the natural order of the keys.
+    pub fn iter_mut(&mut self) -> IterMut<'_, K, V> {
+        IterMut {
+            inner: self.data.iter_mut().enumerate(),
+            len: self.len,
+            _marker: PhantomData,
+        }
+    }
+
     /// Returns an iterator over the keys of the map following the natural order
     /// of the keys.
     pub fn keys(&self) -> Keys<'_, K, V> {
@@ -210,20 +221,6 @@ impl<K: IndexKey, V> Index<K> for VecMap<K, V> {
             self.data[index]
                 .as_ref()
                 .unwrap_or_else(|| panic!("doesn't exist"))
-        }
-    }
-}
-
-impl<K: IndexKey, V> IntoIterator for VecMap<K, V> {
-    type Item = (K, V);
-
-    type IntoIter = IntoIter<K, V>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        IntoIter {
-            inner: self.data.into_iter().enumerate(),
-            len: self.len,
-            _marker: PhantomData,
         }
     }
 }
