@@ -77,6 +77,7 @@ pub use small_map::SmallMap;
     feature = "smallset"
 ))]
 pub use small_set::SmallSet;
-pub use vec_map::*;
+pub use vec_map::IndexKey;
+pub use vec_map::VecMap;
 
 // TODO follow all guidelines here https://rust-lang.github.io/api-guidelines/checklist.html
