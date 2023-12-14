@@ -35,7 +35,6 @@ impl<'a, K: IndexKey, V> DoubleEndedIterator for Iter<'a, K, V> {
         if self.len == 0 {
             return None;
         }
-
         self.inner
             .by_ref()
             .filter_map(|(i, v)| {
@@ -70,7 +69,7 @@ impl<'a, K: IndexKey + fmt::Debug, V: fmt::Debug> fmt::Debug for Iter<'a, K, V> 
 
 /// An owned iterator that iterates over the key-value pairs following the key
 /// ordering.
-#[derive(Clone)]
+#[derive(Clone, Debug)] // TODO figure out a way to implement Debug cleanly but without cloning
 pub struct IntoIter<K, V> {
     pub(super) inner: Enumerate<std::vec::IntoIter<Option<V>>>,
     pub(super) len: usize,
@@ -81,13 +80,32 @@ impl<K: IndexKey, V> Iterator for IntoIter<K, V> {
     type Item = (K, V);
 
     fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            match self.inner.next() {
-                Some((_, None)) => continue,
-                Some((i, Some(v))) => return Some((K::from_index(i), v)),
-                None => return None,
-            }
+        if self.len == 0 {
+            return None;
         }
+        self.inner.by_ref().find_map(|(i, v)| {
+            v.map(|v| {
+                self.len -= 1;
+                (K::from_index(i), v)
+            })
+        })
+    }
+}
+
+impl<K: IndexKey, V> DoubleEndedIterator for IntoIter<K, V> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.len == 0 {
+            return None;
+        }
+        self.inner
+            .by_ref()
+            .filter_map(|(i, v)| {
+                v.map(|v| {
+                    self.len -= 1;
+                    (K::from_index(i), v)
+                })
+            })
+            .next_back()
     }
 }
 
@@ -96,6 +114,8 @@ impl<K: IndexKey, V> ExactSizeIterator for IntoIter<K, V> {
         self.len
     }
 }
+
+impl<K: IndexKey, V> FusedIterator for IntoIter<K, V> {}
 
 /// An iterator over the keys following the key natural order.
 #[derive(Clone)]
@@ -201,6 +221,40 @@ mod test {
     }
 
     #[test]
+    fn test_into_iter() {
+        let map = vecmap! { 9u16 => "nine", 17 => "seventeen", 2 => "two"};
+
+        // forward
+        let mut iter = map.into_iter();
+        assert_eq!(3, iter.len());
+        assert_eq!(Some((2, "two")), iter.next());
+        assert_eq!(2, iter.len());
+        assert_eq!(Some((9, "nine")), iter.next());
+        assert_eq!(1, iter.len());
+        assert_eq!(Some((17, "seventeen")), iter.next());
+        assert_eq!(0, iter.len());
+        assert_eq!(None, iter.next());
+
+        let map = vecmap! { 9u16 => "nine", 17 => "seventeen", 2 => "two"};
+        // back, forward, back
+        let mut iter = map.into_iter();
+        assert_eq!(3, iter.len());
+        assert_eq!(Some((17, "seventeen")), iter.next_back());
+        assert_eq!(2, iter.len());
+        assert_eq!(Some((2, "two")), iter.next());
+        assert_eq!(1, iter.len());
+        assert_eq!(Some((9, "nine")), iter.next_back());
+        assert_eq!(0, iter.len());
+        assert_eq!(None, iter.next_back());
+
+        let map: VecMap<usize, usize> = VecMap::with_capacity(40);
+        let mut iter = map.into_iter();
+        assert_eq!(0, iter.len());
+        assert_eq!(None, iter.next());
+        assert_eq!(0, iter.len());
+    }
+
+    #[test]
     fn test_keys() {
         let map = vecmap! { 9u16 => "nine", 17 => "seventeen", 2 => "two"};
 
@@ -227,7 +281,7 @@ mod test {
         assert_eq!(None, iter.next_back());
 
         let map: VecMap<usize, usize> = VecMap::with_capacity(40);
-        let mut iter = map.iter();
+        let mut iter = map.keys();
         assert_eq!(0, iter.len());
         assert_eq!(None, iter.next());
         assert_eq!(0, iter.len());
