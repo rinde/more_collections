@@ -225,9 +225,12 @@ impl<K: IndexKey, V> Index<K> for VecMap<K, V> {
     }
 }
 
+/// Entry for an existing key-value pair or a vacant location to insert one.
 #[derive(Debug)]
 pub enum Entry<'a, K: IndexKey, V> {
+    /// Vacant slot (i.e. the key does not exist in the map).
     Vacant(K, &'a mut VecMap<K, V>),
+    /// Occupied slot.
     Occupied(&'a mut V),
 }
 
@@ -315,6 +318,25 @@ impl<K: IndexKey + fmt::Debug, V: fmt::Debug> fmt::Debug for VecMap<K, V> {
     }
 }
 
+/// Create an `VecMap` from a lit of key-value pairs.
+///
+/// ## Example
+///
+/// ```
+/// use more_collections::vecmap;
+///
+/// let map = vecmap! {
+///     1usize => "a",
+///     2 => "b",
+/// };
+///
+/// assert_eq!(map[1], "a");
+/// assert_eq!(map[2], "b");
+/// assert_eq!(map.get(3), None);
+///
+/// // 1 is the first key
+/// assert_eq!(map.keys().next(), Some(1));
+/// ```
 #[macro_export]
 macro_rules! vecmap {
     (@single $($x:tt)*) => (());
@@ -333,6 +355,7 @@ macro_rules! vecmap {
     };
 }
 
+#[doc(hidden)]
 #[macro_export]
 macro_rules! impl_indexable{
     ( $( $Int: ty )+ ) => {
