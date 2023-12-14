@@ -679,14 +679,14 @@ mod test {
     #[should_panic(expected = "100 is out of bounds")]
     fn test_index_out_of_bounds_panics() {
         let immutable_map = vecmap! { 8u16 => "august", 13 => "thirteen", 22 => "twentytwo"};
-        immutable_map[100];
+        let _ = immutable_map[100];
     }
 
     #[test]
     #[should_panic(expected = "There is no item at index 1")]
     fn test_index_non_existing_panics() {
         let immutable_map = vecmap! { 8u16 => "august", 13 => "thirteen", 22 => "twentytwo"};
-        immutable_map[1];
+        let _ = immutable_map[1];
     }
 
     #[test]
@@ -694,7 +694,7 @@ mod test {
     #[allow(unused_must_use)]
     fn test_index_mut_out_of_bounds_panics() {
         let mut map = vecmap! { 8u16 => "august", 13 => "thirteen", 22 => "twentytwo"};
-        &mut map[100];
+        let _ = &mut map[100];
     }
 
     #[test]
@@ -703,7 +703,7 @@ mod test {
     fn test_index_mut_non_existing_panics() {
         // #[allow("unused-mut")]
         let mut map = vecmap! { 8u16 => "august", 13 => "thirteen", 22 => "twentytwo"};
-        &mut map[1];
+        let _ = &mut map[1];
     }
 
     #[test]
