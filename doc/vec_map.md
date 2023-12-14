@@ -43,16 +43,16 @@ Below is an overview of the all methods and traits that are implemented for `Vec
 | `get_mut()`              | ✅                            |
 | `get_full_mut()`         | not planned (redundant)      |
 | `remove()`               | ✅                            |
-| `remove_entry()`         |                              |
+| `remove_entry()`         | not planned (redundant)      |
 | `swap_remove()`          | not planned (not applicable) |
 | `swap_remove_entry()`    | not planned (not applicable) |
 | `swap_remove_full()`     | not planned (not applicable) |
 | `shift_remove()`         | not planned (not applicable) |
 | `shift_remove_entry()`   | not planned (not applicable) |
 | `shift_remove_full()`    | not planned (not applicable) |
-| `pop()`                  |                              |
-| `retain()`               |                              |
-| `retain_mut()`           |                              |
+| `pop()`                  | planned                      |
+| `retain()`               | planned                      |
+| `retain_mut()`           | planned                      |
 | `sort_keys()`            | not planned (not applicable) |
 | `sort_by()`              | not planned (not applicable) |
 | `sorted_by()`            | not planned (not applicable) |
@@ -82,23 +82,23 @@ Below is an overview of the all methods and traits that are implemented for `Vec
 
 ## Traits
 
-| Trait                        | VecMap |
-| ---------------------------- | ------ |
-| `Clone`                      | ✅      |
-| `Debug`                      | ✅      |
-| `Index<K>`                   | ✅      |
-| `IndexMut<K>`                |        |
-| `Index<usize>`               |        |
-| `IndexMut<usize>`            |        |
-| `FromIterator<(K,V)>`        | ✅      |
-| `From<[(K,V); N]>`           |        |
-| `Extend<(K,V)>`              |        |
-| `Default`                    | ✅      |
-| `PartialEq`                  | ✅      |
-| `Eq`                         | ✅      |
-| `IntoIterator for &Self`     | ✅      |
-| `IntoIterator for &mut Self` |        |
-| `IntoIterator for Self`      | ✅      |
+| Trait                        | VecMap  |
+| ---------------------------- | ------- |
+| `Clone`                      | ✅       |
+| `Debug`                      | ✅       |
+| `Index<K>`                   | ✅       |
+| `IndexMut<K>`                | planned |
+| `Index<usize>`               | planned |
+| `IndexMut<usize>`            | planned |
+| `FromIterator<(K,V)>`        | ✅       |
+| `From<[(K,V); N]>`           |         |
+| `Extend<(K,V)>`              |         |
+| `Default`                    | ✅       |
+| `PartialEq`                  | ✅       |
+| `Eq`                         | ✅       |
+| `IntoIterator for &Self`     | ✅       |
+| `IntoIterator for &mut Self` |         |
+| `IntoIterator for Self`      | ✅       |
 
 ## Entry
 
@@ -119,10 +119,10 @@ Below is an overview of the all methods and traits that are implemented for `Vec
 | --------------------- | ----------- | ----------- | ----------- | ----------- | ----------- | ----------- | ----------- | ----------- | ------------ |
 | `as_slice()`          | not planned | not planned | not planned | not planned | not planned | not planned | not planned | not planned | not planned  |
 | `as_mut_slice()`      | not planned | not planned | not planned | not planned | not planned | not planned | not planned | not planned | not planned  |
-| `Iterator`            | ✅           | ✅           | ✅           |             | ✅           |             |             |             |              |
-| `DoubleEndedIterator` | ✅           | ✅           | ✅           |             | ✅           |             |             |             |              |
-| `ExactSizeIterator`   | ✅           | ✅           | ✅           |             | ✅           |             |             |             |              |
-| `FusedIterator`       | ✅           | ✅           | ✅           |             | ✅           |             |             |             |              |
+| `Iterator`            | ✅           | ✅           | ✅           |             | ✅           |             | planned     |             |              |
+| `DoubleEndedIterator` | ✅           | ✅           | ✅           |             | ✅           |             | planned     |             |              |
+| `ExactSizeIterator`   | ✅           | ✅           | ✅           |             | ✅           |             | planned     |             |              |
+| `FusedIterator`       | ✅           | ✅           | ✅           |             | ✅           |             | planned     |             |              |
 | `Clone`               | ✅           |             | ✅           |             | ✅           |             |             |             |              |
 | `Debug`               | ✅           | ✅           | ✅           |             | ✅           |             |             |             |              |
 
