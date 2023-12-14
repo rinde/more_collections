@@ -48,7 +48,7 @@ pub struct VecMap<K, V> {
     _marker: PhantomData<K>,
 }
 
-impl<K, V: Clone> VecMap<K, V> {
+impl<K: IndexKey, V: Clone> VecMap<K, V> {
     /// Initializes [`VecMap`] with capacity to hold exactly `n` elements in the
     /// index range of `0..n`.
     pub fn with_capacity(n: usize) -> Self {
@@ -57,6 +57,12 @@ impl<K, V: Clone> VecMap<K, V> {
             len: 0,
             _marker: PhantomData,
         }
+    }
+
+    /// Clears all data from the [`VecMap`] without changing the capacity.
+    pub fn clear(&mut self) {
+        self.len = 0;
+        self.data = vec![None; self.capacity()];
     }
 }
 
@@ -197,12 +203,6 @@ impl<K: IndexKey, V> VecMap<K, V> {
     }
 
     // TODO values()
-
-    /// Clears all data from the [`VecMap`] without changing the capacity.
-    pub fn clear(&mut self) {
-        self.len = 0;
-        self.data.clear();
-    }
 }
 
 impl<K: IndexKey, V> Default for VecMap<K, V> {
@@ -704,5 +704,15 @@ mod test {
         // #[allow("unused-mut")]
         let mut map = vecmap! { 8u16 => "august", 13 => "thirteen", 22 => "twentytwo"};
         &mut map[1];
+    }
+
+    #[test]
+    fn test_clear() {
+        let mut map = vecmap! { 8u16 => "august", 13 => "thirteen", 22 => "twentytwo"};
+        assert_eq!(23, map.capacity());
+        assert_eq!(3, map.len());
+        map.clear();
+        assert_eq!(23, map.capacity());
+        assert_eq!(0, map.len());
     }
 }
