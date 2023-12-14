@@ -82,23 +82,23 @@ Below is an overview of the all methods and traits that are implemented for `Vec
 
 ## Traits
 
-| Trait                        | VecMap  |
-| ---------------------------- | ------- |
-| `Clone`                      | ✅       |
-| `Debug`                      | ✅       |
-| `Index<K>`                   | ✅       |
-| `IndexMut<K>`                | planned |
-| `Index<usize>`               | planned |
-| `IndexMut<usize>`            | planned |
-| `FromIterator<(K,V)>`        | ✅       |
-| `From<[(K,V); N]>`           |         |
-| `Extend<(K,V)>`              |         |
-| `Default`                    | ✅       |
-| `PartialEq`                  | ✅       |
-| `Eq`                         | ✅       |
-| `IntoIterator for &Self`     | ✅       |
-| `IntoIterator for &mut Self` | ✅       |
-| `IntoIterator for Self`      | ✅       |
+| Trait                        | VecMap       |
+| ---------------------------- | ------------ |
+| `Clone`                      | ✅            |
+| `Debug`                      | ✅            |
+| `Index<K>`                   | ✅            |
+| `IndexMut<K>`                | ✅            |
+| `Index<usize>`               | not possible |
+| `IndexMut<usize>`            | not possible |
+| `FromIterator<(K,V)>`        | ✅            |
+| `From<[(K,V); N]>`           |              |
+| `Extend<(K,V)>`              |              |
+| `Default`                    | ✅            |
+| `PartialEq`                  | ✅            |
+| `Eq`                         | ✅            |
+| `IntoIterator for &Self`     | ✅            |
+| `IntoIterator for &mut Self` | ✅            |
+| `IntoIterator for Self`      | ✅            |
 
 ## Entry
 

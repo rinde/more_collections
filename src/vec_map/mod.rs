@@ -5,6 +5,7 @@ mod iter;
 use std::fmt;
 use std::marker::PhantomData;
 use std::ops::Index;
+use std::ops::IndexMut;
 
 pub use crate::vec_map::iter::IntoIter;
 pub use crate::vec_map::iter::Iter;
@@ -216,11 +217,24 @@ impl<K: IndexKey, V> Index<K> for VecMap<K, V> {
     fn index(&self, key: K) -> &Self::Output {
         let index = key.as_index();
         if index >= self.data.len() {
-            panic!("out of bounds");
+            panic!("{index} is out of bounds");
         } else {
             self.data[index]
                 .as_ref()
-                .unwrap_or_else(|| panic!("doesn't exist"))
+                .unwrap_or_else(|| panic!("There is no item at index {index}"))
+        }
+    }
+}
+
+impl<K: IndexKey, V> IndexMut<K> for VecMap<K, V> {
+    fn index_mut(&mut self, key: K) -> &mut Self::Output {
+        let index = key.as_index();
+        if index >= self.data.len() {
+            panic!("{index} is out of bounds");
+        } else {
+            self.data[index]
+                .as_mut()
+                .unwrap_or_else(|| panic!("There is no item at index {index}"))
         }
     }
 }
@@ -643,5 +657,52 @@ mod test {
         map.insert(100, ());
         assert_eq!(2, map.len());
         assert_eq!(101, map.capacity());
+    }
+
+    #[test]
+    fn test_index_and_index_mut() {
+        let immutable_map = vecmap! { 8u16 => "august", 13 => "thirteen", 22 => "twentytwo"};
+        assert_eq!("august", immutable_map[8]);
+        assert_eq!("thirteen", immutable_map[13]);
+        assert_eq!("twentytwo", immutable_map[22]);
+
+        let mut map = vecmap! { 8u16 => "august", 13 => "thirteen", 22 => "twentytwo"};
+        assert_eq!("august", map[8]);
+        assert_eq!("thirteen", map[13]);
+        assert_eq!("twentytwo", map[22]);
+
+        map[8] = "eight";
+        assert_eq!("eight", map[8]);
+    }
+
+    #[test]
+    #[should_panic(expected = "100 is out of bounds")]
+    fn test_index_out_of_bounds_panics() {
+        let immutable_map = vecmap! { 8u16 => "august", 13 => "thirteen", 22 => "twentytwo"};
+        immutable_map[100];
+    }
+
+    #[test]
+    #[should_panic(expected = "There is no item at index 1")]
+    fn test_index_non_existing_panics() {
+        let immutable_map = vecmap! { 8u16 => "august", 13 => "thirteen", 22 => "twentytwo"};
+        immutable_map[1];
+    }
+
+    #[test]
+    #[should_panic(expected = "100 is out of bounds")]
+    #[allow(unused_must_use)]
+    fn test_index_mut_out_of_bounds_panics() {
+        let mut map = vecmap! { 8u16 => "august", 13 => "thirteen", 22 => "twentytwo"};
+        &mut map[100];
+    }
+
+    #[test]
+    #[should_panic(expected = "There is no item at index 1")]
+    #[allow(unused_must_use)]
+    fn test_index_mut_non_existing_panics() {
+        // #[allow("unused-mut")]
+        let mut map = vecmap! { 8u16 => "august", 13 => "thirteen", 22 => "twentytwo"};
+        &mut map[1];
     }
 }
