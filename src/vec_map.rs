@@ -171,9 +171,10 @@ impl<K: IndexKey, V> VecMap<K, V> {
 
     /// Returns an iterator over the keys of the map following the natural order
     /// of the keys.
-    pub fn keys(&self) -> Keys<'_, K, V, impl Fn((K, &V)) -> K> {
+    pub fn keys(&self) -> Keys<'_, K, V> {
         Keys {
-            inner: self.iter().map(as_k),
+            inner: self.data.iter().enumerate(),
+            len: self.len,
             _marker: PhantomData,
         }
     }
@@ -185,10 +186,6 @@ impl<K: IndexKey, V> VecMap<K, V> {
         self.len = 0;
         self.data.clear();
     }
-}
-
-fn as_k<K, V>(item: (K, &V)) -> K {
-    item.0
 }
 
 impl<K: IndexKey, V> Default for VecMap<K, V> {
@@ -212,24 +209,7 @@ impl<K: IndexKey, V> Index<K> for VecMap<K, V> {
     }
 }
 
-#[derive(Clone)]
-pub struct Keys<'a, K, V, F> {
-    inner: core::iter::Map<Iter<'a, K, V>, F>,
-    _marker: PhantomData<K>,
-}
-
-impl<'a, K, V, F> Iterator for Keys<'a, K, V, F>
-where
-    K: IndexKey,
-    F: Fn((K, &V)) -> K,
-{
-    type Item = K;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next()
-    }
-}
-
+/// An iterator that iterates over the key-value pairs following the key ordering.
 #[derive(Clone)]
 pub struct Iter<'a, K, V> {
     inner: Enumerate<core::slice::Iter<'a, Option<V>>>,
@@ -253,12 +233,6 @@ impl<'a, K: IndexKey, V> Iterator for Iter<'a, K, V> {
     }
 }
 
-impl<'a, K: IndexKey, V> ExactSizeIterator for Iter<'a, K, V> {
-    fn len(&self) -> usize {
-        self.len
-    }
-}
-
 impl<'a, K: IndexKey, V> DoubleEndedIterator for Iter<'a, K, V> {
     fn next_back(&mut self) -> Option<Self::Item> {
         if self.len == 0 {
@@ -277,6 +251,12 @@ impl<'a, K: IndexKey, V> DoubleEndedIterator for Iter<'a, K, V> {
     }
 }
 
+impl<'a, K: IndexKey, V> ExactSizeIterator for Iter<'a, K, V> {
+    fn len(&self) -> usize {
+        self.len
+    }
+}
+
 impl<'a, K: IndexKey, V> FusedIterator for Iter<'a, K, V> {}
 
 impl<'a, K: IndexKey + fmt::Debug, V: fmt::Debug> fmt::Debug for Iter<'a, K, V> {
@@ -288,20 +268,6 @@ impl<'a, K: IndexKey + fmt::Debug, V: fmt::Debug> fmt::Debug for Iter<'a, K, V> 
             _marker: PhantomData,
         };
         f.debug_list().entries(iter).finish()
-    }
-}
-
-impl<K: IndexKey, V> IntoIterator for VecMap<K, V> {
-    type Item = (K, V);
-
-    type IntoIter = IntoIter<K, V>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        IntoIter {
-            inner: self.data.into_iter().enumerate(),
-            len: self.len,
-            _marker: PhantomData,
-        }
     }
 }
 
@@ -329,6 +295,85 @@ impl<K: IndexKey, V> Iterator for IntoIter<K, V> {
 impl<K: IndexKey, V> ExactSizeIterator for IntoIter<K, V> {
     fn len(&self) -> usize {
         self.len
+    }
+}
+
+/// An iterator over the keys following the key natural order.
+#[derive(Clone)]
+pub struct Keys<'a, K, V> {
+    inner: Enumerate<core::slice::Iter<'a, Option<V>>>,
+    len: usize,
+    _marker: PhantomData<K>,
+}
+
+impl<'a, K: IndexKey, V> Iterator for Keys<'a, K, V> {
+    type Item = K;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.len == 0 {
+            return None;
+        }
+        self.inner.find_map(|(i, value)| {
+            value.as_ref().map(|_| {
+                self.len -= 1;
+                K::from_index(i)
+            })
+        })
+    }
+}
+
+impl<'a, K: IndexKey, V> DoubleEndedIterator for Keys<'a, K, V> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.len == 0 {
+            return None;
+        }
+        self.inner
+            .by_ref()
+            .filter_map(|(i, v)| {
+                v.as_ref().map(|_| {
+                    self.len -= 1;
+                    K::from_index(i)
+                })
+            })
+            .next_back()
+    }
+}
+
+impl<'a, K: IndexKey, V> ExactSizeIterator for Keys<'a, K, V> {
+    fn len(&self) -> usize {
+        self.len
+    }
+}
+
+impl<'a, K: IndexKey, V> FusedIterator for Keys<'a, K, V> {}
+
+impl<'a, K, V> fmt::Debug for Keys<'a, K, V>
+where
+    K: IndexKey + fmt::Debug,
+    V: fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // TODO why can't we use self.clone()
+        let iter: Keys<'a, K, V> = Keys {
+            inner: self.inner.clone(),
+            len: self.len,
+            _marker: PhantomData,
+        };
+        f.debug_list().entries(iter).finish()
+    }
+}
+
+impl<K: IndexKey, V> IntoIterator for VecMap<K, V> {
+    type Item = (K, V);
+
+    type IntoIter = IntoIter<K, V>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        IntoIter {
+            inner: self.data.into_iter().enumerate(),
+            len: self.len,
+            _marker: PhantomData,
+        }
     }
 }
 
@@ -659,6 +704,39 @@ mod test {
         assert_eq!(Some((2, &"two")), iter.next());
         assert_eq!(1, iter.len());
         assert_eq!(Some((9, &"nine")), iter.next_back());
+        assert_eq!(0, iter.len());
+        assert_eq!(None, iter.next_back());
+
+        let map: VecMap<usize, usize> = VecMap::with_capacity(40);
+        let mut iter = map.iter();
+        assert_eq!(0, iter.len());
+        assert_eq!(None, iter.next());
+        assert_eq!(0, iter.len());
+    }
+
+    #[test]
+    fn test_keys() {
+        let map = vecmap! { 9u16 => "nine", 17 => "seventeen", 2 => "two"};
+
+        // forward
+        let mut iter = map.keys();
+        assert_eq!(3, iter.len());
+        assert_eq!(Some(2), iter.next());
+        assert_eq!(2, iter.len());
+        assert_eq!(Some(9), iter.next());
+        assert_eq!(1, iter.len());
+        assert_eq!(Some(17), iter.next());
+        assert_eq!(0, iter.len());
+        assert_eq!(None, iter.next());
+
+        // back, forward, back
+        let mut iter = map.keys();
+        assert_eq!(3, iter.len());
+        assert_eq!(Some(17), iter.next_back());
+        assert_eq!(2, iter.len());
+        assert_eq!(Some(2), iter.next());
+        assert_eq!(1, iter.len());
+        assert_eq!(Some(9), iter.next_back());
         assert_eq!(0, iter.len());
         assert_eq!(None, iter.next_back());
 

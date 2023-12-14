@@ -118,13 +118,11 @@ Below is an overview of the all methods and traits that are implemented for `Vec
 | as_slice()          | not planned | not planned | not planned | not planned | not planned | not planned | not planned | not planned | not planned |
 | as_mut_slice()      | not planned | not planned | not planned | not planned | not planned | not planned | not planned | not planned | not planned |
 | Iterator            | ✅           |             | ✅           |             | ✅           |             |             |             |             |
-| DoubleEndedIterator | ✅           |             |             |             |             |             |             |             |             |
-| ExactSizeIterator   | ✅           |             | ✅           |             |             |             |             |             |             |
-| FusedIterator       | ✅           |             |             |             |             |             |             |             |             |
-| Clone               | ✅           |             |             |             |             |             |             |             |             |
-| Copy                | ✅           |             |             |             |             |             |             |             |             |
-| Debug               | ✅           |             |             |             |             |             |             |             |             |
-| Default             |             |             |             |             |             |             |             |             |             |
+| DoubleEndedIterator | ✅           |             |             |             | ✅           |             |             |             |             |
+| ExactSizeIterator   | ✅           |             | ✅           |             | ✅           |             |             |             |             |
+| FusedIterator       | ✅           |             |             |             | ✅           |             |             |             |             |
+| Clone               | ✅           |             |             |             | ✅           |             |             |             |             |
+| Debug               | ✅           |             |             |             | ✅           |             |             |             |             |
 
 ## Serde support
 
