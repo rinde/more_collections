@@ -226,7 +226,6 @@ impl<K: IndexKey, V> Index<K> for VecMap<K, V> {
 }
 
 /// Entry for an existing key-value pair or a vacant location to insert one.
-#[derive(Debug)]
 pub enum Entry<'a, K: IndexKey, V> {
     /// Vacant slot (i.e. the key does not exist in the map).
     Vacant(K, &'a mut VecMap<K, V>),
@@ -295,6 +294,15 @@ impl<'a, K: IndexKey, V> Entry<'a, K, V> {
                 Entry::Occupied(o)
             }
             x => x,
+        }
+    }
+}
+
+impl<K: IndexKey + fmt::Debug, V: fmt::Debug> fmt::Debug for Entry<'_, K, V> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            Entry::Occupied(ref value) => f.debug_tuple(stringify!(Entry)).field(value).finish(),
+            Entry::Vacant(ref key, _) => f.debug_tuple(stringify!(Entry)).field(key).finish(),
         }
     }
 }

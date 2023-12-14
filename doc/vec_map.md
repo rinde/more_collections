@@ -19,7 +19,7 @@ Below is an overview of the all methods and traits that are implemented for `Vec
 | `iter_mut()`             | ✅                            |
 | `keys()`                 | ✅                            |
 | `into_keys()`            |                              |
-| `values()`               |                              |
+| `values()`               | planned                      |
 | `values_mut()`           |                              |
 | `into_values()`          |                              |
 | `clear()`                | ✅                            |
@@ -97,21 +97,21 @@ Below is an overview of the all methods and traits that are implemented for `Vec
 | `PartialEq`                  | ✅       |
 | `Eq`                         | ✅       |
 | `IntoIterator for &Self`     | ✅       |
-| `IntoIterator for &mut Self` |         |
+| `IntoIterator for &mut Self` | ✅       |
 | `IntoIterator for Self`      | ✅       |
 
 ## Entry
 
-| Method / trait         | `VecMap` `Entry` |
-| ---------------------- | ---------------- |
-| `or_insert()`          | ✅                |
-| `or_insert_with()`     | ✅                |
-| `or_insert_with_key()` |                  |
-| `key()`                |                  |
-| `index()`              |                  |
-| `and_modify()`         | ✅                |
-| `or_default()`         | ✅                |
-| `Debug`                |                  |
+| Method / trait         | `VecMap` `Entry`        |
+| ---------------------- | ----------------------- |
+| `or_insert()`          | ✅                       |
+| `or_insert_with()`     | ✅                       |
+| `or_insert_with_key()` | not planned (redundant) |
+| `key()`                | not planned (redundant) |
+| `index()`              | not planned (redundant) |
+| `and_modify()`         | ✅                       |
+| `or_default()`         | ✅                       |
+| `Debug`                | ✅                       |
 
 # Iterators
 
