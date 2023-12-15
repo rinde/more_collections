@@ -39,7 +39,7 @@ Built on top of the excellent [smallvec](https://github.com/servo/rust-smallvec)
 ## VecMap
 | Completion | Name   | Behaves as                                           |
 | ---------- | ------ | ---------------------------------------------------- |
-| 🟩🟨⬜️⬜️⬜️      | VecMap | Sorted IndexMap / BTreeMap, optimized for dense maps |
+| 🟩🟩🟩🟨⬜️      | VecMap | Sorted IndexMap / BTreeMap, optimized for dense maps |
 
 [A detailed overivew](doc/vec_map.md).
 
