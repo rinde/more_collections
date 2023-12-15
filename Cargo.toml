@@ -12,13 +12,14 @@ categories = ["data-structures"]
 include = ["LICENSE", "README.md", "**/*.rs", "Cargo.toml"]
 
 [features]
-all = ["hashsetmultimap", "hashvecmultimap", "indexsetmultimap", "indexvecmultimap", "smallset", "smallmap"]
+all = ["hashsetmultimap", "hashvecmultimap", "indexsetmultimap", "indexvecmultimap", "smallset", "smallmap", "vecmap"]
 hashsetmultimap = ["maplit"]
 hashvecmultimap = []
 indexsetmultimap = ["indexmap"]
 indexvecmultimap = ["indexmap"]
 smallmap = ["indexmap", "smallvec"]
 smallset = ["indexmap", "smallvec", "smallmap"]
+vecmap = []
 
 [dependencies]
 indexmap = { version = "2.1.0", optional = true }
@@ -38,7 +39,6 @@ name = "vec_map"
 harness = false
 
 [profile.bench]
-# opt-level = 1  
 lto = true
 
 [lints.rust]
