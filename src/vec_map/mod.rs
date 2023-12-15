@@ -128,11 +128,12 @@ impl<K: IndexKey, V> VecMap<K, V> {
         if self.is_empty() {
             None
         } else {
-            self.data
-                .iter_mut()
-                .enumerate()
-                .rev()
-                .find_map(|(i, x)| x.take().map(|x| (K::from_index(i), x)))
+            self.data.iter_mut().enumerate().rev().find_map(|(i, x)| {
+                x.take().map(|x| {
+                    self.len -= 1;
+                    (K::from_index(i), x)
+                })
+            })
         }
     }
 
@@ -471,10 +472,20 @@ mod test {
     #[test]
     fn test_pop() {
         let mut map = vecmap! { 9usize => "nine", 17 => "seventeen", 2 => "two"};
+        assert_eq!(18, map.capacity());
+        assert_eq!(3, map.len());
         assert_eq!(Some((17, "seventeen")), map.pop());
+        assert_eq!(18, map.capacity());
+        assert_eq!(2, map.len());
         assert_eq!(Some((9, "nine")), map.pop());
+        assert_eq!(18, map.capacity());
+        assert_eq!(1, map.len());
         assert_eq!(Some((2, "two")), map.pop());
+        assert_eq!(18, map.capacity());
+        assert_eq!(0, map.len());
         assert_eq!(None, map.pop());
+        assert_eq!(18, map.capacity());
+        assert_eq!(0, map.len());
     }
 
     #[test]
