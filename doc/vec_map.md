@@ -19,7 +19,7 @@ Below is an overview of the all methods and traits that are implemented for `Vec
 | `iter_mut()`             | ✅                            |
 | `keys()`                 | ✅                            |
 | `into_keys()`            |                              |
-| `values()`               | planned                      |
+| `values()`               | ✅                            |
 | `values_mut()`           |                              |
 | `into_values()`          |                              |
 | `clear()`                | ✅                            |
@@ -118,12 +118,12 @@ Below is an overview of the all methods and traits that are implemented for `Vec
 | --------------------- | ----------- | ----------- | ----------- | ----------- | ----------- | ----------- | ----------- | ----------- | ------------ |
 | `as_slice()`          | not planned | not planned | not planned | not planned | not planned | not planned | not planned | not planned | not planned  |
 | `as_mut_slice()`      | not planned | not planned | not planned | not planned | not planned | not planned | not planned | not planned | not planned  |
-| `Iterator`            | ✅           | ✅           | ✅           |             | ✅           |             | planned     |             |              |
-| `DoubleEndedIterator` | ✅           | ✅           | ✅           |             | ✅           |             | planned     |             |              |
-| `ExactSizeIterator`   | ✅           | ✅           | ✅           |             | ✅           |             | planned     |             |              |
-| `FusedIterator`       | ✅           | ✅           | ✅           |             | ✅           |             | planned     |             |              |
-| `Clone`               | ✅           |             | ✅           |             | ✅           |             |             |             |              |
-| `Debug`               | ✅           | ✅           | ✅           |             | ✅           |             |             |             |              |
+| `Iterator`            | ✅           | ✅           | ✅           |             | ✅           |             | ✅           |             |              |
+| `DoubleEndedIterator` | ✅           | ✅           | ✅           |             | ✅           |             | ✅           |             |              |
+| `ExactSizeIterator`   | ✅           | ✅           | ✅           |             | ✅           |             | ✅           |             |              |
+| `FusedIterator`       | ✅           | ✅           | ✅           |             | ✅           |             | ✅           |             |              |
+| `Clone`               | ✅           |             | ✅           |             | ✅           |             | ✅           |             |              |
+| `Debug`               | ✅           | ✅           | ✅           |             | ✅           |             | ✅           |             |              |
 
 ## Serde support
 

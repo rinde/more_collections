@@ -7,10 +7,7 @@ use std::marker::PhantomData;
 use std::ops::Index;
 use std::ops::IndexMut;
 
-pub use crate::vec_map::iter::IntoIter;
-pub use crate::vec_map::iter::Iter;
-use crate::vec_map::iter::IterMut;
-pub use crate::vec_map::iter::Keys;
+pub use crate::vec_map::iter::*;
 
 /// A key that can be used in a map without needing a hasher.
 ///
@@ -242,7 +239,13 @@ impl<K: IndexKey, V> VecMap<K, V> {
         }
     }
 
-    // TODO values()
+    /// Returns an iterator over the values of the map following the natural order of the keys.
+    pub fn values(&self) -> Values<'_, V> {
+        Values {
+            inner: self.data.iter(),
+            len: self.len,
+        }
+    }
 }
 
 impl<K: IndexKey, V> Default for VecMap<K, V> {

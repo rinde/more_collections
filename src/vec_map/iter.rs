@@ -265,6 +265,65 @@ where
     }
 }
 
+/// An iterator over the values following the key natural order.
+#[derive(Clone)]
+pub struct Values<'a, V> {
+    pub(super) inner: core::slice::Iter<'a, Option<V>>,
+    pub(super) len: usize,
+}
+
+impl<'a, V> Iterator for Values<'a, V> {
+    type Item = &'a V;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.len == 0 {
+            return None;
+        }
+        self.inner.find_map(|value| value.as_ref()).map(|v| {
+            self.len -= 1;
+            v
+        })
+    }
+}
+
+impl<'a, V> DoubleEndedIterator for Values<'a, V> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.len == 0 {
+            return None;
+        }
+        self.inner
+            .by_ref()
+            .rev()
+            .find_map(|value| value.as_ref())
+            .map(|v| {
+                self.len -= 1;
+                v
+            })
+    }
+}
+
+impl<'a, V> ExactSizeIterator for Values<'a, V> {
+    fn len(&self) -> usize {
+        self.len
+    }
+}
+
+impl<'a, V> FusedIterator for Values<'a, V> {}
+
+impl<'a, V> fmt::Debug for Values<'a, V>
+where
+    V: fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // TODO why can't we use self.clone()
+        let iter: Values<'a, V> = Values {
+            inner: self.inner.clone(),
+            len: self.len,
+        };
+        f.debug_list().entries(iter).finish()
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::vecmap;
@@ -404,6 +463,39 @@ mod test {
 
         let map: VecMap<usize, usize> = VecMap::with_capacity(40);
         let mut iter = map.keys();
+        assert_eq!(0, iter.len());
+        assert_eq!(None, iter.next());
+        assert_eq!(0, iter.len());
+    }
+
+    #[test]
+    fn test_values() {
+        let map = vecmap! { 9u16 => "nine", 17 => "seventeen", 2 => "two"};
+
+        // forward
+        let mut iter = map.values();
+        assert_eq!(3, iter.len());
+        assert_eq!(Some(&"two"), iter.next());
+        assert_eq!(2, iter.len());
+        assert_eq!(Some(&"nine"), iter.next());
+        assert_eq!(1, iter.len());
+        assert_eq!(Some(&"seventeen"), iter.next());
+        assert_eq!(0, iter.len());
+        assert_eq!(None, iter.next());
+
+        // back, forward, back
+        let mut iter = map.values();
+        assert_eq!(3, iter.len());
+        assert_eq!(Some(&"seventeen"), iter.next_back());
+        assert_eq!(2, iter.len());
+        assert_eq!(Some(&"two"), iter.next());
+        assert_eq!(1, iter.len());
+        assert_eq!(Some(&"nine"), iter.next_back());
+        assert_eq!(0, iter.len());
+        assert_eq!(None, iter.next_back());
+
+        let map: VecMap<usize, usize> = VecMap::with_capacity(40);
+        let mut iter = map.values();
         assert_eq!(0, iter.len());
         assert_eq!(None, iter.next());
         assert_eq!(0, iter.len());
