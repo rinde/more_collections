@@ -39,9 +39,9 @@ Built on top of the excellent [smallvec](https://github.com/servo/rust-smallvec)
 [A detailed overview](doc/multimap.md).
 
 ## VecMap
-| Completion | Name   | Behaves as                                           |
-| ---------- | ------ | ---------------------------------------------------- |
-| 🟩🟩🟩🟨⬜️      | VecMap | Sorted IndexMap / BTreeMap, optimized for dense maps |
+| Completion | Name   | Behaves as                                     | Distinguishing features |
+| ---------- | ------ | ---------------------------------------------- | ----------------------- |
+| 🟩🟩🟩🟨⬜️      | VecMap | `Vec<Option<T>>` but with a nice Map-like API. | Fast random access      |
 
 [A detailed overview](doc/vec_map.md).
 
