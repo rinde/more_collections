@@ -123,7 +123,8 @@ impl<K: IndexKey, V> VecMap<K, V> {
 
     /// Removes the last key-value pair.
     ///
-    /// Worst case performance is O(n) in case the value is at the first index.
+    /// Worst case performance is O(n) in case the value is at the first index,
+    /// where n = the capacity.
     pub fn pop(&mut self) -> Option<(K, V)> {
         if self.is_empty() {
             None
@@ -134,6 +135,29 @@ impl<K: IndexKey, V> VecMap<K, V> {
                     (K::from_index(i), x)
                 })
             })
+        }
+    }
+
+    /// Iterates over each key-value pair in the map and keep those where the
+    /// closure `keep` returns `true`.
+    ///
+    /// The elements are visited in order.
+    pub fn retain<F>(&mut self, mut keep: F)
+    where
+        F: FnMut(K, &mut V) -> bool,
+    {
+        if !self.is_empty() {
+            self.data
+                .iter_mut()
+                .enumerate()
+                .for_each(|(i, value_option)| {
+                    if let Some(value) = value_option.as_mut() {
+                        if !keep(K::from_index(i), value) {
+                            self.len -= 1;
+                            value_option.take();
+                        }
+                    }
+                });
         }
     }
 
@@ -386,6 +410,7 @@ macro_rules! vecmap {
             let _cap = $crate::vecmap!(@count $($key),*);
             let mut _map = $crate::vec_map::VecMap::with_capacity(_cap);
             $(
+                #[allow(let_underscore_drop)]
                 let _ = _map.insert($key, $value);
             )*
             _map
@@ -486,6 +511,48 @@ mod test {
         assert_eq!(None, map.pop());
         assert_eq!(18, map.capacity());
         assert_eq!(0, map.len());
+    }
+
+    #[test]
+    fn test_retain_by_key() {
+        let mut map = vecmap! { 9usize => "nine".to_string(), 17 => "seventeen".to_string(), 2 => "two".to_string()};
+        map.retain(|k, _| k < 9);
+        assert_eq!(1, map.len());
+        assert_eq!(
+            vec![(2, "two".to_string())],
+            map.into_iter().collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn test_retain_by_value() {
+        let mut map = vecmap! { 9usize => "nine".to_string(), 17 => "seventeen".to_string(), 2 => "two".to_string()};
+        map.retain(|_, s| s.len() > 8);
+        assert_eq!(1, map.len());
+        assert_eq!(
+            vec![(17, "seventeen".to_string())],
+            map.into_iter().collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn test_retain_mut_value() {
+        let mut map = vecmap! { 9usize => "nine".to_string(), 17 => "seventeen".to_string(), 2 => "two".to_string()};
+        map.retain(|_, s| {
+            if s.len() < 8 {
+                s.push_str("-yes");
+            }
+            true
+        });
+        assert_eq!(3, map.len());
+        assert_eq!(
+            vec![
+                (2, "two-yes".to_string()),
+                (9, "nine-yes".to_string()),
+                (17, "seventeen".to_string())
+            ],
+            map.into_iter().collect::<Vec<_>>()
+        );
     }
 
     #[test]
