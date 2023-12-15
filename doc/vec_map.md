@@ -50,7 +50,7 @@ Below is an overview of the all methods and traits that are implemented for `Vec
 | `shift_remove()`         | not planned (not applicable) |
 | `shift_remove_entry()`   | not planned (not applicable) |
 | `shift_remove_full()`    | not planned (not applicable) |
-| `pop()`                  | planned                      |
+| `pop()`                  | ✅                            |
 | `retain()`               | planned                      |
 | `retain_mut()`           | planned                      |
 | `sort_keys()`            | not planned (not applicable) |

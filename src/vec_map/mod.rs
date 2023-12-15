@@ -121,6 +121,21 @@ impl<K: IndexKey, V> VecMap<K, V> {
         }
     }
 
+    /// Removes the last key-value pair.
+    ///
+    /// Worst case performance is O(n) in case the value is at the first index.
+    pub fn pop(&mut self) -> Option<(K, V)> {
+        if self.is_empty() {
+            None
+        } else {
+            self.data
+                .iter_mut()
+                .enumerate()
+                .rev()
+                .find_map(|(i, x)| x.take().map(|x| (K::from_index(i), x)))
+        }
+    }
+
     /// Get the given key's entry in the map for insertion and/or in-place
     /// manipulation.
     pub fn entry(&mut self, key: K) -> Entry<K, V> {
@@ -451,6 +466,15 @@ mod test {
         assert_eq!(Some("seventeen"), map.remove(17));
         assert_eq!(2, map.len());
         assert_eq!(vec![2, 9], map.keys().collect::<Vec<_>>());
+    }
+
+    #[test]
+    fn test_pop() {
+        let mut map = vecmap! { 9usize => "nine", 17 => "seventeen", 2 => "two"};
+        assert_eq!(Some((17, "seventeen")), map.pop());
+        assert_eq!(Some((9, "nine")), map.pop());
+        assert_eq!(Some((2, "two")), map.pop());
+        assert_eq!(None, map.pop());
     }
 
     #[test]
