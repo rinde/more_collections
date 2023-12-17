@@ -54,6 +54,7 @@
 //! [`Vec`]: std::vec::Vec
 
 mod multimap;
+mod multiset;
 #[cfg(all(feature = "indexmap", feature = "smallvec", feature = "smallmap"))]
 pub mod small_map;
 #[cfg(all(
@@ -65,6 +66,7 @@ pub mod small_map;
 pub mod small_set;
 
 pub use multimap::*;
+pub use multiset::*;
 #[cfg(all(feature = "indexmap", feature = "smallvec", feature = "smallmap"))]
 pub use small_map::SmallMap;
 #[cfg(all(
