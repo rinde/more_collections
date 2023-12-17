@@ -8,7 +8,7 @@ macro_rules! multimap_base_impl {
         /// not allocate until it is first inserted into.
         pub fn new() -> Self {
             Self {
-                inner: <$keys>::new(),
+                inner: <$keys>::default(),
                 len: 0,
             }
         }
@@ -19,7 +19,7 @@ macro_rules! multimap_base_impl {
         /// reallocating. If `capacity` is 0, the multimap will not allocate.
         pub fn with_key_capacity(capacity: usize) -> Self {
             Self {
-                inner: <$keys>::with_capacity(capacity),
+                inner: <$keys>::with_capacity_and_hasher(capacity, crate::collections::hash_map::RandomState::default()),
                 len: 0,
             }
         }
@@ -448,7 +448,7 @@ macro_rules! insert_full {
                     (keys_index, values_index)
                 }
                 None => {
-                    let values = vec![value];
+                    let values = alloc::vec![value];
                     let (keys_index, _) = self.inner.insert_full(key, values);
                     self.len += 1;
                     (keys_index, 0)
@@ -526,7 +526,7 @@ macro_rules! multimap_extend {
             }
         }
 
-        impl<$($generic_ids)*> std::iter::FromIterator<(K, V)> for $type<$($generic_ids)*>
+        impl<$($generic_ids)*> core::iter::FromIterator<(K, V)> for $type<$($generic_ids)*>
         where
             $($keys)*,
             $($values)*,
@@ -566,7 +566,7 @@ macro_rules! multimap_extend {
             }
         }
 
-        impl<K, Q: ?Sized, V, S> std::ops::Index<&Q> for $type<$($generic_ids)*>
+        impl<K, Q: ?Sized, V, S> core::ops::Index<&Q> for $type<$($generic_ids)*>
         where
             $($keys_get)*,
             $($values)*,
@@ -663,7 +663,7 @@ macro_rules! impl_iter {
             }
         }
 
-        impl<'a, $($generic_ids)*> std::iter::FusedIterator for Iter<'a, $($generic_ids)*> {}
+        impl<'a, $($generic_ids)*> core::iter::FusedIterator for Iter<'a, $($generic_ids)*> {}
 
         /// An iterator over the values of a multimap.
         ///
@@ -688,7 +688,7 @@ macro_rules! impl_iter {
             }
         }
 
-        impl<'a, $($generic_ids)*> std::iter::FusedIterator for Values<'a, $($generic_ids)*> {}
+        impl<'a, $($generic_ids)*> core::iter::FusedIterator for Values<'a, $($generic_ids)*> {}
 
         impl<K, V, S> $type<K, V, S> {
             /// Return an iterator over the key-value pairs of the multimap.
@@ -738,7 +738,7 @@ macro_rules! impl_keys {
             }
         }
 
-        impl<'a, $($generic_ids)*> std::iter::FusedIterator for Keys<'a, $($generic_ids)*> {}
+        impl<'a, $($generic_ids)*> core::iter::FusedIterator for Keys<'a, $($generic_ids)*> {}
 
         impl<K, V, S> $type<K, V, S> {
             /// Return an iterator over the keys of the multimap.
@@ -800,7 +800,7 @@ macro_rules! impl_into_iterator {
             }
         }
 
-        impl<$($generic_ids)*> std::iter::FusedIterator for IntoIter<$($generic_ids)*>
+        impl<$($generic_ids)*> core::iter::FusedIterator for IntoIter<$($generic_ids)*>
         where
            K: Clone,
         {}
@@ -864,7 +864,7 @@ macro_rules! impl_into_iterator {
             }
         }
 
-        impl<$($generic_ids)*> std::iter::FusedIterator for IntoValues<$($generic_ids)*> {}
+        impl<$($generic_ids)*> core::iter::FusedIterator for IntoValues<$($generic_ids)*> {}
 
         impl<K, V, S> $type<K, V, S> {
             /// Return an iterator over the values of the multimap.
@@ -906,7 +906,7 @@ macro_rules! impl_into_keys {
             }
         }
 
-        impl<$($generic_ids)*> std::iter::FusedIterator for IntoKeys<$($generic_ids)*> {}
+        impl<$($generic_ids)*> core::iter::FusedIterator for IntoKeys<$($generic_ids)*> {}
 
         impl<K, V, S> $type<K, V, S> {
             /// Return an owning iterator over the keys of the multimap.

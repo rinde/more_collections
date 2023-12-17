@@ -1,10 +1,10 @@
-use std::collections::hash_map::RandomState;
-use std::fmt;
-use std::fmt::Debug;
-use std::fmt::Formatter;
-use std::hash::BuildHasher;
-use std::iter::Chain;
-use std::iter::FusedIterator;
+use crate::collections::hash_map::RandomState;
+use core::fmt;
+use core::fmt::Debug;
+use core::fmt::Formatter;
+use core::hash::BuildHasher;
+use core::iter::Chain;
+use core::iter::FusedIterator;
 
 use ::core::hash::Hash;
 use indexmap::Equivalent;
@@ -274,7 +274,7 @@ impl<T, const C: usize, S> Hash for SmallSet<T, C, S>
 where
     T: Hash + Eq,
 {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.data.hash(state);
     }
 }
@@ -573,7 +573,7 @@ macro_rules! smallset_inline {
             vec
                 .iter()
                 .map(|(k, _v)| k)
-                .collect::<std::collections::HashSet<_>>()
+                .collect::<crate::collections::HashSet<_>>()
                 .len(),
             "smallset_inline! cannot be initialized with duplicate keys"
         );
@@ -932,7 +932,7 @@ mod test {
 
     // Hash needs to be equivalent to String::hash
     impl Hash for MyType {
-        fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
             self.0.to_string().hash(state);
         }
     }

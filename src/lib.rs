@@ -53,6 +53,26 @@
 //! [`IndexSet`]: indexmap::IndexSet
 //! [`Vec`]: std::vec::Vec
 
+#![cfg_attr(not(feature = "std"), no_std)]
+
+#[cfg(not(feature = "std"))]
+extern crate alloc;
+
+#[cfg(feature = "std")]
+extern crate std as alloc;
+
+#[cfg(feature = "alloc")]
+pub(crate) mod collections {
+    pub(crate) mod hash_map {
+        pub(crate) use hashbrown::hash_map::*;
+        pub(crate) type RandomState = DefaultHashBuilder;
+    }
+    pub(crate) use hashbrown::{HashSet, HashMap, hash_set};
+}
+
+#[cfg(feature = "std")]
+pub(crate) use std::collections;
+
 mod multimap;
 #[cfg(all(feature = "indexmap", feature = "smallvec", feature = "smallmap"))]
 pub mod small_map;
