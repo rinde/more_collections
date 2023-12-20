@@ -239,7 +239,8 @@ impl<K: IndexKey, V> VecMap<K, V> {
         }
     }
 
-    /// Returns an iterator over the values of the map following the natural order of the keys.
+    /// Returns an iterator over the values of the map following the natural
+    /// order of the keys.
     pub fn values(&self) -> Values<'_, V> {
         Values {
             inner: self.data.iter(),
