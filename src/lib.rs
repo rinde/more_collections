@@ -8,7 +8,7 @@
 //! capacity `C`, otherwise they are heap allocated and backed by an
 //! `IndexMap`.
 //!
-//! # VecMap
+//! # `VecMap`
 //!
 //! See [`vec_map`] for more details.
 //!
