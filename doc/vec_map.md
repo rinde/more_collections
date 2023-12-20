@@ -2,7 +2,7 @@
 
 `VecMap` is a `Vec`-backed map, for faster random access. Keys need to implement the `IndexKey` trait instead of `Hash`. A typical use case is to use in conjunction with newtypes that wrap an integer.
 
-Below is an overview of all methods and traits that are implemented for `VecMap`. The list uses the methods and traits implemented by `IndexMap` as a reference.
+Below is an overview of all methods and traits that are implemented for `VecMap`. The list uses the methods and traits implemented by `IndexMap` as a reference. Pull requests are welcome for any not yet implemented methods and traits.
 
 ## Methods and traits
 
