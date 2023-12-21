@@ -1,3 +1,6 @@
+# 0.11.0
+ - Introduce `VecMap` a `IndexMap`-like collection backed by a `Vec`.
+
 # 0.10.0
  - `SmallMap` add `contains_key()`, `DoubleEndedIterator` for `Iter`.
  - `SmallSet` add `IntoIterator`, `difference()`, `symmetric_difference()`, `intersection()`, `union()`,  `contains()`, and `DoubleEndedIterator` for `Iter`.
