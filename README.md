@@ -38,6 +38,13 @@ Built on top of the excellent [smallvec](https://github.com/servo/rust-smallvec)
 
 [A detailed overview](doc/multimap.md).
 
+## VecMap
+| Completion | Name   | Drop-in replacement for | Implemented as   | Distinguishing features |
+| ---------- | ------ | ----------------------- | ---------------- | ----------------------- |
+| 🟩🟩🟩🟨⬜️      | VecMap | `IndexMap<K,V>`         | `Vec<Option<T>>` | Fast random access      |
+
+[Click here for a detailed description and overview of the API](doc/vec_map.md).
+
 ## Multisets
 
 | Completion | Name          | Behaves as          |

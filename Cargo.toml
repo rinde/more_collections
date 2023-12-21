@@ -12,13 +12,14 @@ categories = ["data-structures"]
 include = ["LICENSE", "README.md", "**/*.rs", "Cargo.toml"]
 
 [features]
-all = ["hashsetmultimap", "hashvecmultimap", "indexsetmultimap", "indexvecmultimap", "smallset", "smallmap"]
+all = ["hashsetmultimap", "hashvecmultimap", "indexsetmultimap", "indexvecmultimap", "smallset", "smallmap", "vecmap"]
 hashsetmultimap = ["maplit"]
 hashvecmultimap = []
 indexsetmultimap = ["indexmap"]
 indexvecmultimap = ["indexmap"]
 smallmap = ["indexmap", "smallvec"]
 smallset = ["indexmap", "smallvec", "smallmap"]
+vecmap = []
 
 [dependencies]
 indexmap = { version = "2.1.0", optional = true }
@@ -30,6 +31,15 @@ criterion = { version = "0.5.1", features = ["html_reports"] }
 indexmap = { version = "2.1.0" }
 maplit = { version = "1.0.2" }
 more_collections = { path=".", features = ["all"]}
+rand = "0.8.5"
+itertools = "0.12.0"
+
+[[bench]]
+name = "vec_map"
+harness = false
+
+[profile.bench]
+lto = true
 
 [lints.rust]
 future-incompatible = "warn"
