@@ -1,3 +1,6 @@
+# 0.12.0
+ - Extend `vecmap![]` macro to also support `vecmap!["".to_string(); 7]` syntax.
+
 # 0.11.0
  - Introduce `VecMap` a `IndexMap`-like collection backed by a `Vec`.
 
