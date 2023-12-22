@@ -56,6 +56,15 @@ impl<K: IndexKey, V: Clone> VecMap<K, V> {
         }
     }
 
+    /// Initializes [`VecMap`] with `n` occurences of `elem`.
+    pub fn from_elem(elem: V, n: usize) -> Self {
+        Self {
+            data: vec![Some(elem); n],
+            len: n,
+            _marker: PhantomData,
+        }
+    }
+
     /// Clears all data from the [`VecMap`] without changing the capacity.
     pub fn clear(&mut self) {
         self.len = 0;
@@ -384,18 +393,18 @@ impl<K: IndexKey + fmt::Debug, V: fmt::Debug> fmt::Debug for VecMap<K, V> {
     }
 }
 
-/// Create an `VecMap` from a lit of key-value pairs.
+/// Create a `VecMap` containing the arguments.
 ///
-/// ## Example
+/// There are two forms of this macro:
+///
+/// - Create a [`VecMap`] containing a give list of key-value pairs:
 ///
 /// ```
-/// use more_collections::vecmap;
-///
+/// # use more_collections::vecmap;
 /// let map = vecmap! {
 ///     1usize => "a",
 ///     2 => "b",
 /// };
-///
 /// assert_eq!(map[1], "a");
 /// assert_eq!(map[2], "b");
 /// assert_eq!(map.get(3), None);
@@ -403,10 +412,24 @@ impl<K: IndexKey + fmt::Debug, V: fmt::Debug> fmt::Debug for VecMap<K, V> {
 /// // 1 is the first key
 /// assert_eq!(map.keys().next(), Some(1));
 /// ```
+/// - Create a [`VecMap`] from a given element and size:
+/// ```
+/// # use more_collections::vecmap;
+/// # use more_collections::VecMap;
+/// let counters: VecMap<usize,usize> = vecmap! { 0; 3 };
+///
+/// assert_eq!(vec![0,0,0], counters.values().copied().collect::<Vec<_>>());
+/// assert_eq!(3, counters.len());
+/// assert_eq!(3, counters.capacity());
+/// ```
 #[macro_export]
 macro_rules! vecmap {
     (@single $($x:tt)*) => (());
     (@count $($rest:expr),*) => (<[()]>::len(&[$($crate::vecmap!(@single $rest)),*]));
+
+    ($elem:expr; $n:expr) => (
+        $crate::vec_map::VecMap::from_elem($elem, $n);
+    );
 
     ($($key:expr => $value:expr,)+) => { $crate::vecmap!($($key => $value),+) };
     ($($key:expr => $value:expr),*) => {
