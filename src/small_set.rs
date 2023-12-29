@@ -584,7 +584,6 @@ macro_rules! smallset_inline {
 #[cfg(test)]
 mod test {
     use super::*;
-    use alloc::string::ToString;
 
     #[test]
     fn test_len_and_inline_capacity() {
@@ -783,7 +782,7 @@ mod test {
 
     #[test]
     fn debug_string_test() {
-        let actual = alloc::format!("{:?}", smallset_inline! {0, 1, 2});
+        let actual = format!("{:?}", smallset_inline! {0, 1, 2});
         let expected = "{0, 1, 2}";
         assert_eq!(expected, actual);
     }
@@ -933,7 +932,7 @@ mod test {
 
     // Hash needs to be equivalent to String::hash
     impl Hash for MyType {
-        fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
             self.0.to_string().hash(state);
         }
     }

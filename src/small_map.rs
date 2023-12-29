@@ -802,7 +802,6 @@ mod test {
     use indexmap::indexmap;
 
     use super::*;
-    use alloc::string::ToString;
 
     #[test]
     fn test_len_and_inline_capacity() {
@@ -1234,7 +1233,7 @@ mod test {
 
     // Hash needs to be equivalent to String::hash
     impl Hash for MyType {
-        fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
             self.0.to_string().hash(state);
         }
     }
@@ -1577,7 +1576,7 @@ mod test {
 
     #[test]
     fn debug_string_test() {
-        let actual = alloc::format!("{:?}", smallmap_inline! {0=>6, 1=>5, 2=>4});
+        let actual = format!("{:?}", smallmap_inline! {0=>6, 1=>5, 2=>4});
         let expected = "{0: 6, 1: 5, 2: 4}";
         assert_eq!(expected, actual);
     }

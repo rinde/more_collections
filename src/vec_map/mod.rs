@@ -2,7 +2,9 @@
 //! [`VecMap`] is a [`Vec`]-backed map, for faster random access.
 mod iter;
 
+#[cfg(not(feature = "std"))]
 use alloc::vec;
+#[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
 use core::fmt;
 use core::marker::PhantomData;

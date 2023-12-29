@@ -31,7 +31,7 @@ smallvec = {version = "1.11.2", features = ["const_generics", "const_new", "unio
 
 [dev-dependencies]
 criterion = { version = "0.5.1", features = ["html_reports"] }
-indexmap = { version = "2.1.0", default-features = false }
+indexmap = { version = "2.1.0" }
 maplit = { version = "1.0.2" }
 more_collections = { path=".", features = ["all", "std"] }
 rand = "0.8.5"

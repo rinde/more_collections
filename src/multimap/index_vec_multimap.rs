@@ -16,7 +16,7 @@ pub struct IndexVecMultimap<K, V, S = RandomState> {
 
 #[cfg(feature = "std")]
 impl<K, V> IndexVecMultimap<K, V> {
-    multimap_base_impl! { IndexMap<K,Vec<V>, RandomState>}
+    multimap_base_impl! { IndexMap<K,Vec<V>>}
 }
 
 impl<K, V, S> IndexVecMultimap<K, V, S> {
