@@ -2,10 +2,12 @@
 //! [`VecMap`] is a [`Vec`]-backed map, for faster random access.
 mod iter;
 
-use std::fmt;
-use std::marker::PhantomData;
-use std::ops::Index;
-use std::ops::IndexMut;
+use alloc::vec;
+use alloc::vec::Vec;
+use core::fmt;
+use core::marker::PhantomData;
+use core::ops::Index;
+use core::ops::IndexMut;
 
 pub use crate::vec_map::iter::*;
 

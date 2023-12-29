@@ -12,6 +12,7 @@ pub struct HashSetMultimap<K, V, S = RandomState> {
     len: usize,
 }
 
+#[cfg(feature = "std")]
 impl<K, V> HashSetMultimap<K, V, RandomState> {
     multimap_base_impl! {HashMap<K, HashSet<V>>}
 }
@@ -70,10 +71,15 @@ macro_rules! hashsetmultimap {
     ($($key:expr => {$($value:expr),* },)+) => { hashsetmultimap!($($key => $($value,)* ),+) };
     ($($key:expr => {$($value:expr),* }),*) => {
         {
-            let _cap = hashsetmultimap!(@count $($key),*);
-            let mut _map = $crate::collections::HashMap::with_capacity(_cap);
+            let _mapcap = hashsetmultimap!(@count $($key),*);
+            let mut _map = $crate::collections::HashMap::with_capacity(_mapcap);
             $(
-                let _ = _map.insert($key, maplit::hashset!{$( $value, )*});
+                let _setcap = hashsetmultimap!(@count $($value),*);
+                let mut _set = $crate::collections::HashSet::with_capacity(_setcap);
+                $(
+                    let _ = _set.insert($value);
+                )*
+                let _ = _map.insert($key, _set);
             )*
             HashSetMultimap::from(_map)
         }

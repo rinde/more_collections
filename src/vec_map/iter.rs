@@ -1,7 +1,7 @@
-use std::fmt;
-use std::iter::Enumerate;
-use std::iter::FusedIterator;
-use std::marker::PhantomData;
+use core::fmt;
+use core::iter::Enumerate;
+use core::iter::FusedIterator;
+use core::marker::PhantomData;
 
 use crate::IndexKey;
 use crate::VecMap;
@@ -154,7 +154,7 @@ impl<'a, K: IndexKey, V> FusedIterator for IterMut<'a, K, V> {}
 /// ordering.
 #[derive(Clone, Debug)] // TODO figure out a way to implement Debug cleanly but without cloning
 pub struct IntoIter<K, V> {
-    pub(super) inner: Enumerate<std::vec::IntoIter<Option<V>>>,
+    pub(super) inner: Enumerate<alloc::vec::IntoIter<Option<V>>>,
     pub(super) len: usize,
     pub(super) _marker: PhantomData<K>,
 }

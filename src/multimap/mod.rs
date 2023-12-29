@@ -1,7 +1,7 @@
 #[macro_use]
 mod gen_macros;
 
-#[cfg(all(feature = "hashsetmultimap", feature = "maplit"))]
+#[cfg(feature = "hashsetmultimap")]
 pub mod hash_set_multimap;
 #[cfg(feature = "hashsetmultimap")]
 pub use hash_set_multimap::HashSetMultimap;

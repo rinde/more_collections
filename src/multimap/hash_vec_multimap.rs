@@ -12,6 +12,7 @@ pub struct HashVecMultimap<K, V, S = RandomState> {
     len: usize,
 }
 
+#[cfg(feature = "std")]
 impl<K, V> HashVecMultimap<K, V> {
     multimap_base_impl! { HashMap<K,Vec<V>>}
 }

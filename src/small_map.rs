@@ -185,7 +185,7 @@ where
         match &self.data {
             MapData::Inline(vec) => {
                 if index < self.len() {
-                    Some(&vec[index]).map(|(k, v)| (k, v))
+                    Some(&vec[index]).map(|i| (&i.0, &i.1))
                 } else {
                     None
                 }
@@ -210,7 +210,7 @@ where
                     None
                 }
             }
-            MapData::Heap(map) => map.get_index_mut(index).map(|(k, v)| (k, v)),
+            MapData::Heap(map) => map.get_index_mut(index).map(|i| (i.0, i.1)),
         }
     }
 
@@ -527,7 +527,7 @@ impl<'a, K, V> Iterator for Iter<'a, K, V> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self {
-            Iter::Inline(iter) => iter.next().map(|(k, v)| (k, v)),
+            Iter::Inline(iter) => iter.next().map(|i| (&i.0, &i.1)),
             Iter::Heap(iter) => iter.next(),
         }
     }
@@ -545,7 +545,7 @@ impl<'a, K, V> ExactSizeIterator for Iter<'a, K, V> {
 impl<'a, K, V> DoubleEndedIterator for Iter<'a, K, V> {
     fn next_back(&mut self) -> Option<Self::Item> {
         match self {
-            Iter::Inline(iter) => iter.next_back().map(|(k, v)| (k, v)),
+            Iter::Inline(iter) => iter.next_back().map(|i| (&i.0, &i.1)),
             Iter::Heap(iter) => iter.next_back(),
         }
     }
@@ -627,7 +627,7 @@ impl<K, V, const C: usize> Iterator for IntoIter<K, V, C> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self {
-            IntoIter::Inline(iter) => iter.next().map(|(k, v)| (k, v)),
+            IntoIter::Inline(iter) => iter.next().map(|i| (i.0, i.1)),
             IntoIter::Heap(iter) => iter.next(),
         }
     }
@@ -771,6 +771,7 @@ macro_rules! smallmap {
             $(map.insert($key, $value);)*
             map
         } else {
+            #[allow(unused_mut)]
             let mut index_map = indexmap::IndexMap::with_capacity_and_hasher(count, RandomState::default());
             $(index_map.insert($key, $value);)*
             $crate::SmallMap::from_map(index_map)
@@ -849,13 +850,13 @@ mod test {
             };
             assert_eq!(inline, inline_map.is_inline());
             assert_eq!(
-                alloc::vec![(&1, &7), (&0, &1), (&4, &9)],
-                inline_map.iter().collect::<alloc::vec::Vec<_>>(),
+                vec![(&1, &7), (&0, &1), (&4, &9)],
+                inline_map.iter().collect::<Vec<_>>(),
                 "iter() does not return values in the correct order"
             );
             assert_eq!(
-                alloc::vec![(1, 7), (0, 1), (4, 9)],
-                inline_map.into_iter().collect::<alloc::vec::Vec<_>>(),
+                vec![(1, 7), (0, 1), (4, 9)],
+                inline_map.into_iter().collect::<Vec<_>>(),
                 "into_iter() does not return values in the correct order"
             );
         }
@@ -874,12 +875,12 @@ mod test {
         assert!(inline_map.is_inline());
 
         assert_eq!(
-            alloc::vec![(0, "zero"), (3, "three"), (900, "nine-hundred")],
-            heap_map.into_iter().collect::<alloc::vec::Vec<_>>()
+            vec![(0, "zero"), (3, "three"), (900, "nine-hundred")],
+            heap_map.into_iter().collect::<Vec<_>>()
         );
         assert_eq!(
-            alloc::vec![(0, "zero"), (3, "three"), (900, "nine-hundred")],
-            inline_map.into_iter().collect::<alloc::vec::Vec<_>>()
+            vec![(0, "zero"), (3, "three"), (900, "nine-hundred")],
+            inline_map.into_iter().collect::<Vec<_>>()
         );
     }
 
@@ -895,11 +896,11 @@ mod test {
         ];
         struct TestCase {
             name: &'static str,
-            initial_values: alloc::vec::Vec<(usize, &'static str)>,
+            initial_values: Vec<(usize, &'static str)>,
             remove_key: usize,
             expected_inline_before: bool,
             expected_inline_after: bool,
-            expected_values: alloc::vec::Vec<(usize, &'static str)>,
+            expected_values: Vec<(usize, &'static str)>,
             expected_return: Option<(usize, usize, &'static str)>,
         }
         let test_cases = [
@@ -909,7 +910,7 @@ mod test {
                 remove_key: 5,
                 expected_inline_before: true,
                 expected_inline_after: true,
-                expected_values: alloc::vec![(10, "ten"), (93, "ninety-three"), (86, "eighty-six")],
+                expected_values: vec![(10, "ten"), (93, "ninety-three"), (86, "eighty-six")],
                 expected_return: Some((1,5,"five")),
             },
             TestCase {
@@ -918,7 +919,7 @@ mod test {
                 remove_key: 5,
                 expected_inline_before: false,
                 expected_inline_after: false,
-                expected_values: alloc::vec![
+                expected_values: vec![
                     (10, "ten"),
                     (1, "one"),
                     (86, "eighty-six"),
@@ -933,7 +934,7 @@ mod test {
                 remove_key: 5,
                 expected_inline_before: false,
                 expected_inline_after: true,
-                expected_values: alloc::vec![
+                expected_values: vec![
                     (10, "ten"),
                     (17, "seven-teen"),
                     (86, "eighty-six"),
@@ -947,7 +948,7 @@ mod test {
                 remove_key: 93,
                 expected_inline_before: false,
                 expected_inline_after: true,
-                expected_values: alloc::vec![
+                expected_values: vec![
                     (10, "ten"),
                     (5, "five"),
                     (86, "eighty-six"),
@@ -961,7 +962,7 @@ mod test {
                 remove_key: 94,
                 expected_inline_before: true,
                 expected_inline_after: true,
-                expected_values: alloc::vec![(10, "ten"), (5, "five"), (86, "eighty-six")],
+                expected_values: vec![(10, "ten"), (5, "five"), (86, "eighty-six")],
                 expected_return: None,
             },
             TestCase {
@@ -970,7 +971,7 @@ mod test {
                 remove_key: 94,
                 expected_inline_before: false,
                 expected_inline_after: false,
-                expected_values: alloc::vec![
+                expected_values: vec![
                     (10, "ten"),
                     (5, "five"),
                     (86, "eighty-six"),
@@ -1010,7 +1011,7 @@ mod test {
             );
             assert_eq!(
                 test_case.expected_values,
-                small_map.into_iter().collect::<alloc::vec::Vec<_>>(),
+                small_map.into_iter().collect::<Vec<_>>(),
                 "values in SmallMap do not match expected values in test after remove() '{}'",
                 test_case.name
             );
@@ -1043,7 +1044,7 @@ mod test {
             );
             assert_eq!(
                 test_case.expected_values,
-                small_map.into_iter().collect::<alloc::vec::Vec<_>>(),
+                small_map.into_iter().collect::<Vec<_>>(),
                 "values in SmallMap do not match expected values in test after swap_remove_full() '{}'",
                 test_case.name
             );
@@ -1069,11 +1070,11 @@ mod test {
         ];
         struct TestCase {
             name: &'static str,
-            initial_values: alloc::vec::Vec<(usize, &'static str)>,
+            initial_values: Vec<(usize, &'static str)>,
             insert_key_value: (usize, &'static str),
             expected_inline_before: bool,
             expected_inline_after: bool,
-            expected_values: alloc::vec::Vec<(usize, &'static str)>,
+            expected_values: Vec<(usize, &'static str)>,
             expected_return: (usize, Option<&'static str>),
         }
         let test_cases = [
@@ -1083,7 +1084,7 @@ mod test {
                 insert_key_value: (7, "seven"),
                 expected_inline_before: true,
                 expected_inline_after: true,
-                expected_values: alloc::vec![(10, "ten"), (5, "five"), (7, "seven")],
+                expected_values: vec![(10, "ten"), (5, "five"), (7, "seven")],
                 expected_return: (2, None),
             },
             TestCase {
@@ -1092,7 +1093,7 @@ mod test {
                 insert_key_value: (7, "seven"),
                 expected_inline_before: true,
                 expected_inline_after: false,
-                expected_values: alloc::vec![(10, "ten"), (5, "five"), (86, "eighty-six"), (7, "seven")],
+                expected_values: vec![(10, "ten"), (5, "five"), (86, "eighty-six"), (7, "seven")],
                 expected_return: (3, None),
             },
             TestCase {
@@ -1101,7 +1102,7 @@ mod test {
                 insert_key_value: (7, "seven"),
                 expected_inline_before: false,
                 expected_inline_after: false,
-                expected_values: alloc::vec![
+                expected_values: vec![
                     (10, "ten"),
                     (5, "five"),
                     (86, "eighty-six"),
@@ -1116,7 +1117,7 @@ mod test {
                 insert_key_value: (5, "fivefivefive"),
                 expected_inline_before: true,
                 expected_inline_after: true,
-                expected_values: alloc::vec![(10, "ten"), (5, "fivefivefive"), (86, "eighty-six")],
+                expected_values: vec![(10, "ten"), (5, "fivefivefive"), (86, "eighty-six")],
                 expected_return: (1, Some("five")),
             },
             TestCase {
@@ -1125,7 +1126,7 @@ mod test {
                 insert_key_value: (10, "tententen"),
                 expected_inline_before: false,
                 expected_inline_after: false,
-                expected_values: alloc::vec![
+                expected_values: vec![
                     (10, "tententen"),
                     (5, "five"),
                     (86, "eighty-six"),
@@ -1176,7 +1177,7 @@ mod test {
                 );
                 assert_eq!(
                     test_case.expected_values,
-                    sm.into_iter().collect::<alloc::vec::Vec<_>>(),
+                    sm.into_iter().collect::<Vec<_>>(),
                     "values in SmallMap do not match expected values in test '{}'",
                     test_case.name
                 );
@@ -1196,7 +1197,7 @@ mod test {
             1 => 7,
             4 => 9
         };
-        let map3 = SmallMap::<_, _, 3>::from_iter(alloc::vec![(0, 1), (1, 7), (4, 9)]);
+        let map3 = SmallMap::<_, _, 3>::from_iter(vec![(0, 1), (1, 7), (4, 9)]);
         let mut map4 = SmallMap::<_, _, 3>::new();
         map4.insert(0, 1);
         map4.insert(1, 7);
@@ -1506,11 +1507,11 @@ mod test {
     #[test]
     fn from_iterator_test() {
         fn test<const C: usize>(inline: bool) {
-            let data = alloc::vec![("hi", 2), ("hello", 5), ("hamburg", 7), ("berlin", 6)];
+            let data = vec![("hi", 2), ("hello", 5), ("hamburg", 7), ("berlin", 6)];
             let map = SmallMap::<&'static str, usize, C>::from_iter(data.clone());
             assert_eq!(inline, map.is_inline());
 
-            let output = map.into_iter().collect::<alloc::vec::Vec<_>>();
+            let output = map.into_iter().collect::<Vec<_>>();
             assert_eq!(data, output);
         }
         test::<1>(false);
@@ -1520,7 +1521,7 @@ mod test {
     #[test]
     fn from_iterator_wrong_size_hint_test() {
         struct FaultyIter<T> {
-            data: alloc::vec::Vec<T>,
+            data: Vec<T>,
             index: usize,
             len: usize,
         }
@@ -1539,7 +1540,7 @@ mod test {
             }
         }
 
-        let data = alloc::vec![("hi", 2), ("hello", 5), ("hamburg", 7), ("berlin", 6)];
+        let data = vec![("hi", 2), ("hello", 5), ("hamburg", 7), ("berlin", 6)];
         let iter = FaultyIter::<(&'static str, usize)> {
             data: data.clone(),
             index: 0,
@@ -1551,26 +1552,26 @@ mod test {
         let map = SmallMap::<_, _, 3>::from_iter(iter);
         assert!(!map.is_inline());
 
-        let output = map.into_iter().collect::<alloc::vec::Vec<_>>();
+        let output = map.into_iter().collect::<Vec<_>>();
         assert_eq!(data, output);
     }
 
     #[test]
     fn from_iterator_duplicate_keys() {
         // input fits inline, should stay inline
-        let data = alloc::vec![(0, ()), (1, ()), (0, ())];
+        let data = vec![(0, ()), (1, ()), (0, ())];
         let map = SmallMap::<_, _, 3>::from_iter(data);
 
         assert_eq!(2, map.len());
-        assert_eq!(alloc::vec![0, 1], map.keys().copied().collect::<alloc::vec::Vec<_>>());
+        assert_eq!(vec![0, 1], map.keys().copied().collect::<Vec<_>>());
         assert!(map.is_inline());
 
         // input doesn't fit inline, but because of duplicates it should move inline
-        let data = alloc::vec![(0, ()), (1, ()), (0, ()), (1, ())];
+        let data = vec![(0, ()), (1, ()), (0, ()), (1, ())];
         let map = SmallMap::<_, _, 3>::from_iter(data);
 
         assert_eq!(2, map.len());
-        assert_eq!(alloc::vec![0, 1], map.keys().copied().collect::<alloc::vec::Vec<_>>());
+        assert_eq!(vec![0, 1], map.keys().copied().collect::<Vec<_>>());
         assert!(map.is_inline());
     }
 
