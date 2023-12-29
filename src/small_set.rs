@@ -573,7 +573,7 @@ macro_rules! smallset_inline {
             vec
                 .iter()
                 .map(|(k, _v)| k)
-                .collect::<crate::collections::HashSet<_>>()
+                .collect::<$crate::collections::HashSet<_>>()
                 .len(),
             "smallset_inline! cannot be initialized with duplicate keys"
         );
@@ -584,6 +584,7 @@ macro_rules! smallset_inline {
 #[cfg(test)]
 mod test {
     use super::*;
+    use alloc::string::ToString;
 
     #[test]
     fn test_len_and_inline_capacity() {
@@ -624,13 +625,13 @@ mod test {
             };
             assert_eq!(inline, inline_map.is_inline());
             assert_eq!(
-                vec![&1, &0, &4],
-                inline_map.iter().collect::<Vec<_>>(),
+                alloc::vec![&1, &0, &4],
+                inline_map.iter().collect::<alloc::vec::Vec<_>>(),
                 "iter() does not return values in the correct order"
             );
             assert_eq!(
-                vec![1, 0, 4],
-                inline_map.into_iter().collect::<Vec<_>>(),
+                alloc::vec![1, 0, 4],
+                inline_map.into_iter().collect::<alloc::vec::Vec<_>>(),
                 "into_iter() does not return values in the correct order"
             );
         }
@@ -652,11 +653,11 @@ mod test {
         let values = [10, 5, 86, 93];
         struct TestCase {
             name: &'static str,
-            initial_values: Vec<usize>,
+            initial_values: alloc::vec::Vec<usize>,
             insert_value: usize,
             expected_inline_before: bool,
             expected_inline_after: bool,
-            expected_values: Vec<usize>,
+            expected_values: alloc::vec::Vec<usize>,
             expected_return: (usize, bool),
         }
         let test_cases = [
@@ -666,7 +667,7 @@ mod test {
                 insert_value: 7,
                 expected_inline_before: true,
                 expected_inline_after: true,
-                expected_values: vec![10, 5, 7],
+                expected_values: alloc::vec![10, 5, 7],
                 expected_return: (2, false),
             },
             TestCase {
@@ -675,7 +676,7 @@ mod test {
                 insert_value: 7,
                 expected_inline_before: true,
                 expected_inline_after: false,
-                expected_values: vec![10, 5, 86, 7],
+                expected_values: alloc::vec![10, 5, 86, 7],
                 expected_return: (3, false),
             },
             TestCase {
@@ -684,7 +685,7 @@ mod test {
                 insert_value: 7,
                 expected_inline_before: false,
                 expected_inline_after: false,
-                expected_values: vec![10, 5, 86, 93, 7],
+                expected_values: alloc::vec![10, 5, 86, 93, 7],
                 expected_return: (4, false),
             },
             TestCase {
@@ -693,7 +694,7 @@ mod test {
                 insert_value: 5,
                 expected_inline_before: true,
                 expected_inline_after: true,
-                expected_values: vec![10, 5, 86],
+                expected_values: alloc::vec![10, 5, 86],
                 expected_return: (1, true),
             },
             TestCase {
@@ -702,7 +703,7 @@ mod test {
                 insert_value: 10,
                 expected_inline_before: false,
                 expected_inline_after: false,
-                expected_values: vec![10, 5, 86, 93],
+                expected_values: alloc::vec![10, 5, 86, 93],
                 expected_return: (0, true),
             },
         ];
@@ -745,7 +746,7 @@ mod test {
                 );
                 assert_eq!(
                     test_case.expected_values,
-                    set.iter().copied().collect::<Vec<_>>(),
+                    set.iter().copied().collect::<alloc::vec::Vec<_>>(),
                     "values in SmallSet do not match expected values in test '{}'",
                     test_case.name
                 );
@@ -757,7 +758,7 @@ mod test {
     fn equality_is_consistent() {
         let set1: SmallSet<_, 3> = smallset! {0, 1, 4 };
         let set2 = smallset_inline! {0, 1, 4 };
-        let set3 = SmallSet::<_, 3>::from_iter(vec![0, 1, 4]);
+        let set3 = SmallSet::<_, 3>::from_iter(alloc::vec![0, 1, 4]);
         let mut set4 = SmallSet::<_, 3>::new();
         set4.insert(0);
         set4.insert(1);
@@ -782,7 +783,7 @@ mod test {
 
     #[test]
     fn debug_string_test() {
-        let actual = format!("{:?}", smallset_inline! {0, 1, 2});
+        let actual = alloc::format!("{:?}", smallset_inline! {0, 1, 2});
         let expected = "{0, 1, 2}";
         assert_eq!(expected, actual);
     }
@@ -795,12 +796,12 @@ mod test {
             assert_eq!(inline_a, set_a.is_inline());
             assert_eq!(inline_b, set_b.is_inline());
 
-            let diff_a = set_a.difference(&set_b).copied().collect::<Vec<_>>();
-            assert_eq!(vec!["b"], diff_a);
-            let diff_b = set_b.difference(&set_a).copied().collect::<Vec<_>>();
-            assert_eq!(vec!["d", "a"], diff_b);
-            let diff_b_reverse = set_b.difference(&set_a).copied().rev().collect::<Vec<_>>();
-            assert_eq!(vec!["a", "d"], diff_b_reverse);
+            let diff_a = set_a.difference(&set_b).copied().collect::<alloc::vec::Vec<_>>();
+            assert_eq!(alloc::vec!["b"], diff_a);
+            let diff_b = set_b.difference(&set_a).copied().collect::<alloc::vec::Vec<_>>();
+            assert_eq!(alloc::vec!["d", "a"], diff_b);
+            let diff_b_reverse = set_b.difference(&set_a).copied().rev().collect::<alloc::vec::Vec<_>>();
+            assert_eq!(alloc::vec!["a", "d"], diff_b_reverse);
 
             assert_eq!(0, set_a.difference(&set_a).count());
         }
@@ -821,19 +822,19 @@ mod test {
             let diff_a = set_a
                 .symmetric_difference(&set_b)
                 .copied()
-                .collect::<Vec<_>>();
-            assert_eq!(vec!["b", "d", "a"], diff_a);
+                .collect::<alloc::vec::Vec<_>>();
+            assert_eq!(alloc::vec!["b", "d", "a"], diff_a);
             let diff_b = set_b
                 .symmetric_difference(&set_a)
                 .copied()
-                .collect::<Vec<_>>();
-            assert_eq!(vec!["d", "a", "b"], diff_b);
+                .collect::<alloc::vec::Vec<_>>();
+            assert_eq!(alloc::vec!["d", "a", "b"], diff_b);
             let diff_b_reverse = set_b
                 .symmetric_difference(&set_a)
                 .copied()
                 .rev()
-                .collect::<Vec<_>>();
-            assert_eq!(vec!["b", "a", "d"], diff_b_reverse);
+                .collect::<alloc::vec::Vec<_>>();
+            assert_eq!(alloc::vec!["b", "a", "d"], diff_b_reverse);
 
             assert_eq!(0, set_a.symmetric_difference(&set_a).count());
         }
@@ -851,20 +852,20 @@ mod test {
             assert_eq!(inline_a, set_a.is_inline());
             assert_eq!(inline_b, set_b.is_inline());
 
-            let diff_a = set_a.intersection(&set_b).copied().collect::<Vec<_>>();
-            assert_eq!(vec!["2", "1", "3"], diff_a);
-            let diff_b = set_b.intersection(&set_a).copied().collect::<Vec<_>>();
-            assert_eq!(vec!["1", "3", "2"], diff_b);
+            let diff_a = set_a.intersection(&set_b).copied().collect::<alloc::vec::Vec<_>>();
+            assert_eq!(alloc::vec!["2", "1", "3"], diff_a);
+            let diff_b = set_b.intersection(&set_a).copied().collect::<alloc::vec::Vec<_>>();
+            assert_eq!(alloc::vec!["1", "3", "2"], diff_b);
             let diff_b_reverse = set_b
                 .intersection(&set_a)
                 .copied()
                 .rev()
-                .collect::<Vec<_>>();
-            assert_eq!(vec!["2", "3", "1"], diff_b_reverse);
+                .collect::<alloc::vec::Vec<_>>();
+            assert_eq!(alloc::vec!["2", "3", "1"], diff_b_reverse);
 
             assert_eq!(
-                vec!["2", "1", "3", "b"],
-                set_a.intersection(&set_a).copied().collect::<Vec<_>>()
+                alloc::vec!["2", "1", "3", "b"],
+                set_a.intersection(&set_a).copied().collect::<alloc::vec::Vec<_>>()
             );
         }
         test::<1, 1>(false, false);
@@ -881,16 +882,16 @@ mod test {
             assert_eq!(inline_a, set_a.is_inline());
             assert_eq!(inline_b, set_b.is_inline());
 
-            let diff_a = set_a.union(&set_b).copied().collect::<Vec<_>>();
-            assert_eq!(vec!["2", "1", "3", "b", "d", "a"], diff_a);
-            let diff_b = set_b.union(&set_a).copied().collect::<Vec<_>>();
-            assert_eq!(vec!["1", "d", "3", "2", "a", "b"], diff_b);
-            let diff_b_reverse = set_b.union(&set_a).copied().rev().collect::<Vec<_>>();
-            assert_eq!(vec!["b", "a", "2", "3", "d", "1"], diff_b_reverse);
+            let diff_a = set_a.union(&set_b).copied().collect::<alloc::vec::Vec<_>>();
+            assert_eq!(alloc::vec!["2", "1", "3", "b", "d", "a"], diff_a);
+            let diff_b = set_b.union(&set_a).copied().collect::<alloc::vec::Vec<_>>();
+            assert_eq!(alloc::vec!["1", "d", "3", "2", "a", "b"], diff_b);
+            let diff_b_reverse = set_b.union(&set_a).copied().rev().collect::<alloc::vec::Vec<_>>();
+            assert_eq!(alloc::vec!["b", "a", "2", "3", "d", "1"], diff_b_reverse);
 
             assert_eq!(
-                vec!["2", "1", "3", "b"],
-                set_a.union(&set_a).copied().collect::<Vec<_>>()
+                alloc::vec!["2", "1", "3", "b"],
+                set_a.union(&set_a).copied().collect::<alloc::vec::Vec<_>>()
             );
         }
         test::<1, 1>(false, false);

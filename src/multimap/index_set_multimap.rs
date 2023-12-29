@@ -1,5 +1,5 @@
-use core::borrow::Borrow;
 use crate::collections::hash_map::RandomState;
+use core::borrow::Borrow;
 use core::hash::BuildHasher;
 use core::hash::Hash;
 

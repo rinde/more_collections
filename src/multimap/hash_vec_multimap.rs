@@ -1,9 +1,9 @@
-use core::borrow::Borrow;
 use crate::collections::hash_map::RandomState;
 use crate::collections::HashMap;
+use alloc::vec::Vec;
+use core::borrow::Borrow;
 use core::hash::BuildHasher;
 use core::hash::Hash;
-use alloc::vec::Vec;
 
 /// Multimap implementation that behaves like `HashMap<K, Vec<V>>`.
 #[derive(Debug, Clone)]
@@ -71,7 +71,7 @@ macro_rules! hashvecmultimap {
     ($($key:expr => {$($value:expr),* }),*) => {
         {
             let _cap = hashvecmultimap!(@count $($key),*);
-            let mut _map = crate::collections::HashMap::with_capacity(_cap);
+            let mut _map = $crate::collections::HashMap::with_capacity(_cap);
             $(
                 let _ = _map.insert($key, vec!{$( $value, )*});
             )*

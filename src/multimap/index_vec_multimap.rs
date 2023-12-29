@@ -1,8 +1,8 @@
-use core::borrow::Borrow;
 use crate::collections::hash_map::RandomState;
+use alloc::vec::Vec;
+use core::borrow::Borrow;
 use core::hash::BuildHasher;
 use core::hash::Hash;
-use alloc::vec::Vec;
 
 use indexmap::Equivalent;
 use indexmap::IndexMap;

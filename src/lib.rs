@@ -8,6 +8,10 @@
 //! capacity `C`, otherwise they are heap allocated and backed by an
 //! `IndexMap`.
 //!
+//! # `VecMap`
+//!
+//! See [`vec_map`] for more details.
+//!
 //! # Multimap
 //!
 //! A collection that maps keys to values, similar to [`HashMap`], but where
@@ -24,18 +28,12 @@
 //! The multimap API is based on the second form, `len() == 3` and `keys_len()
 //! == 2` for the above example.
 //!
-//! | Name               | Behaves as                          | Keys order
-//! | Values order        | May contain duplicates | | ------------------ |
-//! ----------------------------------- | ------------------- |
-//! ------------------- | ---------------------- | | [`HashSetMultimap`]  |
-//! [`HashMap`]`<K,`[`HashSet`]`<V>>`   | Arbitrary order     | Arbitrary order
-//! | No                     | | [`HashVecMultimap`]  |
-//! [`HashMap`]`<K,`[`Vec`]`<V>>`       | Arbitrary order     | Insertion
-//! order[^1] | Yes                    | | [`IndexSetMultimap`] |
-//! [`IndexMap`]`<K,`[`IndexSet`]`<V>>` | Insertion order[^1] | Insertion
-//! order[^1] | No                     | | [`IndexVecMultimap`] | [`IndexMap`]`<K,
-//! `[`Vec`]`<V>>`     | Insertion order[^1] | Insertion order[^1] | Yes
-//! |
+//! | Name                 | Behaves as                          | Keys order          | Values order        | May contain duplicates |
+//! | -------------------- | ----------------------------------- | ------------------- |-------------------- | ---------------------- |
+//! | [`HashSetMultimap`]  | [`HashMap`]`<K,`[`HashSet`]`<V>>`   | Arbitrary order     | Arbitrary order     | No                     |
+//! | [`HashVecMultimap`]  | [`HashMap`]`<K,`[`Vec`]`<V>>`       | Arbitrary order     | Insertion order[^1] | Yes                    |
+//! | [`IndexSetMultimap`] | [`IndexMap`]`<K,`[`IndexSet`]`<V>>` | Insertion order[^1] | Insertion order[^1] | No                     |
+//! | [`IndexVecMultimap`] | [`IndexMap`]`<K, `[`Vec`]`<V>>`     | Insertion order[^1] | Insertion order[^1] | Yes                    |
 //!
 //! [^1]: Insertion order is preserved, unless `remove()` or `swap_remove()`
 //! is called. See more in the [IndexMap](https://docs.rs/indexmap/1.7.0/indexmap/map/struct.IndexMap.html#order) documentation.
@@ -55,23 +53,24 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(not(feature = "std"))]
+#[cfg(all(feature = "alloc", not(feature = "std")))]
 extern crate alloc;
 
 #[cfg(feature = "std")]
 extern crate std as alloc;
 
-#[cfg(feature = "alloc")]
-pub(crate) mod collections {
-    pub(crate) mod hash_map {
-        pub(crate) use hashbrown::hash_map::*;
-        pub(crate) type RandomState = DefaultHashBuilder;
+pub mod collections {
+    #[cfg(all(feature = "alloc", not(feature = "std")))]
+    pub mod hash_map {
+        pub use hashbrown::hash_map::*;
+        pub type RandomState = DefaultHashBuilder;
     }
-    pub(crate) use hashbrown::{HashSet, HashMap, hash_set};
-}
+    #[cfg(all(feature = "alloc", not(feature = "std")))]
+    pub use hashbrown::{hash_set, HashMap, HashSet};
 
-#[cfg(feature = "std")]
-pub(crate) use std::collections;
+    #[cfg(feature = "std")]
+    pub use std::collections::{hash_map, hash_set, HashMap, HashSet};
+}
 
 mod multimap;
 #[cfg(all(feature = "indexmap", feature = "smallvec", feature = "smallmap"))]
@@ -84,7 +83,17 @@ pub mod small_map;
 ))]
 pub mod small_set;
 
+#[cfg(feature = "vecmap")]
+pub mod vec_map;
+
+#[cfg(any(
+    feature = "hashsetmultimap",
+    feature = "hashvecmultimap",
+    feature = "indexvecmultimap",
+    feature = "indexsetmultimap"
+))]
 pub use multimap::*;
+
 #[cfg(all(feature = "indexmap", feature = "smallvec", feature = "smallmap"))]
 pub use small_map::SmallMap;
 #[cfg(all(
@@ -94,5 +103,9 @@ pub use small_map::SmallMap;
     feature = "smallset"
 ))]
 pub use small_set::SmallSet;
+#[cfg(feature = "vecmap")]
+pub use vec_map::IndexKey;
+#[cfg(feature = "vecmap")]
+pub use vec_map::VecMap;
 
 // TODO follow all guidelines here https://rust-lang.github.io/api-guidelines/checklist.html

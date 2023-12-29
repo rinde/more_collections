@@ -19,7 +19,10 @@ macro_rules! multimap_base_impl {
         /// reallocating. If `capacity` is 0, the multimap will not allocate.
         pub fn with_key_capacity(capacity: usize) -> Self {
             Self {
-                inner: <$keys>::with_capacity_and_hasher(capacity, crate::collections::hash_map::RandomState::default()),
+                inner: <$keys>::with_capacity_and_hasher(
+                    capacity,
+                    $crate::collections::hash_map::RandomState::default(),
+                ),
                 len: 0,
             }
         }

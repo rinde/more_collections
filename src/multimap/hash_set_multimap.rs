@@ -1,7 +1,7 @@
-use core::borrow::Borrow;
 use crate::collections::hash_map::RandomState;
 use crate::collections::HashMap;
 use crate::collections::HashSet;
+use core::borrow::Borrow;
 use core::hash::BuildHasher;
 use core::hash::Hash;
 
@@ -71,7 +71,7 @@ macro_rules! hashsetmultimap {
     ($($key:expr => {$($value:expr),* }),*) => {
         {
             let _cap = hashsetmultimap!(@count $($key),*);
-            let mut _map = crate::collections::HashMap::with_capacity(_cap);
+            let mut _map = $crate::collections::HashMap::with_capacity(_cap);
             $(
                 let _ = _map.insert($key, maplit::hashset!{$( $value, )*});
             )*
