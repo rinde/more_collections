@@ -1,7 +1,7 @@
 [package]
 edition = "2021"
 name = "more_collections"
-version = "0.10.0"
+version = "0.12.0"
 authors = ["Rinde van Lon <rindevanlon@gmail.com>"]
 description = "Additional collections not found in std::collections"
 repository = "https://github.com/rinde/more_collections/"
@@ -12,13 +12,14 @@ categories = ["data-structures"]
 include = ["LICENSE", "README.md", "**/*.rs", "Cargo.toml"]
 
 [features]
-all = ["hashsetmultimap", "hashvecmultimap", "indexsetmultimap", "indexvecmultimap", "smallset", "smallmap"]
+all = ["hashsetmultimap", "hashvecmultimap", "indexsetmultimap", "indexvecmultimap", "smallset", "smallmap", "vecmap"]
 hashsetmultimap = ["maplit"]
 hashvecmultimap = []
 indexsetmultimap = ["indexmap"]
 indexvecmultimap = ["indexmap"]
 smallmap = ["indexmap", "smallvec"]
 smallset = ["indexmap", "smallvec", "smallmap"]
+vecmap = []
 std = ["indexmap/std"]
 alloc = ["hashbrown"]
 
@@ -33,6 +34,15 @@ criterion = { version = "0.5.1", features = ["html_reports"] }
 indexmap = { version = "2.1.0" }
 maplit = { version = "1.0.2" }
 more_collections = { path=".", features = ["all"]}
+rand = "0.8.5"
+itertools = "0.12.0"
+
+[[bench]]
+name = "vec_map"
+harness = false
+
+[profile.bench]
+lto = true
 
 [lints.rust]
 future-incompatible = "warn"
