@@ -1,7 +1,7 @@
-use std::borrow::Borrow;
-use std::collections::hash_map::RandomState;
-use std::hash::BuildHasher;
-use std::hash::Hash;
+use crate::collections::hash_map::RandomState;
+use core::borrow::Borrow;
+use core::hash::BuildHasher;
+use core::hash::Hash;
 
 use indexmap::Equivalent;
 use indexmap::IndexMap;
@@ -14,6 +14,7 @@ pub struct IndexSetMultimap<K, V, S = RandomState> {
     len: usize,
 }
 
+#[cfg(feature = "std")]
 impl<K, V> IndexSetMultimap<K, V> {
     multimap_base_impl! {IndexMap<K, IndexSet<V>>}
 }

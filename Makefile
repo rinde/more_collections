@@ -1,5 +1,5 @@
 RUST_NIGHTLY_VERSION  := $(shell cat rust-toolchain-nightly)
-SHELL := /bin/bash -eu
+SHELL := /usr/bin/env bash -eu
 
 .PHONY: test
 test:

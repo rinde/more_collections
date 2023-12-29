@@ -1,7 +1,8 @@
-use std::borrow::Borrow;
-use std::collections::hash_map::RandomState;
-use std::hash::BuildHasher;
-use std::hash::Hash;
+use crate::collections::hash_map::RandomState;
+use alloc::vec::Vec;
+use core::borrow::Borrow;
+use core::hash::BuildHasher;
+use core::hash::Hash;
 
 use indexmap::Equivalent;
 use indexmap::IndexMap;
@@ -13,6 +14,7 @@ pub struct IndexVecMultimap<K, V, S = RandomState> {
     len: usize,
 }
 
+#[cfg(feature = "std")]
 impl<K, V> IndexVecMultimap<K, V> {
     multimap_base_impl! { IndexMap<K,Vec<V>>}
 }
@@ -61,14 +63,14 @@ impl_iter! {
     IndexVecMultimap,
     (K,V),
     indexmap::map::Iter<'a, K, Vec<V>>,
-    std::slice::Iter<'a, V>
+    core::slice::Iter<'a, V>
 }
 impl_keys! {IndexVecMultimap, (K,V), indexmap::map::Keys<'a, K, Vec<V>>}
 impl_into_iterator! {
     IndexVecMultimap,
     (K,V),
     indexmap::map::IntoIter<K, Vec<V>>,
-    std::vec::IntoIter<V>
+    alloc::vec::IntoIter<V>
 }
 
 impl_into_keys! {IndexVecMultimap, (K,V), indexmap::map::IntoKeys<K, Vec<V>>}

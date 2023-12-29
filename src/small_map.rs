@@ -1,13 +1,13 @@
-use std::cmp::Ordering;
-use std::collections::hash_map::RandomState;
-use std::fmt;
-use std::fmt::Debug;
-use std::fmt::Formatter;
-use std::hash::BuildHasher;
-use std::iter::FusedIterator;
-use std::mem;
-use std::ops::Index;
-use std::ops::IndexMut;
+use crate::collections::hash_map::RandomState;
+use core::cmp::Ordering;
+use core::fmt;
+use core::fmt::Debug;
+use core::fmt::Formatter;
+use core::hash::BuildHasher;
+use core::iter::FusedIterator;
+use core::mem;
+use core::ops::Index;
+use core::ops::IndexMut;
 
 use ::core::hash::Hash;
 use indexmap::Equivalent;
@@ -185,7 +185,7 @@ where
         match &self.data {
             MapData::Inline(vec) => {
                 if index < self.len() {
-                    Some(&vec[index]).map(|(k, v)| (k, v))
+                    Some(&vec[index]).map(|i| (&i.0, &i.1))
                 } else {
                     None
                 }
@@ -210,7 +210,7 @@ where
                     None
                 }
             }
-            MapData::Heap(map) => map.get_index_mut(index).map(|(k, v)| (k, v)),
+            MapData::Heap(map) => map.get_index_mut(index).map(|i| (i.0, i.1)),
         }
     }
 
@@ -437,7 +437,7 @@ where
     K: Hash + Eq,
     V: Hash + Eq,
 {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.iter().for_each(|(k, v)| {
             k.hash(state);
             v.hash(state);
@@ -518,7 +518,7 @@ where
 
 #[derive(Clone)]
 pub enum Iter<'a, K, V> {
-    Inline(std::slice::Iter<'a, (K, V)>),
+    Inline(core::slice::Iter<'a, (K, V)>),
     Heap(indexmap::map::Iter<'a, K, V>),
 }
 
@@ -527,7 +527,7 @@ impl<'a, K, V> Iterator for Iter<'a, K, V> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self {
-            Iter::Inline(iter) => iter.next().map(|(k, v)| (k, v)),
+            Iter::Inline(iter) => iter.next().map(|i| (&i.0, &i.1)),
             Iter::Heap(iter) => iter.next(),
         }
     }
@@ -545,7 +545,7 @@ impl<'a, K, V> ExactSizeIterator for Iter<'a, K, V> {
 impl<'a, K, V> DoubleEndedIterator for Iter<'a, K, V> {
     fn next_back(&mut self) -> Option<Self::Item> {
         match self {
-            Iter::Inline(iter) => iter.next_back().map(|(k, v)| (k, v)),
+            Iter::Inline(iter) => iter.next_back().map(|i| (&i.0, &i.1)),
             Iter::Heap(iter) => iter.next_back(),
         }
     }
@@ -554,7 +554,7 @@ impl<'a, K, V> DoubleEndedIterator for Iter<'a, K, V> {
 impl<'a, K, V> FusedIterator for Iter<'a, K, V> {}
 
 pub enum IterMut<'a, K, V> {
-    Inline(std::slice::IterMut<'a, (K, V)>),
+    Inline(core::slice::IterMut<'a, (K, V)>),
     Heap(indexmap::map::IterMut<'a, K, V>),
 }
 
@@ -593,7 +593,7 @@ impl<K, V, const C: usize, S> IntoIterator for SmallMap<K, V, C, S> {
 
 #[derive(Clone)]
 pub enum Keys<'a, K, V> {
-    Inline(std::slice::Iter<'a, (K, V)>),
+    Inline(core::slice::Iter<'a, (K, V)>),
     Heap(indexmap::map::Keys<'a, K, V>),
 }
 
@@ -627,7 +627,7 @@ impl<K, V, const C: usize> Iterator for IntoIter<K, V, C> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self {
-            IntoIter::Inline(iter) => iter.next().map(|(k, v)| (k, v)),
+            IntoIter::Inline(iter) => iter.next().map(|i| (i.0, i.1)),
             IntoIter::Heap(iter) => iter.next(),
         }
     }
@@ -771,7 +771,10 @@ macro_rules! smallmap {
             $(map.insert($key, $value);)*
             map
         } else {
-            $crate::SmallMap::from_map(indexmap::indexmap! {$($key => $value,)*})
+            #[allow(unused_mut)]
+            let mut index_map = indexmap::IndexMap::with_capacity_and_hasher(count, RandomState::default());
+            $(index_map.insert($key, $value);)*
+            $crate::SmallMap::from_map(index_map)
         }
     });
 }
@@ -786,7 +789,7 @@ macro_rules! smallmap_inline {
             vec
                 .iter()
                 .map(|(k, _v)| k)
-                .collect::<std::collections::HashSet<_>>()
+                .collect::<$crate::collections::HashSet<_>>()
                 .len(),
             "smallmap_inline! cannot be initialized with duplicate keys"
         );

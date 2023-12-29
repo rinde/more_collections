@@ -1,8 +1,9 @@
-use std::borrow::Borrow;
-use std::collections::hash_map::RandomState;
-use std::collections::HashMap;
-use std::hash::BuildHasher;
-use std::hash::Hash;
+use crate::collections::hash_map::RandomState;
+use crate::collections::HashMap;
+use alloc::vec::Vec;
+use core::borrow::Borrow;
+use core::hash::BuildHasher;
+use core::hash::Hash;
 
 /// Multimap implementation that behaves like `HashMap<K, Vec<V>>`.
 #[derive(Debug, Clone)]
@@ -11,6 +12,7 @@ pub struct HashVecMultimap<K, V, S = RandomState> {
     len: usize,
 }
 
+#[cfg(feature = "std")]
 impl<K, V> HashVecMultimap<K, V> {
     multimap_base_impl! { HashMap<K,Vec<V>>}
 }
@@ -49,17 +51,17 @@ multimap_eq! { HashVecMultimap, (Eq)}
 impl_iter! {
     HashVecMultimap,
     (K,V),
-    std::collections::hash_map::Iter<'a, K, Vec<V>>,
-    std::slice::Iter<'a, V>
+    crate::collections::hash_map::Iter<'a, K, Vec<V>>,
+    core::slice::Iter<'a, V>
 }
-impl_keys! {HashVecMultimap, (K, V), std::collections::hash_map::Keys<'a, K, Vec<V>>}
+impl_keys! {HashVecMultimap, (K, V), crate::collections::hash_map::Keys<'a, K, Vec<V>>}
 impl_into_iterator! {
     HashVecMultimap,
     (K,V),
-    std::collections::hash_map::IntoIter<K, Vec<V>>,
-    std::vec::IntoIter<V>
+    crate::collections::hash_map::IntoIter<K, Vec<V>>,
+    alloc::vec::IntoIter<V>
 }
-impl_into_keys! {HashVecMultimap, (K, V), std::collections::hash_map::IntoKeys<K, Vec<V>>}
+impl_into_keys! {HashVecMultimap, (K, V), crate::collections::hash_map::IntoKeys<K, Vec<V>>}
 
 #[macro_export]
 macro_rules! hashvecmultimap {
@@ -70,7 +72,7 @@ macro_rules! hashvecmultimap {
     ($($key:expr => {$($value:expr),* }),*) => {
         {
             let _cap = hashvecmultimap!(@count $($key),*);
-            let mut _map = std::collections::HashMap::with_capacity(_cap);
+            let mut _map = $crate::collections::HashMap::with_capacity(_cap);
             $(
                 let _ = _map.insert($key, vec!{$( $value, )*});
             )*
