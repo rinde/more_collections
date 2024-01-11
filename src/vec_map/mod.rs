@@ -431,9 +431,12 @@ impl<K: IndexKey + fmt::Debug, V: fmt::Debug> fmt::Debug for VecMap<K, V> {
 /// ```
 /// # use more_collections::vecmap;
 /// # use more_collections::VecMap;
-/// let counters: VecMap<usize,usize> = vecmap! { 0; 3 };
+/// let counters: VecMap<usize, usize> = vecmap! { 0; 3 };
 ///
-/// assert_eq!(vec![0,0,0], counters.values().copied().collect::<Vec<_>>());
+/// assert_eq!(
+///     vec![0, 0, 0],
+///     counters.values().copied().collect::<Vec<_>>()
+/// );
 /// assert_eq!(3, counters.len());
 /// assert_eq!(3, counters.capacity());
 /// ```
