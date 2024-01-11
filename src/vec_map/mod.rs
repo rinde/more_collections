@@ -392,6 +392,16 @@ impl<K: IndexKey, V: Clone> FromIterator<(K, V)> for VecMap<K, V> {
     }
 }
 
+impl<K: IndexKey, V: Clone> Extend<(K, V)> for VecMap<K, V> {
+    fn extend<T: IntoIterator<Item = (K, V)>>(&mut self, iter: T) {
+        // extend does not attempt to reserve additional space because the space needed
+        // is dependent on the keys that are added
+        iter.into_iter().for_each(|(key, value)| {
+            self.insert(key, value);
+        })
+    }
+}
+
 impl<K: IndexKey + fmt::Debug, V: fmt::Debug> fmt::Debug for VecMap<K, V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_map().entries(self.iter()).finish()
@@ -863,5 +873,16 @@ mod test {
         map.reserve(7);
         assert_eq!(14, map.capacity());
         assert!(map.is_empty());
+    }
+
+    #[test]
+    fn test_extend() {
+        let mut map: VecMap<u8, ()> = vecmap! {};
+        assert_eq!(0, map.capacity());
+        assert!(map.is_empty());
+
+        map.extend([(7, ()), (2, ())]);
+        assert_eq!(8, map.capacity());
+        assert_eq!(2, map.len());
     }
 }

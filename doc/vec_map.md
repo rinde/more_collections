@@ -93,7 +93,7 @@ Below is an overview of all methods and traits that are implemented for `VecMap`
 | `IndexMut<usize>`            | not possible |
 | `FromIterator<(K,V)>`        | ✅            |
 | `From<[(K,V); N]>`           |              |
-| `Extend<(K,V)>`              |              |
+| `Extend<(K,V)>`              | ✅            |
 | `Default`                    | ✅            |
 | `PartialEq`                  | ✅            |
 | `Eq`                         | ✅            |
