@@ -1,3 +1,6 @@
+# 0.13.0
+ - Add `Extend` impl to `VecMap`
+
 # 0.12.0
  - Extend `vecmap![]` macro to also support `vecmap!["".to_string(); 7]` syntax.
 
