@@ -28,7 +28,7 @@ Below is an overview of all methods and traits that are implemented for `VecMap`
 | `truncate()`             |                              |
 | `drain()`                |                              |
 | `split_off()`            |                              |
-| `reserve()`              |                              |
+| `reserve()`              | ✅                            |
 | `reserve_exact()`        |                              |
 | `try_reserve()`          |                              |
 | `try_reserve_exact()`    |                              |

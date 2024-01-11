@@ -70,6 +70,11 @@ impl<K: IndexKey, V: Clone> VecMap<K, V> {
         self.len = 0;
         self.data = vec![None; self.capacity()];
     }
+
+    /// Reserve capacity for `additional` key-value pairs.
+    pub fn reserve(&mut self, additional: usize) {
+        self.data.extend(vec![None; additional]);
+    }
 }
 
 impl<K: IndexKey, V> VecMap<K, V> {
@@ -843,5 +848,20 @@ mod test {
         map.clear();
         assert_eq!(23, map.capacity());
         assert_eq!(0, map.len());
+    }
+
+    #[test]
+    fn test_reserve() {
+        let mut map: VecMap<u8, ()> = vecmap! {};
+        assert_eq!(0, map.capacity());
+        assert!(map.is_empty());
+
+        map.reserve(7);
+        assert_eq!(7, map.capacity());
+        assert!(map.is_empty());
+
+        map.reserve(7);
+        assert_eq!(14, map.capacity());
+        assert!(map.is_empty());
     }
 }
