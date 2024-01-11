@@ -398,7 +398,7 @@ impl<K: IndexKey, V: Clone> Extend<(K, V)> for VecMap<K, V> {
         // is dependent on the keys that are added
         iter.into_iter().for_each(|(key, value)| {
             self.insert(key, value);
-        })
+        });
     }
 }
 
