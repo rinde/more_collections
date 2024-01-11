@@ -185,6 +185,7 @@ where
         match &self.data {
             MapData::Inline(vec) => {
                 if index < self.len() {
+                    #[allow(clippy::map_identity)] // false positive
                     Some(&vec[index]).map(|(k, v)| (k, v))
                 } else {
                     None
@@ -210,6 +211,7 @@ where
                     None
                 }
             }
+            #[allow(clippy::map_identity)] // false positive
             MapData::Heap(map) => map.get_index_mut(index).map(|(k, v)| (k, v)),
         }
     }
@@ -527,6 +529,7 @@ impl<'a, K, V> Iterator for Iter<'a, K, V> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self {
+            #[allow(clippy::map_identity)] // false positive
             Iter::Inline(iter) => iter.next().map(|(k, v)| (k, v)),
             Iter::Heap(iter) => iter.next(),
         }
@@ -545,6 +548,7 @@ impl<'a, K, V> ExactSizeIterator for Iter<'a, K, V> {
 impl<'a, K, V> DoubleEndedIterator for Iter<'a, K, V> {
     fn next_back(&mut self) -> Option<Self::Item> {
         match self {
+            #[allow(clippy::map_identity)] // false positive
             Iter::Inline(iter) => iter.next_back().map(|(k, v)| (k, v)),
             Iter::Heap(iter) => iter.next_back(),
         }
@@ -627,6 +631,7 @@ impl<K, V, const C: usize> Iterator for IntoIter<K, V, C> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self {
+            #[allow(clippy::map_identity)] // false positive
             IntoIter::Inline(iter) => iter.next().map(|(k, v)| (k, v)),
             IntoIter::Heap(iter) => iter.next(),
         }
