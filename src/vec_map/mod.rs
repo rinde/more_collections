@@ -2,6 +2,7 @@
 //! [`VecMap`] is a [`Vec`]-backed map, for faster random access.
 mod iter;
 
+use std::cmp::Ordering;
 use std::fmt;
 use std::marker::PhantomData;
 use std::ops::Index;
@@ -38,7 +39,7 @@ pub trait IndexKey: Copy {
 /// recommended to initialize `VecMap` with `with_capacity()`.
 ///
 /// Iteration order follows the natural ordering of [`IndexKey::as_index()`].
-#[derive(Clone, Eq, PartialEq)]
+#[derive(Clone)]
 pub struct VecMap<K, V> {
     data: Vec<Option<V>>,
     len: usize,
@@ -268,6 +269,27 @@ impl<K: IndexKey, V> Default for VecMap<K, V> {
         Self::new()
     }
 }
+
+impl<K, V: Eq> PartialEq for VecMap<K, V> {
+    fn eq(&self, other: &Self) -> bool {
+        if self.len != other.len {
+            return false;
+        }
+
+        let shared_capacity = self.data.len().min(other.data.len());
+        if self.data[..shared_capacity] != other.data[..shared_capacity] {
+            return false;
+        }
+
+        match self.data.len().cmp(&other.data.len()) {
+            Ordering::Less => other.data[shared_capacity..].iter().all(|x| x.is_none()),
+            Ordering::Equal => true,
+            Ordering::Greater => self.data[shared_capacity..].iter().all(|x| x.is_none()),
+        }
+    }
+}
+
+impl<K, V: Eq> Eq for VecMap<K, V> {}
 
 impl<K: IndexKey, V> Index<K> for VecMap<K, V> {
     type Output = V;
@@ -887,5 +909,20 @@ mod test {
         map.extend([(7, ()), (2, ())]);
         assert_eq!(8, map.capacity());
         assert_eq!(2, map.len());
+    }
+
+    #[test]
+    fn test_eq_with_different_capacities() {
+        let map1 = VecMap {
+            data: vec![None, Some(1)],
+            len: 1,
+            _marker: PhantomData::<u8>,
+        };
+        let map2 = VecMap {
+            data: vec![None, Some(1), None, None],
+            len: 1,
+            _marker: PhantomData::<u8>,
+        };
+        assert_eq!(map1, map2);
     }
 }
