@@ -1,3 +1,6 @@
+# 0.13.2
+ - Bug fix: [Correct `Eq` for `VecMap`](https://github.com/rinde/more_collections/pull/46) by [Felerius](https://github.com/Felerius)
+
 # 0.13.0
  - Add `Extend` impl to `VecMap`
 
