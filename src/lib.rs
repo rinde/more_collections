@@ -72,7 +72,6 @@ pub mod vec_map;
     feature = "indexsetmultimap"
 ))]
 pub use multimap::*;
-
 #[cfg(all(feature = "indexmap", feature = "smallvec", feature = "smallmap"))]
 pub use small_map::SmallMap;
 #[cfg(all(
