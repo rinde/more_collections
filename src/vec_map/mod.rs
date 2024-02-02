@@ -1,5 +1,7 @@
 #![warn(missing_docs, missing_debug_implementations)]
 //! [`VecMap`] is a [`Vec`]-backed map, for faster random access.
+pub mod dense;
+mod gen_macros;
 mod iter;
 
 use std::cmp::Ordering;
@@ -9,6 +11,8 @@ use std::ops::Index;
 use std::ops::IndexMut;
 
 pub use crate::vec_map::iter::*;
+use crate::vecmap_base2_impl;
+use crate::vecmap_base_impl;
 
 /// A key that can be used in a map without needing a hasher.
 ///
@@ -46,59 +50,10 @@ pub struct VecMap<K, V> {
     _marker: PhantomData<K>,
 }
 
-impl<K: IndexKey, V: Clone> VecMap<K, V> {
-    /// Initializes [`VecMap`] with capacity to hold exactly `n` elements in the
-    /// index range of `0..n`.
-    pub fn with_capacity(n: usize) -> Self {
-        Self {
-            data: vec![None; n],
-            len: 0,
-            _marker: PhantomData,
-        }
-    }
-
-    /// Initializes [`VecMap`] with `n` occurences of `elem`.
-    pub fn from_elem(elem: V, n: usize) -> Self {
-        Self {
-            data: vec![Some(elem); n],
-            len: n,
-            _marker: PhantomData,
-        }
-    }
-
-    /// Clears all data from the [`VecMap`] without changing the capacity.
-    pub fn clear(&mut self) {
-        self.len = 0;
-        self.data = vec![None; self.capacity()];
-    }
-
-    /// Reserve capacity for `additional` key-value pairs.
-    pub fn reserve(&mut self, additional: usize) {
-        self.data.extend(vec![None; additional]);
-    }
-}
+vecmap_base_impl!(VecMap, (V: Clone), Some);
+vecmap_base2_impl!(VecMap, (V), Some);
 
 impl<K: IndexKey, V> VecMap<K, V> {
-    /// Initializes an empty [`VecMap`].
-    ///
-    /// For performance reasons it's almost always better to avoid dynamic
-    /// resizing by using [`Self::with_capacity()`] instead.
-    pub const fn new() -> Self {
-        Self {
-            data: vec![],
-            len: 0,
-            _marker: PhantomData,
-        }
-    }
-
-    /// Returns the number of elements the map can hold without reallocating.
-    ///
-    /// The index range of items that the map can hold without reallocating is
-    /// `0..capacity`.
-    pub fn capacity(&self) -> usize {
-        self.data.len()
-    }
-
     /// Inserts a key-value pair into the map.
     ///
     /// If the key is present in the map, the value is updated and the old value
