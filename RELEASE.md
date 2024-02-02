@@ -1,3 +1,6 @@
+# 0.13.3
+ - Bug fix: [Fix docs visibility](https://github.com/rinde/more_collections/pull/47) by [Felerius](https://github.com/Felerius)
+
 # 0.13.2
  - Bug fix: [Correct `Eq` for `VecMap`](https://github.com/rinde/more_collections/pull/46) by [Felerius](https://github.com/Felerius)
 
