@@ -101,3 +101,6 @@ range_minus_one = "warn"
 range_plus_one = "warn"
 redundant_else = "warn"
 semicolon_if_nothing_returned = "warn"
+
+[package.metadata.docs.rs]
+all-features = true
