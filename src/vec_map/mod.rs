@@ -1,6 +1,7 @@
 #![warn(missing_docs, missing_debug_implementations)]
 //! [`VecMap`] is a [`Vec`]-backed map, for faster random access.
 mod iter;
+mod compare;
 
 use std::cmp::Ordering;
 use std::fmt;
