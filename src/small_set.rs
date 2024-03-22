@@ -51,6 +51,7 @@ pub struct SmallSet<T, const C: usize, S = RandomState> {
 
 impl<T, const C: usize> SmallSet<T, C> {
     /// Create a new set.
+    #[must_use]
     pub fn new() -> Self {
         Self {
             data: SmallMap::new(),
@@ -297,19 +298,19 @@ impl<'a, T> Iterator for Iter<'a, T> {
     type Item = &'a T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next().map(|(t, _)| t)
+        self.inner.next().map(|(t, ())| t)
     }
 }
 
-impl<'a, T> ExactSizeIterator for Iter<'a, T> {
+impl<T> ExactSizeIterator for Iter<'_, T> {
     fn len(&self) -> usize {
         self.inner.len()
     }
 }
 
-impl<'a, T> DoubleEndedIterator for Iter<'a, T> {
+impl<T> DoubleEndedIterator for Iter<'_, T> {
     fn next_back(&mut self) -> Option<Self::Item> {
-        self.inner.next_back().map(|(t, _)| t)
+        self.inner.next_back().map(|(t, ())| t)
     }
 }
 
@@ -325,6 +326,14 @@ impl<T, const C: usize, S> IntoIterator for SmallSet<T, C, S> {
     }
 }
 
+impl<'a, T, const C: usize, S> IntoIterator for &'a SmallSet<T, C, S> {
+    type IntoIter = Iter<'a, T>;
+    type Item = &'a T;
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
 pub struct IntoIter<T, const C: usize> {
     inner: small_map::IntoIter<T, (), C>,
 }
@@ -333,7 +342,7 @@ impl<T, const C: usize> Iterator for IntoIter<T, C> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next().map(|(k, _)| k)
+        self.inner.next().map(|(k, ())| k)
     }
 }
 
@@ -352,7 +361,7 @@ where
 {
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
         Self {
-            data: SmallMap::from_iter(iter.into_iter().map(|i| (i, ()))),
+            data: iter.into_iter().map(|i| (i, ())).collect(),
         }
     }
 }
@@ -435,8 +444,8 @@ where
     }
 }
 
-impl<'a, T, const C1: usize, S1, const C2: usize, S2> DoubleEndedIterator
-    for SymmetricDifference<'a, T, C1, S1, C2, S2>
+impl<T, const C1: usize, S1, const C2: usize, S2> DoubleEndedIterator
+    for SymmetricDifference<'_, T, C1, S1, C2, S2>
 where
     T: Eq + Hash,
     S1: BuildHasher,
@@ -454,8 +463,8 @@ where
     }
 }
 
-impl<'a, T, const C1: usize, S1, const C2: usize, S2> FusedIterator
-    for SymmetricDifference<'a, T, C1, S1, C2, S2>
+impl<T, const C1: usize, S1, const C2: usize, S2> FusedIterator
+    for SymmetricDifference<'_, T, C1, S1, C2, S2>
 where
     T: Eq + Hash,
     S1: BuildHasher,
@@ -485,7 +494,7 @@ where
     }
 }
 
-impl<'a, T, const C: usize, S> DoubleEndedIterator for Intersection<'a, T, C, S>
+impl<T, const C: usize, S> DoubleEndedIterator for Intersection<'_, T, C, S>
 where
     T: Eq + Hash,
     S: BuildHasher,
@@ -495,7 +504,7 @@ where
     }
 }
 
-impl<'a, T, const C: usize, S> FusedIterator for Intersection<'a, T, C, S>
+impl<T, const C: usize, S> FusedIterator for Intersection<'_, T, C, S>
 where
     T: Eq + Hash,
     S: BuildHasher,
@@ -530,7 +539,7 @@ where
     }
 }
 
-impl<'a, T, const C: usize, S> DoubleEndedIterator for Union<'a, T, C, S>
+impl<T, const C: usize, S> DoubleEndedIterator for Union<'_, T, C, S>
 where
     T: Eq + Hash,
     S: BuildHasher,
@@ -547,7 +556,7 @@ where
     }
 }
 
-impl<'a, T, const C: usize, S> FusedIterator for Union<'a, T, C, S>
+impl<T, const C: usize, S> FusedIterator for Union<'_, T, C, S>
 where
     T: Eq + Hash,
     S: BuildHasher,
@@ -649,7 +658,6 @@ mod test {
         // | already existing    | Stay inline  | Same as existing   |
         // | already existing    | Stay on heap | Same as existing   |
 
-        let values = [10, 5, 86, 93];
         struct TestCase {
             name: &'static str,
             initial_values: Vec<usize>,
@@ -659,6 +667,7 @@ mod test {
             expected_values: Vec<usize>,
             expected_return: (usize, bool),
         }
+        let values = [10, 5, 86, 93];
         let test_cases = [
             TestCase {
                 name: "new key/value, stay inline",

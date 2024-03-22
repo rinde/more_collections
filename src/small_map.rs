@@ -58,6 +58,7 @@ enum MapData<K, V, const C: usize, S = RandomState> {
 
 impl<K, V, const C: usize> SmallMap<K, V, C> {
     /// Create a new map.
+    #[must_use]
     pub fn new() -> Self {
         debug_assert!(
                 C > 0,
@@ -339,9 +340,13 @@ where
     ///
     /// If the value is found then [`Result::Ok`] is returned, containing the
     /// index of the matching element. If there are multiple matches, then any
-    /// one of the matches could be returned. If the value is not found then
-    /// [`Result::Err`] is returned, containing the index where a matching
-    /// element could be inserted while maintaining sorted order.
+    /// one of the matches could be returned.
+    ///
+    /// # Errors
+    ///
+    /// If the value is not found then [`Result::Err`] is returned, containing
+    /// the index where a matching element could be inserted while maintaining
+    /// sorted order.
     pub fn binary_search_by<'a, F>(&'a self, mut f: F) -> Result<usize, usize>
     where
         F: FnMut((&'a K, &'a V)) -> Ordering,
@@ -429,7 +434,7 @@ where
 impl<K, V, const C: usize, S> Default for SmallMap<K, V, C, S> {
     fn default() -> Self {
         Self {
-            data: Default::default(),
+            data: MapData::default(),
         }
     }
 }
@@ -536,7 +541,7 @@ impl<'a, K, V> Iterator for Iter<'a, K, V> {
     }
 }
 
-impl<'a, K, V> ExactSizeIterator for Iter<'a, K, V> {
+impl<K, V> ExactSizeIterator for Iter<'_, K, V> {
     fn len(&self) -> usize {
         match self {
             Iter::Inline(iter) => iter.len(),
@@ -545,7 +550,7 @@ impl<'a, K, V> ExactSizeIterator for Iter<'a, K, V> {
     }
 }
 
-impl<'a, K, V> DoubleEndedIterator for Iter<'a, K, V> {
+impl<K, V> DoubleEndedIterator for Iter<'_, K, V> {
     fn next_back(&mut self) -> Option<Self::Item> {
         match self {
             #[allow(clippy::map_identity)] // false positive
@@ -555,7 +560,7 @@ impl<'a, K, V> DoubleEndedIterator for Iter<'a, K, V> {
     }
 }
 
-impl<'a, K, V> FusedIterator for Iter<'a, K, V> {}
+impl<K, V> FusedIterator for Iter<'_, K, V> {}
 
 pub enum IterMut<'a, K, V> {
     Inline(std::slice::IterMut<'a, (K, V)>),
@@ -592,6 +597,22 @@ impl<K, V, const C: usize, S> IntoIterator for SmallMap<K, V, C, S> {
             MapData::Inline(vec) => IntoIter::Inline(vec.into_iter()),
             MapData::Heap(map) => IntoIter::Heap(map.into_iter()),
         }
+    }
+}
+
+impl<'a, K, V, const C: usize, S> IntoIterator for &'a SmallMap<K, V, C, S> {
+    type IntoIter = Iter<'a, K, V>;
+    type Item = (&'a K, &'a V);
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+impl<'a, K, V, const C: usize, S> IntoIterator for &'a mut SmallMap<K, V, C, S> {
+    type IntoIter = IterMut<'a, K, V>;
+    type Item = (&'a K, &'a mut V);
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter_mut()
     }
 }
 
@@ -659,14 +680,14 @@ where
         let (lower_bound, _) = iter.size_hint();
         if lower_bound <= C {
             let mut map = Self {
-                data: MapData::Inline(Default::default()),
+                data: MapData::Inline(SmallVec::default()),
             };
             iter.for_each(|(key, value)| {
                 map.insert(key, value);
             });
             map
         } else {
-            let mut index_map = IndexMap::from_iter(iter);
+            let mut index_map = iter.collect::<IndexMap<_, _, S>>();
             if index_map.len() <= C {
                 Self {
                     data: MapData::Inline(index_map.drain(0..index_map.len()).collect()),
@@ -685,12 +706,13 @@ pub enum Entry<'a, K, V, const C: usize, S> {
     Vacant(&'a mut SmallMap<K, V, C, S>, K),
 }
 
-impl<'a, K, V, const C: usize, S> Entry<'a, K, V, C, S>
+impl<K, V, const C: usize, S> Entry<'_, K, V, C, S>
 where
     K: Hash + Eq,
     S: BuildHasher,
 {
     /// Modifies the entry if it is occupied. Otherwise this is a no-op.
+    #[allow(clippy::return_self_not_must_use)] // no need to use Entry after this operation
     pub fn and_modify<F>(self, f: F) -> Self
     where
         F: FnOnce(&mut V),
@@ -700,7 +722,7 @@ where
                 f(map.get_index_mut(index).map(|(_k, v)| v).unwrap());
                 Entry::Occupied(map, index)
             }
-            x => x,
+            x @ Entry::Vacant(_, _) => x,
         }
     }
 }
@@ -886,15 +908,8 @@ mod test {
     }
 
     #[test]
+    #[allow(clippy::too_many_lines)] // fine for tests
     fn remove_tests() {
-        let values = [
-            (10, "ten"),
-            (5, "five"),
-            (86, "eighty-six"),
-            (93, "ninety-three"),
-            (17, "seven-teen"),
-            (1, "one"),
-        ];
         struct TestCase {
             name: &'static str,
             initial_values: Vec<(usize, &'static str)>,
@@ -904,6 +919,14 @@ mod test {
             expected_values: Vec<(usize, &'static str)>,
             expected_return: Option<(usize, usize, &'static str)>,
         }
+        let values = [
+            (10, "ten"),
+            (5, "five"),
+            (86, "eighty-six"),
+            (93, "ninety-three"),
+            (17, "seven-teen"),
+            (1, "one"),
+        ];
         let test_cases = [
             TestCase {
                 name: "remove key from the middle swaps last item into middle when inline",
@@ -1053,6 +1076,7 @@ mod test {
     }
 
     #[test]
+    #[allow(clippy::too_many_lines)] // fine for tests
     fn insert_and_insert_full_tests() {
         // Test cases:
         // | Key/Value           | Memory       | Insertion position |
@@ -1063,12 +1087,6 @@ mod test {
         // | overwrites existing | Stay inline  | Same as existing   |
         // | overwrites existing | Stay on heap | Same as existing   |
 
-        let values = [
-            (10, "ten"),
-            (5, "five"),
-            (86, "eighty-six"),
-            (93, "ninety-three"),
-        ];
         struct TestCase {
             name: &'static str,
             initial_values: Vec<(usize, &'static str)>,
@@ -1078,6 +1096,12 @@ mod test {
             expected_values: Vec<(usize, &'static str)>,
             expected_return: (usize, Option<&'static str>),
         }
+        let values = [
+            (10, "ten"),
+            (5, "five"),
+            (86, "eighty-six"),
+            (93, "ninety-three"),
+        ];
         let test_cases = [
             TestCase {
                 name: "new key/value, stay inline",
@@ -1550,7 +1574,7 @@ mod test {
         // Even though the iterator says that it's len is 1, which would fit inline.
         // The actual len is 4 which does not fit inline. This test checks whether the
         // data is correctly allocated on the heap.
-        let map = SmallMap::<_, _, 3>::from_iter(iter);
+        let map = iter.collect::<SmallMap<_, _, 3>>();
         assert!(!map.is_inline());
 
         let output = map.into_iter().collect::<Vec<_>>();
@@ -1588,7 +1612,7 @@ mod test {
         expected = "Cannot instantiate SmallMap with no inline capacity, use positive capacity or use IndexMap instead"
     )]
     fn new_fails_on_zero_capacity() {
-        SmallMap::<usize, usize, 0>::new();
+        let _unused = SmallMap::<usize, usize, 0>::new();
     }
 
     #[test]

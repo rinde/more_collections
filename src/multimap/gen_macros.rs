@@ -6,6 +6,7 @@ macro_rules! multimap_base_impl {
         ///
         /// The multimap is initially created with a capacity of 0, so it will
         /// not allocate until it is first inserted into.
+        #[must_use]
         pub fn new() -> Self {
             Self {
                 inner: <$keys>::new(),
@@ -17,6 +18,7 @@ macro_rules! multimap_base_impl {
         ///
         /// The multimap will be able to hold at least `capacity` keys without
         /// reallocating. If `capacity` is 0, the multimap will not allocate.
+        #[must_use]
         pub fn with_key_capacity(capacity: usize) -> Self {
             Self {
                 inner: <$keys>::with_capacity(capacity),
@@ -526,7 +528,7 @@ macro_rules! multimap_extend {
             }
         }
 
-        impl<$($generic_ids)*> std::iter::FromIterator<(K, V)> for $type<$($generic_ids)*>
+        impl<$($generic_ids)*> FromIterator<(K, V)> for $type<$($generic_ids)*>
         where
             $($keys)*,
             $($values)*,
@@ -657,13 +659,13 @@ macro_rules! impl_iter {
             }
         }
 
-        impl<'a, $($generic_ids)*> ExactSizeIterator for Iter<'a, $($generic_ids)*> {
+        impl<$($generic_ids)*> ExactSizeIterator for Iter<'_, $($generic_ids)*> {
             fn len(&self) -> usize {
                 self.len
             }
         }
 
-        impl<'a, $($generic_ids)*> std::iter::FusedIterator for Iter<'a, $($generic_ids)*> {}
+        impl<$($generic_ids)*> std::iter::FusedIterator for Iter<'_, $($generic_ids)*> {}
 
         /// An iterator over the values of a multimap.
         ///
@@ -682,13 +684,13 @@ macro_rules! impl_iter {
             }
         }
 
-        impl<'a, $($generic_ids)*> ExactSizeIterator for Values<'a, $($generic_ids)*> {
+        impl<$($generic_ids)*> ExactSizeIterator for Values<'_, $($generic_ids)*> {
             fn len(&self) -> usize {
                 self.inner.len()
             }
         }
 
-        impl<'a, $($generic_ids)*> std::iter::FusedIterator for Values<'a, $($generic_ids)*> {}
+        impl<$($generic_ids)*> std::iter::FusedIterator for Values<'_, $($generic_ids)*> {}
 
         impl<K, V, S> $type<K, V, S> {
             /// Return an iterator over the key-value pairs of the multimap.
@@ -707,6 +709,14 @@ macro_rules! impl_iter {
                 Values {
                     inner: self.iter(),
                 }
+            }
+        }
+
+        impl<'a, K, V, S> IntoIterator for &'a $type<K, V, S> {
+            type IntoIter = Iter<'a, $($generic_ids)*>;
+            type Item = (&'a K, &'a V);
+            fn into_iter(self) -> Self::IntoIter {
+                self.iter()
             }
         }
     }
@@ -732,13 +742,13 @@ macro_rules! impl_keys {
             }
         }
 
-        impl<'a, $($generic_ids)*> ExactSizeIterator for Keys<'a, $($generic_ids)*> {
+        impl<$($generic_ids)*> ExactSizeIterator for Keys<'_, $($generic_ids)*> {
             fn len(&self) -> usize {
                 self.inner.len()
             }
         }
 
-        impl<'a, $($generic_ids)*> std::iter::FusedIterator for Keys<'a, $($generic_ids)*> {}
+        impl<$($generic_ids)*> std::iter::FusedIterator for Keys<'_, $($generic_ids)*> {}
 
         impl<K, V, S> $type<K, V, S> {
             /// Return an iterator over the keys of the multimap.
