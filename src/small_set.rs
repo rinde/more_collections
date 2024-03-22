@@ -289,7 +289,6 @@ where
     }
 }
 
-#[derive(Clone)]
 pub struct Iter<'a, T> {
     inner: small_map::Iter<'a, T, ()>,
 }
@@ -314,6 +313,23 @@ impl<T> DoubleEndedIterator for Iter<'_, T> {
     }
 }
 
+impl<T> FusedIterator for Iter<'_, T> {}
+
+// FIXME(#26925) Remove in favor of `#[derive(Clone)]`
+impl<T> Clone for Iter<'_, T> {
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+        }
+    }
+}
+
+impl<T: Debug> Debug for Iter<'_, T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_list().entries(self.clone()).finish()
+    }
+}
+
 impl<T, const C: usize, S> IntoIterator for SmallSet<T, C, S> {
     type Item = T;
 
@@ -334,6 +350,7 @@ impl<'a, T, const C: usize, S> IntoIterator for &'a SmallSet<T, C, S> {
     }
 }
 
+#[derive(Debug)]
 pub struct IntoIter<T, const C: usize> {
     inner: small_map::IntoIter<T, (), C>,
 }
@@ -375,7 +392,6 @@ where
     }
 }
 
-#[derive(Clone)]
 pub struct Difference<'a, T, const C: usize, S> {
     iter: Iter<'a, T>,
     other: &'a SmallSet<T, C, S>,
@@ -414,7 +430,26 @@ where
 {
 }
 
-#[derive(Clone)]
+// FIXME(#26925) Remove in favor of `#[derive(Clone)]`
+impl<T, const C: usize, S> Clone for Difference<'_, T, C, S> {
+    fn clone(&self) -> Self {
+        Self {
+            iter: self.iter.clone(),
+            other: self.other,
+        }
+    }
+}
+
+impl<T, const C: usize, S> Debug for Difference<'_, T, C, S>
+where
+    T: Debug + Eq + Hash,
+    S: BuildHasher,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_list().entries(self.clone()).finish()
+    }
+}
+
 pub struct SymmetricDifference<'a, T, const C1: usize, S1, const C2: usize, S2> {
     iter: Chain<Difference<'a, T, C2, S2>, Difference<'a, T, C1, S1>>,
 }
@@ -472,7 +507,33 @@ where
 {
 }
 
-#[derive(Clone)]
+// FIXME(#26925) Remove in favor of `#[derive(Clone)]`
+impl<T, const C1: usize, S1, const C2: usize, S2> Clone
+    for SymmetricDifference<'_, T, C1, S1, C2, S2>
+where
+    T: Eq + Hash,
+    S1: BuildHasher,
+    S2: BuildHasher,
+{
+    fn clone(&self) -> Self {
+        Self {
+            iter: self.iter.clone(),
+        }
+    }
+}
+
+impl<T, const C1: usize, S1, const C2: usize, S2> Debug
+    for SymmetricDifference<'_, T, C1, S1, C2, S2>
+where
+    T: Eq + Hash + Debug,
+    S1: BuildHasher,
+    S2: BuildHasher,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_list().entries(self.clone()).finish()
+    }
+}
+
 pub struct Intersection<'a, T, const C: usize, S> {
     iter: Iter<'a, T>,
     other: &'a SmallSet<T, C, S>,
@@ -511,7 +572,30 @@ where
 {
 }
 
-#[derive(Clone)]
+// FIXME(#26925) Remove in favor of `#[derive(Clone)]`
+impl<T, const C: usize, S> Clone for Intersection<'_, T, C, S>
+where
+    T: Eq + Hash,
+    S: BuildHasher,
+{
+    fn clone(&self) -> Self {
+        Self {
+            iter: self.iter.clone(),
+            other: self.other,
+        }
+    }
+}
+
+impl<T, const C: usize, S> Debug for Intersection<'_, T, C, S>
+where
+    T: Debug + Eq + Hash,
+    S: BuildHasher,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_list().entries(self.clone()).finish()
+    }
+}
+
 pub struct Union<'a, T, const C: usize, S> {
     iter: Chain<Iter<'a, T>, Difference<'a, T, C, S>>,
 }
@@ -561,6 +645,29 @@ where
     T: Eq + Hash,
     S: BuildHasher,
 {
+}
+
+// FIXME(#26925) Remove in favor of `#[derive(Clone)]`
+impl<T, const C: usize, S> Clone for Union<'_, T, C, S>
+where
+    T: Eq + Hash,
+    S: BuildHasher,
+{
+    fn clone(&self) -> Self {
+        Self {
+            iter: self.iter.clone(),
+        }
+    }
+}
+
+impl<T, const C: usize, S> Debug for Union<'_, T, C, S>
+where
+    T: Debug + Eq + Hash,
+    S: BuildHasher,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_list().entries(self.clone()).finish()
+    }
 }
 
 /// Create a [`SmallSet`] with with the specified values.

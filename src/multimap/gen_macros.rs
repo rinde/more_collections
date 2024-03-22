@@ -626,7 +626,6 @@ macro_rules! impl_iter {
         /// An iterator over the entries of a multimap.
         ///
         /// This struct is created by the `iter` method on multimap.
-        #[derive(Clone)]
         pub struct Iter<'a, $($generic_ids)*> where K: 'a, V: 'a{
             outer: $outer_iter,
             inner: Option<(&'a K, $inner_iter)>,
@@ -667,10 +666,30 @@ macro_rules! impl_iter {
 
         impl<$($generic_ids)*> std::iter::FusedIterator for Iter<'_, $($generic_ids)*> {}
 
+        // FIXME(#26925) Remove in favor of `#[derive(Clone)]`
+        impl<$($generic_ids)*> Clone for Iter<'_, $($generic_ids)*> {
+            fn clone(&self) -> Self {
+                Iter {
+                    outer: self.outer.clone(),
+                    inner: self.inner.clone(),
+                    len: self.len,
+                }
+            }
+        }
+
+        impl<$($generic_ids)*> std::fmt::Debug for Iter<'_, $($generic_ids)*>
+        where
+            K: std::fmt::Debug,
+            V: std::fmt::Debug,
+        {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.debug_list().entries(self.clone()).finish()
+            }
+        }
+
         /// An iterator over the values of a multimap.
         ///
         /// This `struct` is created by the `values` method on multimap.
-        #[derive(Clone)]
         pub struct Values<'a, $($generic_ids)*>{
             inner: Iter<'a, $($generic_ids)*>,
         }
@@ -691,6 +710,24 @@ macro_rules! impl_iter {
         }
 
         impl<$($generic_ids)*> std::iter::FusedIterator for Values<'_, $($generic_ids)*> {}
+
+        // FIXME(#26925) Remove in favor of `#[derive(Clone)]`
+        impl<$($generic_ids)*> Clone for Values<'_, $($generic_ids)*> {
+            fn clone(&self) -> Self {
+                Values {
+                    inner: self.inner.clone(),
+                }
+            }
+        }
+
+        impl<$($generic_ids)*> std::fmt::Debug for Values<'_, $($generic_ids)*>
+        where
+            V: std::fmt::Debug,
+        {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.debug_list().entries(self.clone()).finish()
+            }
+        }
 
         impl<K, V, S> $type<K, V, S> {
             /// Return an iterator over the key-value pairs of the multimap.
@@ -729,7 +766,6 @@ macro_rules! impl_keys {
         /// An iterator over the keys of a multimap.
         ///
         /// This `struct` is created by the `keys` method on multimap.
-        #[derive(Clone)]
         pub struct Keys<'a, $($generic_ids)*> {
             inner: $inner_iter,
         }
@@ -750,6 +786,24 @@ macro_rules! impl_keys {
 
         impl<$($generic_ids)*> std::iter::FusedIterator for Keys<'_, $($generic_ids)*> {}
 
+        // FIXME(#26925) Remove in favor of `#[derive(Clone)]`
+        impl<$($generic_ids)*> Clone for Keys<'_, $($generic_ids)*> {
+            fn clone(&self) -> Self {
+                Keys {
+                    inner: self.inner.clone(),
+                }
+            }
+        }
+
+        impl<$($generic_ids)*> std::fmt::Debug for Keys<'_, $($generic_ids)*>
+        where
+            K: std::fmt::Debug,
+        {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.debug_list().entries(self.clone()).finish()
+            }
+        }
+
         impl<K, V, S> $type<K, V, S> {
             /// Return an iterator over the keys of the multimap.
             pub fn keys(&self) -> Keys<'_, $($generic_ids)*> {
@@ -766,6 +820,7 @@ macro_rules! impl_keys {
 macro_rules! impl_into_iterator {
     ($type:tt, ($($generic_ids:tt)*), $outer_iter:ty, $inner_iter:ty) => {
         /// An owning iterator over the entries of a multimap.
+        #[derive(Debug)]
         pub struct IntoIter<$($generic_ids)*> {
             outer: $outer_iter,
             inner: Option<(K, $inner_iter)>,
@@ -837,6 +892,7 @@ macro_rules! impl_into_iterator {
         /// An owning iterator over the values of a multimap.
         ///
         /// This `struct` is created by the `into_values` method on multimap.
+        #[derive(Debug)]
         pub struct IntoValues<$($generic_ids)*> {
             outer: $outer_iter,
             inner: Option<$inner_iter>,
@@ -898,6 +954,7 @@ macro_rules! impl_into_keys {
         /// An owning iterator over the keys of a multimap.
         ///
         /// This `struct` is created by the `into_keys` method on multimap.
+        #[derive(Debug)]
         pub struct IntoKeys<$($generic_ids)*> {
             inner: $inner_iter,
         }

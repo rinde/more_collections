@@ -523,7 +523,6 @@ where
     }
 }
 
-#[derive(Clone)]
 pub enum Iter<'a, K, V> {
     Inline(std::slice::Iter<'a, (K, V)>),
     Heap(indexmap::map::Iter<'a, K, V>),
@@ -562,6 +561,22 @@ impl<K, V> DoubleEndedIterator for Iter<'_, K, V> {
 
 impl<K, V> FusedIterator for Iter<'_, K, V> {}
 
+impl<K, V> Clone for Iter<'_, K, V> {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Inline(arg0) => Self::Inline(arg0.clone()),
+            Self::Heap(arg0) => Self::Heap(arg0.clone()),
+        }
+    }
+}
+
+impl<K: Debug, V: Debug> Debug for Iter<'_, K, V> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_list().entries(self.clone()).finish()
+    }
+}
+
+#[derive(Debug)]
 pub enum IterMut<'a, K, V> {
     Inline(std::slice::IterMut<'a, (K, V)>),
     Heap(indexmap::map::IterMut<'a, K, V>),
@@ -586,6 +601,8 @@ impl<K, V> ExactSizeIterator for IterMut<'_, K, V> {
         }
     }
 }
+
+impl<K, V> FusedIterator for IterMut<'_, K, V> {}
 
 impl<K, V, const C: usize, S> IntoIterator for SmallMap<K, V, C, S> {
     type Item = (K, V);
@@ -616,7 +633,6 @@ impl<'a, K, V, const C: usize, S> IntoIterator for &'a mut SmallMap<K, V, C, S> 
     }
 }
 
-#[derive(Clone)]
 pub enum Keys<'a, K, V> {
     Inline(std::slice::Iter<'a, (K, V)>),
     Heap(indexmap::map::Keys<'a, K, V>),
@@ -642,6 +658,25 @@ impl<K, V> ExactSizeIterator for Keys<'_, K, V> {
     }
 }
 
+impl<K, V> FusedIterator for Keys<'_, K, V> {}
+
+// FIXME(#26925) Remove in favor of `#[derive(Clone)]`
+impl<K, V> Clone for Keys<'_, K, V> {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Inline(arg0) => Self::Inline(arg0.clone()),
+            Self::Heap(arg0) => Self::Heap(arg0.clone()),
+        }
+    }
+}
+
+impl<K: Debug, V> Debug for Keys<'_, K, V> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_list().entries(self.clone()).finish()
+    }
+}
+
+#[derive(Debug)]
 pub enum IntoIter<K, V, const C: usize> {
     Inline(smallvec::IntoIter<[(K, V); C]>),
     Heap(indexmap::map::IntoIter<K, V>),
@@ -772,6 +807,23 @@ where
                 &mut map[index]
             }
             Entry::Occupied(map, index) => &mut map[index],
+        }
+    }
+}
+
+impl<K, V, const C: usize, S> Debug for Entry<'_, K, V, C, S>
+where
+    K: Hash + Eq + Debug,
+    V: Default + Debug,
+    S: BuildHasher + Default,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Entry::Vacant(map, key) => f
+                .debug_tuple(stringify!(Entry))
+                .field(&(key, map.get(key)))
+                .finish(),
+            Entry::Occupied(_, index) => f.debug_tuple("VacantEntry").field(&index).finish(),
         }
     }
 }

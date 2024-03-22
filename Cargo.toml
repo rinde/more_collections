@@ -51,7 +51,7 @@ unused = "warn"
 # specific lints that are allow by default
 macro_use_extern_crate = "warn"
 meta_variable_misuse = "warn"
-# missing_debug_implementations = "warn"
+missing_debug_implementations = "warn"
 missing_copy_implementations = "warn"
 # missing_docs = "warn"
 unreachable_pub = "warn"
