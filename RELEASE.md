@@ -1,3 +1,7 @@
+# 0.13.4
+ - [Make functions `const` where possible](https://github.com/rinde/more_collections/pull/50)
+ - [Enable pedantic lints](https://github.com/rinde/more_collections/pull/52/files) which adds `Debug` implementations to all types, improves docs, and more.
+
 # 0.13.3
  - Bug fix: [Fix docs visibility](https://github.com/rinde/more_collections/pull/47) by [Felerius](https://github.com/Felerius)
 
