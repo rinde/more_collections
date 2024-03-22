@@ -210,12 +210,12 @@ impl<K: IndexKey, V> VecMap<K, V> {
     }
 
     /// Return the number of key-value pairs in the map.
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.len
     }
 
     /// Returns `true` if the map contains no elements.
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.len() == 0
     }
 

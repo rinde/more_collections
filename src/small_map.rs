@@ -93,13 +93,13 @@ impl<K, V, const C: usize, S> SmallMap<K, V, C, S> {
 
     /// The memory capacity that will be allocated inline. If the nubmer of
     /// values exceeds the inline capacity, the map will move to the heap.
-    pub fn inline_capacity(&self) -> usize {
+    pub const fn inline_capacity(&self) -> usize {
         C
     }
 
     /// Is the data contained by this map stored inline (`true`) or on the heap
     /// (`false`).
-    pub fn is_inline(&self) -> bool {
+    pub const fn is_inline(&self) -> bool {
         matches!(self.data, MapData::Inline(_))
     }
 
@@ -1593,7 +1593,7 @@ mod test {
 
     #[test]
     fn binary_search_test() {
-        fn find_key(k: i32, target: i32) -> Ordering {
+        const fn find_key(k: i32, target: i32) -> Ordering {
             match k {
                 x if x == target => Ordering::Equal,
                 x if x < target => Ordering::Less,

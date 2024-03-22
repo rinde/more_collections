@@ -79,13 +79,13 @@ impl<T, const C: usize, S> SmallSet<T, C, S> {
 
     /// The memory capacity that will be allocated inline. If the nubmer of
     /// values exceeds the inline capacity, the set will move to the heap.
-    pub fn inline_capacity(&self) -> usize {
+    pub const fn inline_capacity(&self) -> usize {
         self.data.inline_capacity()
     }
 
     /// Is the data contained by this set stored inline (`true`) or on the heap
     /// (`false`).
-    pub fn is_inline(&self) -> bool {
+    pub const fn is_inline(&self) -> bool {
         self.data.is_inline()
     }
 
@@ -152,7 +152,7 @@ where
     T: Hash + Eq,
     S: BuildHasher,
 {
-    pub fn from_keys(map: SmallMap<T, (), C, S>) -> Self {
+    pub const fn from_keys(map: SmallMap<T, (), C, S>) -> Self {
         SmallSet { data: map }
     }
 
