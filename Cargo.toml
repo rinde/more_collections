@@ -55,7 +55,7 @@ unused_extern_crates = "warn"
 unused_import_braces = "warn"
 unused_lifetimes = "warn"
 unused_macro_rules = "warn"
-unused_tuple_struct_fields = "warn"
+dead_code = "warn"
 unused = "warn"
 
 
