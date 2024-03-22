@@ -42,10 +42,16 @@ harness = false
 lto = true
 
 [lints.rust]
+# lint groups
 future-incompatible = "warn"
 let-underscore = "warn"
 nonstandard-style = "deny"
-# missing_debug_implementations = "warn"
+unused = "warn"
+
+# specific lints that are allow by default
+macro_use_extern_crate = "warn"
+meta_variable_misuse = "warn"
+missing_debug_implementations = "warn"
 missing_copy_implementations = "warn"
 # missing_docs = "warn"
 unreachable_pub = "warn"
@@ -55,54 +61,31 @@ unused_extern_crates = "warn"
 unused_import_braces = "warn"
 unused_lifetimes = "warn"
 unused_macro_rules = "warn"
+unused_qualifications = "warn"
 dead_code = "warn"
-unused = "warn"
-
+single_use_lifetimes = "warn"
 
 [lints.rustdoc]
 broken_intra_doc_links = "deny"
 private_intra_doc_links = "allow"
 
 [lints.clippy]
-correctness = "deny"
-suspicious = "warn"
-complexity = "warn"
-perf = "deny"
 cargo = "warn"
+complexity = "warn"
+correctness = "deny"
+perf = "warn"
 style = "warn"
-todo = "deny"
-doc_link_with_quotes = "warn"
-doc_markdown = "warn"
-cloned_instead_of_copied = "warn"
-checked_conversions = "warn"
-filter_map_next = "warn"
-manual_instant_elapsed = "warn"
-cast_possible_wrap = "warn"
-cast_lossless = "warn"
-
-cast_possible_truncation = "warn"
-copy_iterator = "warn"
-explicit_into_iter_loop = "warn"
-explicit_iter_loop = "warn"
-flat_map_option = "warn"
-# into_iter_without_iter = "warn"
-# iter_without_into_iter = "warn"
-iter_not_returning_iterator = "warn"
-manual_assert = "warn"
-manual_let_else = "warn"
-manual_ok_or = "warn"
-map_unwrap_or = "warn"
-match_bool = "warn"
-match_same_arms = "warn"
-# missing_errors_doc = "warn"
-missing_fields_in_debug = "warn"
-# missing_panics_doc = "warn"
-range_minus_one = "warn"
-range_plus_one = "warn"
-redundant_else = "warn"
-semicolon_if_nothing_returned = "warn"
+suspicious = "deny"
+todo = "warn"
 
 missing_const_for_fn = "warn"
+
+### Pedantic
+pedantic = { level = "warn", priority = -1 } # setting a lower priority for the group to allow individual overrides
+
+# Below are the pedantic lints that we currently do not opt in to including the reason why.
+missing_panics_doc = "allow"
+module_name_repetitions = "allow" # naming is already hard enough
 
 [package.metadata.docs.rs]
 all-features = true

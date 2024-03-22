@@ -83,6 +83,7 @@ impl<K: IndexKey, V> VecMap<K, V> {
     ///
     /// For performance reasons it's almost always better to avoid dynamic
     /// resizing by using [`Self::with_capacity()`] instead.
+    #[must_use]
     pub const fn new() -> Self {
         Self {
             data: vec![],
@@ -95,6 +96,7 @@ impl<K: IndexKey, V> VecMap<K, V> {
     ///
     /// The index range of items that the map can hold without reallocating is
     /// `0..capacity`.
+    #[must_use]
     pub fn capacity(&self) -> usize {
         self.data.len()
     }
@@ -210,11 +212,13 @@ impl<K: IndexKey, V> VecMap<K, V> {
     }
 
     /// Return the number of key-value pairs in the map.
+    #[must_use]
     pub const fn len(&self) -> usize {
         self.len
     }
 
     /// Returns `true` if the map contains no elements.
+    #[must_use]
     pub const fn is_empty(&self) -> bool {
         self.len() == 0
     }
@@ -226,6 +230,7 @@ impl<K: IndexKey, V> VecMap<K, V> {
 
     /// Returns an iterator over the key-value pairs of the map, following the
     /// natural order of the keys.
+    #[must_use]
     pub fn iter(&self) -> Iter<'_, K, V> {
         Iter {
             inner: self.data.iter().enumerate(),
@@ -246,6 +251,7 @@ impl<K: IndexKey, V> VecMap<K, V> {
 
     /// Returns an iterator over the keys of the map following the natural order
     /// of the keys.
+    #[must_use]
     pub fn keys(&self) -> Keys<'_, K, V> {
         Keys {
             inner: self.data.iter().enumerate(),
@@ -256,6 +262,7 @@ impl<K: IndexKey, V> VecMap<K, V> {
 
     /// Returns an iterator over the values of the map following the natural
     /// order of the keys.
+    #[must_use]
     pub fn values(&self) -> Values<'_, V> {
         Values {
             inner: self.data.iter(),
@@ -282,9 +289,9 @@ impl<K, V: Eq> PartialEq for VecMap<K, V> {
         }
 
         match self.data.len().cmp(&other.data.len()) {
-            Ordering::Less => other.data[shared_capacity..].iter().all(|x| x.is_none()),
+            Ordering::Less => other.data[shared_capacity..].iter().all(Option::is_none),
             Ordering::Equal => true,
-            Ordering::Greater => self.data[shared_capacity..].iter().all(|x| x.is_none()),
+            Ordering::Greater => self.data[shared_capacity..].iter().all(Option::is_none),
         }
     }
 }
@@ -378,6 +385,7 @@ impl<'a, K: IndexKey, V> Entry<'a, K, V> {
     }
 
     /// Modifies the entry if it is occupied.
+    #[allow(clippy::return_self_not_must_use)] // no need to use entry after this
     pub fn and_modify<F>(self, f: F) -> Self
     where
         F: FnOnce(&mut V),
@@ -387,7 +395,7 @@ impl<'a, K: IndexKey, V> Entry<'a, K, V> {
                 f(o);
                 Entry::Occupied(o)
             }
-            x => x,
+            x @ Entry::Vacant(_, _) => x,
         }
     }
 }
