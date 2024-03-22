@@ -62,12 +62,12 @@ macro_rules! multimap_base2_impl {
         /// Note that the number of elements in the multimap may not be the
         /// same as the number of keys in the multimap. See
         /// [`Self::keys_len()`].
-        pub fn len(&self) -> usize {
+        pub const fn len(&self) -> usize {
             self.len
         }
 
         /// Returns `true` if the multimap contains no elements.
-        pub fn is_empty(&self) -> bool {
+        pub const fn is_empty(&self) -> bool {
             self.len == 0
         }
 
@@ -241,7 +241,7 @@ macro_rules! multimap_mutators_impl {
         }
 
         /// Return a borrow of the underlying map.
-        pub fn as_map(&self) -> &$keys {
+        pub const fn as_map(&self) -> &$keys {
             &self.inner
         }
 

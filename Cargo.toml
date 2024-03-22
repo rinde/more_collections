@@ -102,5 +102,7 @@ range_plus_one = "warn"
 redundant_else = "warn"
 semicolon_if_nothing_returned = "warn"
 
+missing_const_for_fn = "warn"
+
 [package.metadata.docs.rs]
 all-features = true
