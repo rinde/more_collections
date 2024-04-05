@@ -256,6 +256,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d77f7ec81a6d05a3abb01ab6eb7590f6083d08449fe5a1c8b1e620283546ccb7"
 
 [[package]]
+name = "indexed_vec"
+version = "1.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dd5390d1640d64a30efbbe9cd15cb9f472388b4d5693677c693a7bc9310c0d08"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "indexmap"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -350,11 +359,13 @@ name = "more_collections"
 version = "0.13.3"
 dependencies = [
  "criterion",
+ "indexed_vec",
  "indexmap",
  "itertools 0.12.0",
  "maplit",
  "more_collections",
  "rand",
+ "safe_index",
  "smallvec",
 ]
 
@@ -526,6 +537,12 @@ name = "ryu"
 version = "1.0.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f91339c0467de62360649f8d3e185ca8de4224ff281f66000de5eb2a77a79041"
+
+[[package]]
+name = "safe_index"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e72df1d3e26fc17c55ac50bbe79449bc050d98f6c685964683e5a6e9399beea8"
 
 [[package]]
 name = "same-file"
