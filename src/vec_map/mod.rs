@@ -277,7 +277,7 @@ impl<K: IndexKey, V> Default for VecMap<K, V> {
     }
 }
 
-impl<K, V: Eq> PartialEq for VecMap<K, V> {
+impl<K, V: PartialEq> PartialEq for VecMap<K, V> {
     fn eq(&self, other: &Self) -> bool {
         if self.len != other.len {
             return false;
