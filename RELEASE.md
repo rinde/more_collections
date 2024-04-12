@@ -1,3 +1,6 @@
+# 0.13.5
+ - [Relax `PartialEq` bound](https://github.com/rinde/more_collections/pull/53) by [Felerius](https://github.com/Felerius)
+
 # 0.13.4
  - [Make functions `const` where possible](https://github.com/rinde/more_collections/pull/50)
  - [Enable pedantic lints](https://github.com/rinde/more_collections/pull/52/files) which adds `Debug` implementations to all types, improves docs, and more.
