@@ -217,36 +217,6 @@ macro_rules! multiset_mutators_impl {
         // Multiset specific methods
         /////////////////////////////////////
 
-        /// Create a new multiset from an iterator of tuples containing the
-        /// item counts. If there are duplicate items, the respective counts
-        /// will be summed up.
-        ///
-        /// # Example
-        /// ```
-        /// # use std::collections::hash_map::RandomState;
-        ///
-        #[doc=concat!("# use more_collections::", stringify!($type), ";")]
-        #[doc=concat!("let multiset: ",
-            stringify!($type),
-            "<_, RandomState> = ",
-            stringify!($type),
-            "::from_tuples(vec!["
-        )]
-        ///     ("A", 3u8), ("B", 2), ("A", 1), ("C", 7)
-        /// ]);
-        ///
-        /// assert_eq!(4, multiset.count("A"));
-        /// ```
-        pub fn from_tuples<I, C>(iterable: I) -> Self
-        where
-            I: IntoIterator<Item = (T, C)>,
-            C: Into<usize>,
-        {
-            let mut multiset = Self::default();
-            multiset.extend(iterable.into_iter());
-            multiset
-        }
-
         /// Return a borrow of the underlying map.
         pub const fn as_map(&self) -> &$inner_ty_full {
             &self.inner
@@ -307,6 +277,34 @@ macro_rules! multiset_common_traits_impl {
                 // Expecting that about 50% of the incoming values are
                 // duplicates and reserving that amount of capacity.
                 let mut multiset = Self::with_capacity_and_hasher(low / 2, <_>::default());
+                multiset.extend(iter);
+                multiset
+            }
+        }
+
+        /// Create a new multiset from an iterator of tuples containing the
+        /// item counts. If there are duplicate items, the respective counts
+        /// will be summed up.
+        ///
+        /// # Example
+        /// ```
+        #[doc=concat!("# use more_collections::", stringify!($type), ";")]
+        /// let multiset = [("A", 3u8), ("B", 2), ("A", 1), ("C", 7)]
+        ///     .into_iter()
+        #[doc=concat!("    .collect::<", stringify!($type), "<_>>()")]
+        ///
+        /// assert_eq!(4, multiset.count("A"));
+        /// ```
+        impl<T, C, S> FromIterator<(T, C)> for $type<T, S>
+        where
+            $($elements)*,
+            C: Into<usize>,
+            S: BuildHasher + Default
+        {
+            fn from_iter<I: IntoIterator<Item = (T, C)>>(iterable: I) -> Self {
+                let iter = iterable.into_iter();
+                let (low, _) = iter.size_hint();
+                let mut multiset = Self::with_capacity_and_hasher(low, <_>::default());
                 multiset.extend(iter);
                 multiset
             }

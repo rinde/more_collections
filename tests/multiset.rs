@@ -52,7 +52,7 @@ macro_rules! general_multiset_tests {
 
         #[test]
         fn remove_works_correctly() {
-            let mut ms: $type<_, RandomState> = $type::from_tuples($map_macro! {
+            let mut ms: $type<_, RandomState> = $type::from_iter($map_macro! {
                 "A" => 5u8,
                 "B" => 7,
                 "C" => 2,
@@ -80,7 +80,7 @@ macro_rules! general_multiset_tests {
 
         #[test]
         fn remove_n_works_correctly() {
-            let mut ms: $type<_, RandomState> = $type::from_tuples($map_macro! {
+            let mut ms: $type<_, RandomState> = $type::from_iter($map_macro! {
                 "A" => 5u8,
                 "B" => 7,
                 "C" => 2,
@@ -121,9 +121,10 @@ macro_rules! general_multiset_tests {
         }
 
         #[test]
-        fn from_tuples() {
-            let elements = vec![("A", 3u8), ("B", 2), ("A", 1), ("C", 7)];
-            let multiset: $type<_, RandomState> = $type::from_tuples(elements);
+        fn from_iter_tc() {
+            let multiset = [("A", 3u8), ("B", 2), ("A", 1), ("C", 7)]
+                .into_iter()
+                .collect::<$type<_>>();
             assert_eq!(13, multiset.len());
             assert_eq!(3, multiset.unique_len());
             let expected = $map_macro! {
