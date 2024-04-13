@@ -218,8 +218,8 @@ macro_rules! multiset_mutators_impl {
         /////////////////////////////////////
 
         /// Create a new multiset from an iterator of tuples containing the
-        /// item counts. If there are duplicate items, the _last_ entry will be
-        /// used for the count.
+        /// item counts. If there are duplicate items, the respective counts
+        /// will be summed up.
         ///
         /// # Example
         /// ```
@@ -235,21 +235,16 @@ macro_rules! multiset_mutators_impl {
         ///     ("A", 3u8), ("B", 2), ("A", 1), ("C", 7)
         /// ]);
         ///
-        /// assert_eq!(1, multiset.count("A"));
+        /// assert_eq!(4, multiset.count("A"));
         /// ```
         pub fn from_tuples<I, C>(iterable: I) -> Self
         where
             I: IntoIterator<Item = (T, C)>,
             C: Into<usize>,
         {
-            let map = iterable
-                .into_iter()
-                .map(|(element, count)| (element, count.into()))
-                .collect::<$inner_ty<T, usize, S>>();
-            Self {
-                len: map.iter().map(|(_, c)| c).sum(),
-                inner: map,
-            }
+            let mut multiset = Self::default();
+            multiset.extend(iterable.into_iter());
+            multiset
         }
 
         /// Return a borrow of the underlying map.
@@ -285,20 +280,21 @@ macro_rules! multiset_common_traits_impl {
             }
         }
 
-        // impl<T, C> Extend<(T,C)> for $type<T>
-        // where
-        //     $($elements)*,
-        //     C: Into<usize>
-        // {
-        //     fn extend<I: IntoIterator<Item = (T,C)>>(&mut self, iterable: I) {
-        //         let iter = iterable.into_iter();
-        //         let reserve = (iter.size_hint().0 + 1) / 2;
-        //         self.reserve(reserve);
-        //         iter.for_each(move |element| {
-        //             self.insert(element);
-        //         })
-        //     }
-        // }
+        impl<T, C, S> Extend<(T,C)> for $type<T, S>
+        where
+            $($elements)*,
+            C: Into<usize>,
+            S: BuildHasher + Default
+        {
+            fn extend<I: IntoIterator<Item = (T,C)>>(&mut self, iterable: I) {
+                let iter = iterable.into_iter();
+                let reserve = (iter.size_hint().0 + 1) / 2;
+                self.reserve(reserve);
+                iter.for_each(move |(item, count)| {
+                    self.insert_n(item, count.into());
+                })
+            }
+        }
 
         impl<T, S> FromIterator<T> for $type<T, S>
         where

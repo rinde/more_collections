@@ -124,10 +124,10 @@ macro_rules! general_multiset_tests {
         fn from_tuples() {
             let elements = vec![("A", 3u8), ("B", 2), ("A", 1), ("C", 7)];
             let multiset: $type<_, RandomState> = $type::from_tuples(elements);
-            assert_eq!(10, multiset.len());
+            assert_eq!(13, multiset.len());
             assert_eq!(3, multiset.unique_len());
             let expected = $map_macro! {
-                "A" => 1,
+                "A" => 4,
                 "B" => 2,
                 "C" => 7,
             };
