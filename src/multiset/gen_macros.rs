@@ -6,6 +6,7 @@ macro_rules! multiset_base_impl {
         ///
         /// The multiset is initially created with a capacity of 0, so it will
         /// not allocate until it is first inserted into.
+        #[must_use]
         pub fn new() -> Self {
             Self {
                 inner: <$inner_ty>::new(),
@@ -17,6 +18,7 @@ macro_rules! multiset_base_impl {
         ///
         /// The multiset will be able to hold at least `capacity` _unique_ elements
         /// without reallocating. If `capacity` is 0, the multiset will not allocate.
+        #[must_use]
         pub fn with_capacity(capacity: usize) -> Self {
             Self {
                 inner: <$inner_ty>::with_capacity(capacity),
@@ -60,13 +62,13 @@ macro_rules! multiset_base2_impl {
         ///
         /// Note that the number of elements in the multiset may not be the
         /// same as the number of _unqiue_ elements in the multiset. See
-        /// [Self::unique_len()].
-        pub fn len(&self) -> usize {
+        /// [`Self::unique_len()`].
+        pub const fn len(&self) -> usize {
             self.len
         }
 
         /// Returns `true` if the multiset contains no elements.
-        pub fn is_empty(&self) -> bool {
+        pub const fn is_empty(&self) -> bool {
             self.len == 0
         }
 
@@ -74,7 +76,7 @@ macro_rules! multiset_base2_impl {
         ///
         /// Note that the number of _unique_ elements in the multiset may not be the
         /// same as the total number of elements in the multiset. See
-        /// [Self::len()].
+        /// [`Self::len()`].
         pub fn unique_len(&self) -> usize {
             self.inner.len()
         }
@@ -251,7 +253,7 @@ macro_rules! multiset_mutators_impl {
         }
 
         /// Return a borrow of the underlying map.
-        pub fn as_map(&self) -> &$inner_ty_full {
+        pub const fn as_map(&self) -> &$inner_ty_full {
             &self.inner
         }
 
@@ -268,9 +270,10 @@ macro_rules! multiset_mutators_impl {
 macro_rules! multiset_common_traits_impl {
     ($type:tt, $inner_ty:tt, ($($elements:tt)*)) => {
 
-        impl<T> Extend<T> for $type<T>
+        impl<T, S> Extend<T> for $type<T, S>
         where
-            $($elements)*
+            $($elements)*,
+            S: BuildHasher + Default
         {
             fn extend<I: IntoIterator<Item = T>>(&mut self, iterable: I) {
                 let iter = iterable.into_iter();
@@ -297,8 +300,10 @@ macro_rules! multiset_common_traits_impl {
         //     }
         // }
 
-        impl<T> std::iter::FromIterator<T> for $type<T>
-        where $($elements)*
+        impl<T, S> FromIterator<T> for $type<T, S>
+        where
+            $($elements)*,
+            S: BuildHasher + Default
         {
             fn from_iter<I: IntoIterator<Item = T>>(iterable: I) -> Self {
                 let iter = iterable.into_iter();
@@ -309,6 +314,20 @@ macro_rules! multiset_common_traits_impl {
                 multiset.extend(iter);
                 multiset
             }
+        }
+
+        impl<T, S> Default for $type<T, S>
+        where
+            $($elements)*,
+            S: BuildHasher + Default
+        {
+            fn default() -> Self {
+                Self {
+                    inner: Default::default(),
+                    len: 0,
+                }
+            }
+
         }
     };
 }
