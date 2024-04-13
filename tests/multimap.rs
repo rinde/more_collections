@@ -1,4 +1,5 @@
 #![cfg(test)]
+#![allow(unused_qualifications)]
 
 macro_rules! set_multimap_tests {
     ($type:tt) => {
@@ -636,6 +637,64 @@ macro_rules! general_multimap_tests {
                 0 => { 1, 0, 7 }
             };
             let _ = &a[&1];
+        }
+
+        #[test]
+        fn iter_supports_clone() {
+            let map = $multimap_macro! {
+                "a" => {1, 2, 3},
+                "b" => {2, 3},
+                "c" => {3}
+            };
+            let mut iter = map.iter();
+            let holdout = iter.next().unwrap();
+            // testing this clone \/
+            let actual = iter.clone().collect::<std::collections::HashSet<_>>();
+            let mut expected = map.iter().collect::<std::collections::HashSet<_>>();
+            expected.remove(&holdout);
+            assert_eq!(expected, actual);
+        }
+
+        #[test]
+        fn keys_supports_clone() {
+            let map = $multimap_macro! {
+                "a" => {1, 2, 3},
+                "b" => {2, 3},
+                "c" => {3}
+            };
+            let mut keys = map.keys();
+            let holdout = keys.next().unwrap();
+            // testing this clone \/
+            let actual = keys.clone().collect::<std::collections::HashSet<_>>();
+            let mut expected = map.keys().collect::<std::collections::HashSet<_>>();
+            expected.remove(holdout);
+            assert_eq!(expected, actual);
+        }
+
+        #[test]
+        fn values_supports_clone() {
+            let map = $multimap_macro! {
+                "a" => {1, 2, 3},
+                "b" => {2, 3},
+                "c" => {3}
+            };
+
+            let mut values = map.values();
+            let holdout = values.next().unwrap();
+            // testing this clone \/
+            let actual = values.clone().collect::<Vec<_>>();
+            let mut expected = map.values().collect::<Vec<_>>();
+
+            let mut found = false;
+            expected.retain(|v| {
+                if !found && v == &holdout {
+                    found = true;
+                    false
+                } else {
+                    true
+                }
+            });
+            assert_eq!(expected, actual);
         }
     };
 }

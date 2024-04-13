@@ -3,10 +3,14 @@
 //! # Small* collections
 //!
 //! Built on top of the excellent [smallvec](https://github.com/servo/rust-smallvec)
-//! crate, [SmallMap] and [SmallSet] are a `Map` and `Set` respectively that
+//! crate, [`SmallMap`] and [`SmallSet`] are a `Map` and `Set` respectively that
 //! are inlined if they contain fewer values than a (statically chosen)
 //! capacity `C`, otherwise they are heap allocated and backed by an
 //! `IndexMap`.
+//!
+//! # `VecMap`
+//!
+//! See [`vec_map`] for more details.
 //!
 //! # Multimap
 //!
@@ -24,18 +28,12 @@
 //! The multimap API is based on the second form, `len() == 3` and `keys_len()
 //! == 2` for the above example.
 //!
-//! | Name               | Behaves as                          | Keys order
-//! | Values order        | May contain duplicates | | ------------------ |
-//! ----------------------------------- | ------------------- |
-//! ------------------- | ---------------------- | | [HashSetMultimap]  |
-//! [`HashMap`]`<K,`[`HashSet`]`<V>>`   | Arbitrary order     | Arbitrary order
-//! | No                     | | [HashVecMultimap]  |
-//! [`HashMap`]`<K,`[`Vec`]`<V>>`       | Arbitrary order     | Insertion
-//! order[^1] | Yes                    | | [IndexSetMultimap] |
-//! [`IndexMap`]`<K,`[`IndexSet`]`<V>>` | Insertion order[^1] | Insertion
-//! order[^1] | No                     | | [IndexVecMultimap] | [`IndexMap`]`<K,
-//! `[`Vec`]`<V>>`     | Insertion order[^1] | Insertion order[^1] | Yes
-//! |
+//! | Name                 | Behaves as                          | Keys order          | Values order        | May contain duplicates |
+//! | -------------------- | ----------------------------------- | ------------------- |-------------------- | ---------------------- |
+//! | [`HashSetMultimap`]  | [`HashMap`]`<K,`[`HashSet`]`<V>>`   | Arbitrary order     | Arbitrary order     | No                     |
+//! | [`HashVecMultimap`]  | [`HashMap`]`<K,`[`Vec`]`<V>>`       | Arbitrary order     | Insertion order[^1] | Yes                    |
+//! | [`IndexSetMultimap`] | [`IndexMap`]`<K,`[`IndexSet`]`<V>>` | Insertion order[^1] | Insertion order[^1] | No                     |
+//! | [`IndexVecMultimap`] | [`IndexMap`]`<K, `[`Vec`]`<V>>`     | Insertion order[^1] | Insertion order[^1] | Yes                    |
 //!
 //! [^1]: Insertion order is preserved, unless `remove()` or `swap_remove()`
 //! is called. See more in the [IndexMap](https://docs.rs/indexmap/1.7.0/indexmap/map/struct.IndexMap.html#order) documentation.
@@ -56,25 +54,38 @@
 mod multimap;
 mod multiset;
 #[cfg(all(feature = "indexmap", feature = "smallvec", feature = "smallmap"))]
-mod small_map;
+pub mod small_map;
 #[cfg(all(
     feature = "indexmap",
     feature = "smallvec",
     feature = "smallmap",
     feature = "smallset"
 ))]
-mod small_set;
+pub mod small_set;
 
+#[cfg(feature = "vecmap")]
+pub mod vec_map;
+
+#[cfg(any(
+    feature = "hashsetmultimap",
+    feature = "hashvecmultimap",
+    feature = "indexvecmultimap",
+    feature = "indexsetmultimap"
+))]
 pub use multimap::*;
 pub use multiset::*;
 #[cfg(all(feature = "indexmap", feature = "smallvec", feature = "smallmap"))]
-pub use small_map::*;
+pub use small_map::SmallMap;
 #[cfg(all(
     feature = "indexmap",
     feature = "smallvec",
     feature = "smallmap",
     feature = "smallset"
 ))]
-pub use small_set::*;
+pub use small_set::SmallSet;
+#[cfg(feature = "vecmap")]
+pub use vec_map::IndexKey;
+#[cfg(feature = "vecmap")]
+pub use vec_map::VecMap;
 
 // TODO follow all guidelines here https://rust-lang.github.io/api-guidelines/checklist.html

@@ -6,6 +6,7 @@ macro_rules! multimap_base_impl {
         ///
         /// The multimap is initially created with a capacity of 0, so it will
         /// not allocate until it is first inserted into.
+        #[must_use]
         pub fn new() -> Self {
             Self {
                 inner: <$keys>::new(),
@@ -17,6 +18,7 @@ macro_rules! multimap_base_impl {
         ///
         /// The multimap will be able to hold at least `capacity` keys without
         /// reallocating. If `capacity` is 0, the multimap will not allocate.
+        #[must_use]
         pub fn with_key_capacity(capacity: usize) -> Self {
             Self {
                 inner: <$keys>::with_capacity(capacity),
@@ -61,13 +63,13 @@ macro_rules! multimap_base2_impl {
         ///
         /// Note that the number of elements in the multimap may not be the
         /// same as the number of keys in the multimap. See
-        /// [Self::keys_len()].
-        pub fn len(&self) -> usize {
+        /// [`Self::keys_len()`].
+        pub const fn len(&self) -> usize {
             self.len
         }
 
         /// Returns `true` if the multimap contains no elements.
-        pub fn is_empty(&self) -> bool {
+        pub const fn is_empty(&self) -> bool {
             self.len == 0
         }
 
@@ -75,7 +77,7 @@ macro_rules! multimap_base2_impl {
         ///
         /// Note that the number of keys in the multimap may not be the
         /// same as the number of elements in the multimap. See
-        /// [Self::len()].
+        /// [`Self::len()`].
         pub fn keys_len(&self) -> usize {
             self.inner.len()
         }
@@ -241,7 +243,7 @@ macro_rules! multimap_mutators_impl {
         }
 
         /// Return a borrow of the underlying map.
-        pub fn as_map(&self) -> &$keys {
+        pub const fn as_map(&self) -> &$keys {
             &self.inner
         }
 
@@ -283,6 +285,17 @@ macro_rules! index_multimap_impl {
                 self.inner.get_index_of(key)
             }
         }
+
+        /// Get a key-value pair by index, if it is present, else None.
+        pub fn get_index(&self, index: usize) -> Option<(&K, &$values)> {
+            if index >= self.inner.len() {
+                None
+            } else {
+                self.inner.get_index(index)
+            }
+        }
+
+
     };
 }
 
@@ -515,7 +528,7 @@ macro_rules! multimap_extend {
             }
         }
 
-        impl<$($generic_ids)*> std::iter::FromIterator<(K, V)> for $type<$($generic_ids)*>
+        impl<$($generic_ids)*> FromIterator<(K, V)> for $type<$($generic_ids)*>
         where
             $($keys)*,
             $($values)*,
@@ -645,13 +658,34 @@ macro_rules! impl_iter {
             }
         }
 
-        impl<'a, $($generic_ids)*> ExactSizeIterator for Iter<'a, $($generic_ids)*> {
+        impl<$($generic_ids)*> ExactSizeIterator for Iter<'_, $($generic_ids)*> {
             fn len(&self) -> usize {
                 self.len
             }
         }
 
-        impl<'a, $($generic_ids)*> std::iter::FusedIterator for Iter<'a, $($generic_ids)*> {}
+        impl<$($generic_ids)*> std::iter::FusedIterator for Iter<'_, $($generic_ids)*> {}
+
+        // FIXME(#26925) Remove in favor of `#[derive(Clone)]`
+        impl<$($generic_ids)*> Clone for Iter<'_, $($generic_ids)*> {
+            fn clone(&self) -> Self {
+                Iter {
+                    outer: self.outer.clone(),
+                    inner: self.inner.clone(),
+                    len: self.len,
+                }
+            }
+        }
+
+        impl<$($generic_ids)*> std::fmt::Debug for Iter<'_, $($generic_ids)*>
+        where
+            K: std::fmt::Debug,
+            V: std::fmt::Debug,
+        {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.debug_list().entries(self.clone()).finish()
+            }
+        }
 
         /// An iterator over the values of a multimap.
         ///
@@ -669,13 +703,31 @@ macro_rules! impl_iter {
             }
         }
 
-        impl<'a, $($generic_ids)*> ExactSizeIterator for Values<'a, $($generic_ids)*> {
+        impl<$($generic_ids)*> ExactSizeIterator for Values<'_, $($generic_ids)*> {
             fn len(&self) -> usize {
                 self.inner.len()
             }
         }
 
-        impl<'a, $($generic_ids)*> std::iter::FusedIterator for Values<'a, $($generic_ids)*> {}
+        impl<$($generic_ids)*> std::iter::FusedIterator for Values<'_, $($generic_ids)*> {}
+
+        // FIXME(#26925) Remove in favor of `#[derive(Clone)]`
+        impl<$($generic_ids)*> Clone for Values<'_, $($generic_ids)*> {
+            fn clone(&self) -> Self {
+                Values {
+                    inner: self.inner.clone(),
+                }
+            }
+        }
+
+        impl<$($generic_ids)*> std::fmt::Debug for Values<'_, $($generic_ids)*>
+        where
+            V: std::fmt::Debug,
+        {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.debug_list().entries(self.clone()).finish()
+            }
+        }
 
         impl<K, V, S> $type<K, V, S> {
             /// Return an iterator over the key-value pairs of the multimap.
@@ -694,6 +746,14 @@ macro_rules! impl_iter {
                 Values {
                     inner: self.iter(),
                 }
+            }
+        }
+
+        impl<'a, K, V, S> IntoIterator for &'a $type<K, V, S> {
+            type IntoIter = Iter<'a, $($generic_ids)*>;
+            type Item = (&'a K, &'a V);
+            fn into_iter(self) -> Self::IntoIter {
+                self.iter()
             }
         }
     }
@@ -718,13 +778,31 @@ macro_rules! impl_keys {
             }
         }
 
-        impl<'a, $($generic_ids)*> ExactSizeIterator for Keys<'a, $($generic_ids)*> {
+        impl<$($generic_ids)*> ExactSizeIterator for Keys<'_, $($generic_ids)*> {
             fn len(&self) -> usize {
                 self.inner.len()
             }
         }
 
-        impl<'a, $($generic_ids)*> std::iter::FusedIterator for Keys<'a, $($generic_ids)*> {}
+        impl<$($generic_ids)*> std::iter::FusedIterator for Keys<'_, $($generic_ids)*> {}
+
+        // FIXME(#26925) Remove in favor of `#[derive(Clone)]`
+        impl<$($generic_ids)*> Clone for Keys<'_, $($generic_ids)*> {
+            fn clone(&self) -> Self {
+                Keys {
+                    inner: self.inner.clone(),
+                }
+            }
+        }
+
+        impl<$($generic_ids)*> std::fmt::Debug for Keys<'_, $($generic_ids)*>
+        where
+            K: std::fmt::Debug,
+        {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.debug_list().entries(self.clone()).finish()
+            }
+        }
 
         impl<K, V, S> $type<K, V, S> {
             /// Return an iterator over the keys of the multimap.
@@ -742,6 +820,7 @@ macro_rules! impl_keys {
 macro_rules! impl_into_iterator {
     ($type:tt, ($($generic_ids:tt)*), $outer_iter:ty, $inner_iter:ty) => {
         /// An owning iterator over the entries of a multimap.
+        #[derive(Debug)]
         pub struct IntoIter<$($generic_ids)*> {
             outer: $outer_iter,
             inner: Option<(K, $inner_iter)>,
@@ -813,6 +892,7 @@ macro_rules! impl_into_iterator {
         /// An owning iterator over the values of a multimap.
         ///
         /// This `struct` is created by the `into_values` method on multimap.
+        #[derive(Debug)]
         pub struct IntoValues<$($generic_ids)*> {
             outer: $outer_iter,
             inner: Option<$inner_iter>,
@@ -874,6 +954,7 @@ macro_rules! impl_into_keys {
         /// An owning iterator over the keys of a multimap.
         ///
         /// This `struct` is created by the `into_keys` method on multimap.
+        #[derive(Debug)]
         pub struct IntoKeys<$($generic_ids)*> {
             inner: $inner_iter,
         }

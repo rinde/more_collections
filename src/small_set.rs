@@ -3,6 +3,8 @@ use std::fmt;
 use std::fmt::Debug;
 use std::fmt::Formatter;
 use std::hash::BuildHasher;
+use std::iter::Chain;
+use std::iter::FusedIterator;
 
 use ::core::hash::Hash;
 use indexmap::Equivalent;
@@ -14,8 +16,8 @@ use crate::SmallMap;
 /// A set-like container that can store a specified number of elements inline.
 ///
 /// `SmallSet` shares most of its API with, and behaves like,
-/// [IndexSet](indexmap::IndexSet). It can store a limited amount of data
-/// inline, backed by [SmallVec](smallvec::SmallVec). If the data exceeds the
+/// [`IndexSet`](indexmap::IndexSet). It can store a limited amount of data
+/// inline, backed by [`SmallVec`]. If the data exceeds the
 /// limit `C`, `SmallSet` will move _all_ its data over to the heap in the form
 /// of an `IndexSet`. For performance reasons, transitions between heap and
 /// inline storage should generally be avoided.
@@ -49,6 +51,7 @@ pub struct SmallSet<T, const C: usize, S = RandomState> {
 
 impl<T, const C: usize> SmallSet<T, C> {
     /// Create a new set.
+    #[must_use]
     pub fn new() -> Self {
         Self {
             data: SmallMap::new(),
@@ -77,13 +80,13 @@ impl<T, const C: usize, S> SmallSet<T, C, S> {
 
     /// The memory capacity that will be allocated inline. If the nubmer of
     /// values exceeds the inline capacity, the set will move to the heap.
-    pub fn inline_capacity(&self) -> usize {
+    pub const fn inline_capacity(&self) -> usize {
         self.data.inline_capacity()
     }
 
     /// Is the data contained by this set stored inline (`true`) or on the heap
     /// (`false`).
-    pub fn is_inline(&self) -> bool {
+    pub const fn is_inline(&self) -> bool {
         self.data.is_inline()
     }
 
@@ -150,7 +153,7 @@ where
     T: Hash + Eq,
     S: BuildHasher,
 {
-    pub fn from_keys(map: SmallMap<T, (), C, S>) -> Self {
+    pub const fn from_keys(map: SmallMap<T, (), C, S>) -> Self {
         SmallSet { data: map }
     }
 
@@ -187,6 +190,85 @@ where
     {
         self.data.remove(key).is_some()
     }
+
+    /// Return an iterator over the values that are in `self` but not `other`.
+    ///
+    /// Values are produced in the same order that they appear in `self`.
+    pub fn difference<'a, const C2: usize, S2>(
+        &'a self,
+        other: &'a SmallSet<T, C2, S2>,
+    ) -> Difference<'a, T, C2, S2>
+    where
+        S2: BuildHasher,
+    {
+        Difference {
+            iter: self.iter(),
+            other,
+        }
+    }
+
+    /// Return an iterator over the values that are in `self` or `other`,
+    /// but not in both.
+    ///
+    /// Values from `self` are produced in their original order, followed by
+    /// values from `other` in their original order.
+    pub fn symmetric_difference<'a, const C2: usize, S2>(
+        &'a self,
+        other: &'a SmallSet<T, C2, S2>,
+    ) -> SymmetricDifference<'a, T, C, S, C2, S2>
+    where
+        S2: BuildHasher,
+    {
+        let diff1 = self.difference(other);
+        let diff2 = other.difference(self);
+        SymmetricDifference {
+            iter: diff1.chain(diff2),
+        }
+    }
+
+    /// Return an iterator over the values that are in both `self` and `other`.
+    ///
+    /// Values are produced in the same order that they appear in `self`.
+    pub fn intersection<'a, const C2: usize, S2>(
+        &'a self,
+        other: &'a SmallSet<T, C2, S2>,
+    ) -> Intersection<'a, T, C2, S2>
+    where
+        S2: BuildHasher,
+    {
+        Intersection {
+            iter: self.iter(),
+            other,
+        }
+    }
+
+    /// Return an iterator over all values that are in `self` or `other`.
+    ///
+    /// Values from `self` are produced in their original order, followed by
+    /// values that are unique to `other` in their original order.
+    pub fn union<'a, const C2: usize, S2>(
+        &'a self,
+        other: &'a SmallSet<T, C2, S2>,
+    ) -> Union<'a, T, C, S>
+    where
+        S2: BuildHasher,
+    {
+        Union {
+            iter: self.iter().chain(other.difference(self)),
+        }
+    }
+
+    /// Return `true` if an equivalent to `value` exists in the set.
+    ///
+    /// Computational complexity:
+    ///  - inline: O(n)
+    ///  - heap: O(1)
+    pub fn contains<Q: ?Sized>(&self, value: &Q) -> bool
+    where
+        Q: Hash + Equivalent<T>,
+    {
+        self.data.contains_key(value)
+    }
 }
 
 impl<T, const C: usize, S> Hash for SmallSet<T, C, S>
@@ -215,15 +297,79 @@ impl<'a, T> Iterator for Iter<'a, T> {
     type Item = &'a T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next().map(|(t, _)| t)
+        self.inner.next().map(|(t, ())| t)
     }
 }
 
-impl<'a, T> ExactSizeIterator for Iter<'a, T> {
+impl<T> ExactSizeIterator for Iter<'_, T> {
     fn len(&self) -> usize {
         self.inner.len()
     }
 }
+
+impl<T> DoubleEndedIterator for Iter<'_, T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.inner.next_back().map(|(t, ())| t)
+    }
+}
+
+impl<T> FusedIterator for Iter<'_, T> {}
+
+// FIXME(#26925) Remove in favor of `#[derive(Clone)]`
+impl<T> Clone for Iter<'_, T> {
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+        }
+    }
+}
+
+impl<T: Debug> Debug for Iter<'_, T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_list().entries(self.clone()).finish()
+    }
+}
+
+impl<T, const C: usize, S> IntoIterator for SmallSet<T, C, S> {
+    type Item = T;
+
+    type IntoIter = IntoIter<T, C>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        IntoIter {
+            inner: self.data.into_iter(),
+        }
+    }
+}
+
+impl<'a, T, const C: usize, S> IntoIterator for &'a SmallSet<T, C, S> {
+    type IntoIter = Iter<'a, T>;
+    type Item = &'a T;
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+#[derive(Debug)]
+pub struct IntoIter<T, const C: usize> {
+    inner: small_map::IntoIter<T, (), C>,
+}
+
+impl<T, const C: usize> Iterator for IntoIter<T, C> {
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next().map(|(k, ())| k)
+    }
+}
+
+impl<T, const C: usize> ExactSizeIterator for IntoIter<T, C> {
+    fn len(&self) -> usize {
+        self.inner.len()
+    }
+}
+
+impl<T, const C: usize> FusedIterator for IntoIter<T, C> {}
 
 impl<T, const C: usize, S> FromIterator<T> for SmallSet<T, C, S>
 where
@@ -232,7 +378,7 @@ where
 {
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
         Self {
-            data: SmallMap::from_iter(iter.into_iter().map(|i| (i, ()))),
+            data: iter.into_iter().map(|i| (i, ())).collect(),
         }
     }
 }
@@ -243,6 +389,284 @@ where
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.debug_set().entries(self.iter()).finish()
+    }
+}
+
+pub struct Difference<'a, T, const C: usize, S> {
+    iter: Iter<'a, T>,
+    other: &'a SmallSet<T, C, S>,
+}
+
+impl<'a, T, const C: usize, S> Iterator for Difference<'a, T, C, S>
+where
+    T: Eq + Hash,
+    S: BuildHasher,
+{
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.find(|item| !self.other.contains(*item))
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (0, self.iter.size_hint().1)
+    }
+}
+
+impl<T, const C: usize, S> DoubleEndedIterator for Difference<'_, T, C, S>
+where
+    T: Eq + Hash,
+    S: BuildHasher,
+{
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.iter.rfind(|item| !self.other.contains(*item))
+    }
+}
+
+impl<T, const C: usize, S> FusedIterator for Difference<'_, T, C, S>
+where
+    T: Eq + Hash,
+    S: BuildHasher,
+{
+}
+
+// FIXME(#26925) Remove in favor of `#[derive(Clone)]`
+impl<T, const C: usize, S> Clone for Difference<'_, T, C, S> {
+    fn clone(&self) -> Self {
+        Self {
+            iter: self.iter.clone(),
+            other: self.other,
+        }
+    }
+}
+
+impl<T, const C: usize, S> Debug for Difference<'_, T, C, S>
+where
+    T: Debug + Eq + Hash,
+    S: BuildHasher,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_list().entries(self.clone()).finish()
+    }
+}
+
+pub struct SymmetricDifference<'a, T, const C1: usize, S1, const C2: usize, S2> {
+    iter: Chain<Difference<'a, T, C2, S2>, Difference<'a, T, C1, S1>>,
+}
+
+impl<'a, T, const C1: usize, S1, const C2: usize, S2> Iterator
+    for SymmetricDifference<'a, T, C1, S1, C2, S2>
+where
+    T: Eq + Hash,
+    S1: BuildHasher,
+    S2: BuildHasher,
+{
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next()
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
+
+    fn fold<B, F>(self, init: B, f: F) -> B
+    where
+        F: FnMut(B, Self::Item) -> B,
+    {
+        self.iter.fold(init, f)
+    }
+}
+
+impl<T, const C1: usize, S1, const C2: usize, S2> DoubleEndedIterator
+    for SymmetricDifference<'_, T, C1, S1, C2, S2>
+where
+    T: Eq + Hash,
+    S1: BuildHasher,
+    S2: BuildHasher,
+{
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.iter.next_back()
+    }
+
+    fn rfold<B, F>(self, init: B, f: F) -> B
+    where
+        F: FnMut(B, Self::Item) -> B,
+    {
+        self.iter.rfold(init, f)
+    }
+}
+
+impl<T, const C1: usize, S1, const C2: usize, S2> FusedIterator
+    for SymmetricDifference<'_, T, C1, S1, C2, S2>
+where
+    T: Eq + Hash,
+    S1: BuildHasher,
+    S2: BuildHasher,
+{
+}
+
+// FIXME(#26925) Remove in favor of `#[derive(Clone)]`
+impl<T, const C1: usize, S1, const C2: usize, S2> Clone
+    for SymmetricDifference<'_, T, C1, S1, C2, S2>
+where
+    T: Eq + Hash,
+    S1: BuildHasher,
+    S2: BuildHasher,
+{
+    fn clone(&self) -> Self {
+        Self {
+            iter: self.iter.clone(),
+        }
+    }
+}
+
+impl<T, const C1: usize, S1, const C2: usize, S2> Debug
+    for SymmetricDifference<'_, T, C1, S1, C2, S2>
+where
+    T: Eq + Hash + Debug,
+    S1: BuildHasher,
+    S2: BuildHasher,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_list().entries(self.clone()).finish()
+    }
+}
+
+pub struct Intersection<'a, T, const C: usize, S> {
+    iter: Iter<'a, T>,
+    other: &'a SmallSet<T, C, S>,
+}
+
+impl<'a, T, const C: usize, S> Iterator for Intersection<'a, T, C, S>
+where
+    T: Eq + Hash,
+    S: BuildHasher,
+{
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.find(|item| self.other.contains(*item))
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (0, self.iter.size_hint().1)
+    }
+}
+
+impl<T, const C: usize, S> DoubleEndedIterator for Intersection<'_, T, C, S>
+where
+    T: Eq + Hash,
+    S: BuildHasher,
+{
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.iter.rfind(|item| self.other.contains(*item))
+    }
+}
+
+impl<T, const C: usize, S> FusedIterator for Intersection<'_, T, C, S>
+where
+    T: Eq + Hash,
+    S: BuildHasher,
+{
+}
+
+// FIXME(#26925) Remove in favor of `#[derive(Clone)]`
+impl<T, const C: usize, S> Clone for Intersection<'_, T, C, S>
+where
+    T: Eq + Hash,
+    S: BuildHasher,
+{
+    fn clone(&self) -> Self {
+        Self {
+            iter: self.iter.clone(),
+            other: self.other,
+        }
+    }
+}
+
+impl<T, const C: usize, S> Debug for Intersection<'_, T, C, S>
+where
+    T: Debug + Eq + Hash,
+    S: BuildHasher,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_list().entries(self.clone()).finish()
+    }
+}
+
+pub struct Union<'a, T, const C: usize, S> {
+    iter: Chain<Iter<'a, T>, Difference<'a, T, C, S>>,
+}
+
+impl<'a, T, const C: usize, S> Iterator for Union<'a, T, C, S>
+where
+    T: Eq + Hash,
+    S: BuildHasher,
+{
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next()
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
+
+    fn fold<B, F>(self, init: B, f: F) -> B
+    where
+        F: FnMut(B, Self::Item) -> B,
+    {
+        self.iter.fold(init, f)
+    }
+}
+
+impl<T, const C: usize, S> DoubleEndedIterator for Union<'_, T, C, S>
+where
+    T: Eq + Hash,
+    S: BuildHasher,
+{
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.iter.next_back()
+    }
+
+    fn rfold<B, F>(self, init: B, f: F) -> B
+    where
+        F: FnMut(B, Self::Item) -> B,
+    {
+        self.iter.rfold(init, f)
+    }
+}
+
+impl<T, const C: usize, S> FusedIterator for Union<'_, T, C, S>
+where
+    T: Eq + Hash,
+    S: BuildHasher,
+{
+}
+
+// FIXME(#26925) Remove in favor of `#[derive(Clone)]`
+impl<T, const C: usize, S> Clone for Union<'_, T, C, S>
+where
+    T: Eq + Hash,
+    S: BuildHasher,
+{
+    fn clone(&self) -> Self {
+        Self {
+            iter: self.iter.clone(),
+        }
+    }
+}
+
+impl<T, const C: usize, S> Debug for Union<'_, T, C, S>
+where
+    T: Debug + Eq + Hash,
+    S: BuildHasher,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_list().entries(self.clone()).finish()
     }
 }
 
@@ -310,11 +734,24 @@ mod test {
 
     #[test]
     fn iter_iterates_in_insertion_order() {
-        let set: SmallSet<_, 5> = smallset! { 0, 1, 2, 5, 2};
-        assert_eq!(4, set.len());
-        let actual = set.iter().copied().collect::<Vec<_>>();
-        let expected = vec![0, 1, 2, 5];
-        assert_eq!(expected, actual);
+        fn test<const C: usize>(inline: bool) {
+            let inline_map: SmallSet<_, C> = smallset! {
+                1, 0, 4
+            };
+            assert_eq!(inline, inline_map.is_inline());
+            assert_eq!(
+                vec![&1, &0, &4],
+                inline_map.iter().collect::<Vec<_>>(),
+                "iter() does not return values in the correct order"
+            );
+            assert_eq!(
+                vec![1, 0, 4],
+                inline_map.into_iter().collect::<Vec<_>>(),
+                "into_iter() does not return values in the correct order"
+            );
+        }
+        test::<1>(false);
+        test::<3>(true);
     }
 
     #[test]
@@ -328,7 +765,6 @@ mod test {
         // | already existing    | Stay inline  | Same as existing   |
         // | already existing    | Stay on heap | Same as existing   |
 
-        let values = vec![10, 5, 86, 93];
         struct TestCase {
             name: &'static str,
             initial_values: Vec<usize>,
@@ -338,6 +774,7 @@ mod test {
             expected_values: Vec<usize>,
             expected_return: (usize, bool),
         }
+        let values = [10, 5, 86, 93];
         let test_cases = [
             TestCase {
                 name: "new key/value, stay inline",
@@ -464,5 +901,161 @@ mod test {
         let actual = format!("{:?}", smallset_inline! {0, 1, 2});
         let expected = "{0, 1, 2}";
         assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn test_difference() {
+        fn test<const C1: usize, const C2: usize>(inline_a: bool, inline_b: bool) {
+            let set_a: SmallSet<&'static str, C1> = smallset! {"2", "1", "3", "b"};
+            let set_b: SmallSet<&'static str, C2> = smallset! {"2", "d", "1", "3", "a"};
+            assert_eq!(inline_a, set_a.is_inline());
+            assert_eq!(inline_b, set_b.is_inline());
+
+            let diff_a = set_a.difference(&set_b).copied().collect::<Vec<_>>();
+            assert_eq!(vec!["b"], diff_a);
+            let diff_b = set_b.difference(&set_a).copied().collect::<Vec<_>>();
+            assert_eq!(vec!["d", "a"], diff_b);
+            let diff_b_reverse = set_b.difference(&set_a).copied().rev().collect::<Vec<_>>();
+            assert_eq!(vec!["a", "d"], diff_b_reverse);
+
+            assert_eq!(0, set_a.difference(&set_a).count());
+        }
+        test::<1, 1>(false, false);
+        test::<1, 5>(false, true);
+        test::<4, 5>(true, true);
+        test::<4, 4>(true, false);
+    }
+
+    #[test]
+    fn test_symmetric_difference() {
+        fn test<const C1: usize, const C2: usize>(inline_a: bool, inline_b: bool) {
+            let set_a: SmallSet<&'static str, C1> = smallset! {"2", "1", "3", "b"};
+            let set_b: SmallSet<&'static str, C2> = smallset! {"2", "d", "1", "3", "a"};
+            assert_eq!(inline_a, set_a.is_inline());
+            assert_eq!(inline_b, set_b.is_inline());
+
+            let diff_a = set_a
+                .symmetric_difference(&set_b)
+                .copied()
+                .collect::<Vec<_>>();
+            assert_eq!(vec!["b", "d", "a"], diff_a);
+            let diff_b = set_b
+                .symmetric_difference(&set_a)
+                .copied()
+                .collect::<Vec<_>>();
+            assert_eq!(vec!["d", "a", "b"], diff_b);
+            let diff_b_reverse = set_b
+                .symmetric_difference(&set_a)
+                .copied()
+                .rev()
+                .collect::<Vec<_>>();
+            assert_eq!(vec!["b", "a", "d"], diff_b_reverse);
+
+            assert_eq!(0, set_a.symmetric_difference(&set_a).count());
+        }
+        test::<1, 1>(false, false);
+        test::<1, 5>(false, true);
+        test::<4, 5>(true, true);
+        test::<4, 4>(true, false);
+    }
+
+    #[test]
+    fn test_intersection() {
+        fn test<const C1: usize, const C2: usize>(inline_a: bool, inline_b: bool) {
+            let set_a: SmallSet<&'static str, C1> = smallset! {"2", "1", "3", "b"};
+            let set_b: SmallSet<&'static str, C2> = smallset! {"1", "d", "3", "2", "a"};
+            assert_eq!(inline_a, set_a.is_inline());
+            assert_eq!(inline_b, set_b.is_inline());
+
+            let diff_a = set_a.intersection(&set_b).copied().collect::<Vec<_>>();
+            assert_eq!(vec!["2", "1", "3"], diff_a);
+            let diff_b = set_b.intersection(&set_a).copied().collect::<Vec<_>>();
+            assert_eq!(vec!["1", "3", "2"], diff_b);
+            let diff_b_reverse = set_b
+                .intersection(&set_a)
+                .copied()
+                .rev()
+                .collect::<Vec<_>>();
+            assert_eq!(vec!["2", "3", "1"], diff_b_reverse);
+
+            assert_eq!(
+                vec!["2", "1", "3", "b"],
+                set_a.intersection(&set_a).copied().collect::<Vec<_>>()
+            );
+        }
+        test::<1, 1>(false, false);
+        test::<1, 5>(false, true);
+        test::<4, 5>(true, true);
+        test::<4, 4>(true, false);
+    }
+
+    #[test]
+    fn test_union() {
+        fn test<const C1: usize, const C2: usize>(inline_a: bool, inline_b: bool) {
+            let set_a: SmallSet<&'static str, C1> = smallset! {"2", "1", "3", "b"};
+            let set_b: SmallSet<&'static str, C2> = smallset! {"1", "d", "3", "2", "a"};
+            assert_eq!(inline_a, set_a.is_inline());
+            assert_eq!(inline_b, set_b.is_inline());
+
+            let diff_a = set_a.union(&set_b).copied().collect::<Vec<_>>();
+            assert_eq!(vec!["2", "1", "3", "b", "d", "a"], diff_a);
+            let diff_b = set_b.union(&set_a).copied().collect::<Vec<_>>();
+            assert_eq!(vec!["1", "d", "3", "2", "a", "b"], diff_b);
+            let diff_b_reverse = set_b.union(&set_a).copied().rev().collect::<Vec<_>>();
+            assert_eq!(vec!["b", "a", "2", "3", "d", "1"], diff_b_reverse);
+
+            assert_eq!(
+                vec!["2", "1", "3", "b"],
+                set_a.union(&set_a).copied().collect::<Vec<_>>()
+            );
+        }
+        test::<1, 1>(false, false);
+        test::<1, 5>(false, true);
+        test::<4, 5>(true, true);
+        test::<4, 4>(true, false);
+    }
+
+    #[test]
+    fn get_index_of_and_contains_test() {
+        fn test<const C: usize>(inline: bool) {
+            let set: SmallSet<&'static str, C> = smallset! {"2", "1", "3"};
+            assert_eq!(inline, set.is_inline());
+
+            assert_eq!(None, set.get_index_of(&"0"));
+            assert!(!set.contains(&"0"));
+            assert_eq!(None, set.get_index_of(&MyType(0)));
+            assert!(!set.contains(&MyType(0)));
+
+            assert_eq!(Some(1), set.get_index_of(&"1"));
+            assert!(set.contains(&"1"));
+            assert_eq!(Some(1), set.get_index_of(&MyType(1)));
+            assert!(set.contains(&MyType(1)));
+            assert_eq!(Some(0), set.get_index_of(&"2"));
+            assert!(set.contains(&"2"));
+            assert_eq!(Some(0), set.get_index_of(&MyType(2)));
+            assert!(set.contains(&MyType(2)));
+            assert_eq!(Some(2), set.get_index_of(&"3"));
+            assert!(set.contains(&"3"));
+            assert_eq!(Some(2), set.get_index_of(&MyType(3)));
+            assert!(set.contains(&MyType(3)));
+        }
+        test::<1>(false);
+        test::<3>(true);
+    }
+
+    // Type for testing equivalence to String
+    struct MyType(usize);
+
+    // Hash needs to be equivalent to String::hash
+    impl Hash for MyType {
+        fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+            self.0.to_string().hash(state);
+        }
+    }
+
+    impl Equivalent<&'static str> for MyType {
+        fn equivalent(&self, key: &&'static str) -> bool {
+            &self.0.to_string() == key
+        }
     }
 }

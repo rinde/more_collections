@@ -4,6 +4,7 @@ use std::fmt;
 use std::fmt::Debug;
 use std::fmt::Formatter;
 use std::hash::BuildHasher;
+use std::iter::FusedIterator;
 use std::mem;
 use std::ops::Index;
 use std::ops::IndexMut;
@@ -16,11 +17,11 @@ use smallvec::SmallVec;
 /// A map-like container that can store a specified number of elements inline.
 ///
 /// `SmallMap` shares most of its API with, and behaves like
-/// [IndexMap](indexmap::IndexMap). It can store a limited amount of data
-/// inline, backed by [SmallVec]. If the data exceeds the limit `C`, `SmallMap`
-/// will move _all_ its data over to the heap in the form of an `IndexMap`. For
-/// performance reasons, transitions between heap and inline storage should
-/// generally be avoided.
+/// [`IndexMap`]. It can store a limited amount of data
+/// inline, backed by [`SmallVec`]. If the data exceeds the limit `C`,
+/// `SmallMap` will move _all_ its data over to the heap in the form of an
+/// `IndexMap`. For performance reasons, transitions between heap and inline
+/// storage should generally be avoided.
 ///
 /// The `SmallMap` datastructure is meant for situations where the data does not
 /// exceed `C` _most of the time_ but it still needs to support cases where the
@@ -57,6 +58,7 @@ enum MapData<K, V, const C: usize, S = RandomState> {
 
 impl<K, V, const C: usize> SmallMap<K, V, C> {
     /// Create a new map.
+    #[must_use]
     pub fn new() -> Self {
         debug_assert!(
                 C > 0,
@@ -92,13 +94,13 @@ impl<K, V, const C: usize, S> SmallMap<K, V, C, S> {
 
     /// The memory capacity that will be allocated inline. If the nubmer of
     /// values exceeds the inline capacity, the map will move to the heap.
-    pub fn inline_capacity(&self) -> usize {
+    pub const fn inline_capacity(&self) -> usize {
         C
     }
 
     /// Is the data contained by this map stored inline (`true`) or on the heap
     /// (`false`).
-    pub fn is_inline(&self) -> bool {
+    pub const fn is_inline(&self) -> bool {
         matches!(self.data, MapData::Inline(_))
     }
 
@@ -184,6 +186,7 @@ where
         match &self.data {
             MapData::Inline(vec) => {
                 if index < self.len() {
+                    #[allow(clippy::map_identity)] // false positive
                     Some(&vec[index]).map(|(k, v)| (k, v))
                 } else {
                     None
@@ -209,7 +212,8 @@ where
                     None
                 }
             }
-            MapData::Heap(map) => map.get_index_mut(index).map(|(k, v)| (&*k, v)),
+            #[allow(clippy::map_identity)] // false positive
+            MapData::Heap(map) => map.get_index_mut(index).map(|(k, v)| (k, v)),
         }
     }
 
@@ -240,6 +244,18 @@ where
             Some(index) => Entry::Occupied(self, index),
             None => Entry::Vacant(self, key),
         }
+    }
+
+    /// Return `true` if an equivalent to `key` exists in the map.
+    ///
+    /// Computational complexity:
+    ///  - inline: O(n)
+    ///  - heap: O(1)
+    pub fn contains_key<Q: ?Sized>(&self, key: &Q) -> bool
+    where
+        Q: Hash + Equivalent<K>,
+    {
+        self.get_index_of(key).is_some()
     }
 
     /// Convert the specified map and turn it into a `SmallMap`.
@@ -324,9 +340,13 @@ where
     ///
     /// If the value is found then [`Result::Ok`] is returned, containing the
     /// index of the matching element. If there are multiple matches, then any
-    /// one of the matches could be returned. If the value is not found then
-    /// [`Result::Err`] is returned, containing the index where a matching
-    /// element could be inserted while maintaining sorted order.
+    /// one of the matches could be returned.
+    ///
+    /// # Errors
+    ///
+    /// If the value is not found then [`Result::Err`] is returned, containing
+    /// the index where a matching element could be inserted while maintaining
+    /// sorted order.
     pub fn binary_search_by<'a, F>(&'a self, mut f: F) -> Result<usize, usize>
     where
         F: FnMut((&'a K, &'a V)) -> Ordering,
@@ -414,7 +434,7 @@ where
 impl<K, V, const C: usize, S> Default for SmallMap<K, V, C, S> {
     fn default() -> Self {
         Self {
-            data: Default::default(),
+            data: MapData::default(),
         }
     }
 }
@@ -439,8 +459,8 @@ where
 }
 impl<K, V, const C: usize, S> PartialEq for SmallMap<K, V, C, S>
 where
-    K: Hash + Eq,
-    V: Eq,
+    K: Hash + PartialEq,
+    V: PartialEq,
 {
     fn eq(&self, other: &Self) -> bool {
         self.iter().eq(other.iter())
@@ -513,13 +533,14 @@ impl<'a, K, V> Iterator for Iter<'a, K, V> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self {
+            #[allow(clippy::map_identity)] // false positive
             Iter::Inline(iter) => iter.next().map(|(k, v)| (k, v)),
             Iter::Heap(iter) => iter.next(),
         }
     }
 }
 
-impl<'a, K, V> ExactSizeIterator for Iter<'a, K, V> {
+impl<K, V> ExactSizeIterator for Iter<'_, K, V> {
     fn len(&self) -> usize {
         match self {
             Iter::Inline(iter) => iter.len(),
@@ -528,6 +549,34 @@ impl<'a, K, V> ExactSizeIterator for Iter<'a, K, V> {
     }
 }
 
+impl<K, V> DoubleEndedIterator for Iter<'_, K, V> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        match self {
+            #[allow(clippy::map_identity)] // false positive
+            Iter::Inline(iter) => iter.next_back().map(|(k, v)| (k, v)),
+            Iter::Heap(iter) => iter.next_back(),
+        }
+    }
+}
+
+impl<K, V> FusedIterator for Iter<'_, K, V> {}
+
+impl<K, V> Clone for Iter<'_, K, V> {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Inline(arg0) => Self::Inline(arg0.clone()),
+            Self::Heap(arg0) => Self::Heap(arg0.clone()),
+        }
+    }
+}
+
+impl<K: Debug, V: Debug> Debug for Iter<'_, K, V> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_list().entries(self.clone()).finish()
+    }
+}
+
+#[derive(Debug)]
 pub enum IterMut<'a, K, V> {
     Inline(std::slice::IterMut<'a, (K, V)>),
     Heap(indexmap::map::IterMut<'a, K, V>),
@@ -553,6 +602,8 @@ impl<K, V> ExactSizeIterator for IterMut<'_, K, V> {
     }
 }
 
+impl<K, V> FusedIterator for IterMut<'_, K, V> {}
+
 impl<K, V, const C: usize, S> IntoIterator for SmallMap<K, V, C, S> {
     type Item = (K, V);
 
@@ -563,6 +614,22 @@ impl<K, V, const C: usize, S> IntoIterator for SmallMap<K, V, C, S> {
             MapData::Inline(vec) => IntoIter::Inline(vec.into_iter()),
             MapData::Heap(map) => IntoIter::Heap(map.into_iter()),
         }
+    }
+}
+
+impl<'a, K, V, const C: usize, S> IntoIterator for &'a SmallMap<K, V, C, S> {
+    type IntoIter = Iter<'a, K, V>;
+    type Item = (&'a K, &'a V);
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+impl<'a, K, V, const C: usize, S> IntoIterator for &'a mut SmallMap<K, V, C, S> {
+    type IntoIter = IterMut<'a, K, V>;
+    type Item = (&'a K, &'a mut V);
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter_mut()
     }
 }
 
@@ -591,6 +658,25 @@ impl<K, V> ExactSizeIterator for Keys<'_, K, V> {
     }
 }
 
+impl<K, V> FusedIterator for Keys<'_, K, V> {}
+
+// FIXME(#26925) Remove in favor of `#[derive(Clone)]`
+impl<K, V> Clone for Keys<'_, K, V> {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Inline(arg0) => Self::Inline(arg0.clone()),
+            Self::Heap(arg0) => Self::Heap(arg0.clone()),
+        }
+    }
+}
+
+impl<K: Debug, V> Debug for Keys<'_, K, V> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_list().entries(self.clone()).finish()
+    }
+}
+
+#[derive(Debug)]
 pub enum IntoIter<K, V, const C: usize> {
     Inline(smallvec::IntoIter<[(K, V); C]>),
     Heap(indexmap::map::IntoIter<K, V>),
@@ -601,6 +687,7 @@ impl<K, V, const C: usize> Iterator for IntoIter<K, V, C> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self {
+            #[allow(clippy::map_identity)] // false positive
             IntoIter::Inline(iter) => iter.next().map(|(k, v)| (k, v)),
             IntoIter::Heap(iter) => iter.next(),
         }
@@ -616,6 +703,8 @@ impl<K, V, const C: usize> ExactSizeIterator for IntoIter<K, V, C> {
     }
 }
 
+impl<K, V, const C: usize> FusedIterator for IntoIter<K, V, C> {}
+
 impl<K, V, const C: usize, S> FromIterator<(K, V)> for SmallMap<K, V, C, S>
 where
     K: Hash + Eq,
@@ -625,22 +714,23 @@ where
         let iter = iterable.into_iter();
         let (lower_bound, _) = iter.size_hint();
         if lower_bound <= C {
-            let vec = SmallVec::<[(K, V); C]>::from_iter(iter);
-            // If the lower bound of the size hint is off, such that the actual vector
-            // length exceeds the inline capacity, then the data will be moved to an
-            // IndexMap _after_ it was moved into the SmallVec.
-            if vec.len() > C {
+            let mut map = Self {
+                data: MapData::Inline(SmallVec::default()),
+            };
+            iter.for_each(|(key, value)| {
+                map.insert(key, value);
+            });
+            map
+        } else {
+            let mut index_map = iter.collect::<IndexMap<_, _, S>>();
+            if index_map.len() <= C {
                 Self {
-                    data: MapData::Heap(IndexMap::from_iter(vec)),
+                    data: MapData::Inline(index_map.drain(0..index_map.len()).collect()),
                 }
             } else {
                 Self {
-                    data: MapData::Inline(vec),
+                    data: MapData::Heap(index_map),
                 }
-            }
-        } else {
-            Self {
-                data: MapData::Heap(IndexMap::from_iter(iter)),
             }
         }
     }
@@ -651,12 +741,13 @@ pub enum Entry<'a, K, V, const C: usize, S> {
     Vacant(&'a mut SmallMap<K, V, C, S>, K),
 }
 
-impl<'a, K, V, const C: usize, S> Entry<'a, K, V, C, S>
+impl<K, V, const C: usize, S> Entry<'_, K, V, C, S>
 where
     K: Hash + Eq,
     S: BuildHasher,
 {
     /// Modifies the entry if it is occupied. Otherwise this is a no-op.
+    #[allow(clippy::return_self_not_must_use)] // no need to use Entry after this operation
     pub fn and_modify<F>(self, f: F) -> Self
     where
         F: FnOnce(&mut V),
@@ -666,7 +757,7 @@ where
                 f(map.get_index_mut(index).map(|(_k, v)| v).unwrap());
                 Entry::Occupied(map, index)
             }
-            x => x,
+            x @ Entry::Vacant(_, _) => x,
         }
     }
 }
@@ -686,6 +777,53 @@ where
                 &mut map[index]
             }
             Entry::Occupied(map, index) => &mut map[index],
+        }
+    }
+}
+
+impl<'a, K, V, const C: usize, S> Entry<'a, K, V, C, S>
+where
+    K: Hash + Eq,
+    V: Default,
+    S: BuildHasher + Default,
+{
+    /// Ensures a value is in the entry by inserting the default value if empty,
+    /// and returns a mutable reference to the value in the entry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use more_collections::SmallMap;
+    ///
+    /// let mut map: SmallMap<&str, Option<u32>, 2> = SmallMap::new();
+    /// map.entry("lalaland").or_default();
+    ///
+    /// assert_eq!(map["lalaland"], None);
+    /// ```
+    pub fn or_default(self) -> &'a mut V {
+        match self {
+            Entry::Vacant(map, key) => {
+                let (index, _) = map.insert_full(key, Default::default());
+                &mut map[index]
+            }
+            Entry::Occupied(map, index) => &mut map[index],
+        }
+    }
+}
+
+impl<K, V, const C: usize, S> Debug for Entry<'_, K, V, C, S>
+where
+    K: Hash + Eq + Debug,
+    V: Default + Debug,
+    S: BuildHasher + Default,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Entry::Vacant(map, key) => f
+                .debug_tuple(stringify!(Entry))
+                .field(&(key, map.get(key)))
+                .finish(),
+            Entry::Occupied(_, index) => f.debug_tuple("VacantEntry").field(&index).finish(),
         }
     }
 }
@@ -822,15 +960,8 @@ mod test {
     }
 
     #[test]
+    #[allow(clippy::too_many_lines)] // fine for tests
     fn remove_tests() {
-        let values = vec![
-            (10, "ten"),
-            (5, "five"),
-            (86, "eighty-six"),
-            (93, "ninety-three"),
-            (17, "seven-teen"),
-            (1, "one"),
-        ];
         struct TestCase {
             name: &'static str,
             initial_values: Vec<(usize, &'static str)>,
@@ -840,6 +971,14 @@ mod test {
             expected_values: Vec<(usize, &'static str)>,
             expected_return: Option<(usize, usize, &'static str)>,
         }
+        let values = [
+            (10, "ten"),
+            (5, "five"),
+            (86, "eighty-six"),
+            (93, "ninety-three"),
+            (17, "seven-teen"),
+            (1, "one"),
+        ];
         let test_cases = [
             TestCase {
                 name: "remove key from the middle swaps last item into middle when inline",
@@ -989,6 +1128,7 @@ mod test {
     }
 
     #[test]
+    #[allow(clippy::too_many_lines)] // fine for tests
     fn insert_and_insert_full_tests() {
         // Test cases:
         // | Key/Value           | Memory       | Insertion position |
@@ -999,12 +1139,6 @@ mod test {
         // | overwrites existing | Stay inline  | Same as existing   |
         // | overwrites existing | Stay on heap | Same as existing   |
 
-        let values = vec![
-            (10, "ten"),
-            (5, "five"),
-            (86, "eighty-six"),
-            (93, "ninety-three"),
-        ];
         struct TestCase {
             name: &'static str,
             initial_values: Vec<(usize, &'static str)>,
@@ -1014,6 +1148,12 @@ mod test {
             expected_values: Vec<(usize, &'static str)>,
             expected_return: (usize, Option<&'static str>),
         }
+        let values = [
+            (10, "ten"),
+            (5, "five"),
+            (86, "eighty-six"),
+            (93, "ninety-three"),
+        ];
         let test_cases = [
             TestCase {
                 name: "new key/value, stay inline",
@@ -1154,6 +1294,15 @@ mod test {
     fn empty_small_maps_are_equal() {
         let map1: SmallMap<usize, usize, 3> = smallmap! {};
         let map2: SmallMap<usize, usize, 3> = smallmap! {};
+        assert_eq!(map1, map2);
+    }
+
+    #[test]
+    fn small_map_partial_eq_only_requires_partial_eq_bound() {
+        #[derive(Hash, Debug, PartialEq)]
+        struct PartialEqType(usize);
+        let map1: SmallMap<usize, PartialEqType, 2> = smallmap! {};
+        let map2: SmallMap<usize, PartialEqType, 2> = smallmap! {};
         assert_eq!(map1, map2);
     }
 
@@ -1325,21 +1474,29 @@ mod test {
     }
 
     #[test]
-    fn get_index_of_test() {
+    fn get_index_of_and_contains_test() {
         fn test<const C: usize>(inline: bool) {
             let map: SmallMap<&'static str, usize, C> =
                 smallmap! {"2" => 222, "1" => 111, "3" => 333};
             assert_eq!(inline, map.is_inline());
 
             assert_eq!(None, map.get_index_of(&"0"));
+            assert!(!map.contains_key(&"0"));
             assert_eq!(None, map.get_index_of(&MyType(0)));
+            assert!(!map.contains_key(&MyType(0)));
 
             assert_eq!(Some(1), map.get_index_of(&"1"));
+            assert!(map.contains_key(&"1"));
             assert_eq!(Some(1), map.get_index_of(&MyType(1)));
+            assert!(map.contains_key(&MyType(1)));
             assert_eq!(Some(0), map.get_index_of(&"2"));
+            assert!(map.contains_key(&"2"));
             assert_eq!(Some(0), map.get_index_of(&MyType(2)));
+            assert!(map.contains_key(&MyType(2)));
             assert_eq!(Some(2), map.get_index_of(&"3"));
+            assert!(map.contains_key(&"3"));
             assert_eq!(Some(2), map.get_index_of(&MyType(3)));
+            assert!(map.contains_key(&MyType(3)));
         }
         test::<1>(false);
         test::<3>(true);
@@ -1469,11 +1626,30 @@ mod test {
         // Even though the iterator says that it's len is 1, which would fit inline.
         // The actual len is 4 which does not fit inline. This test checks whether the
         // data is correctly allocated on the heap.
-        let map = SmallMap::<_, _, 3>::from_iter(iter);
+        let map = iter.collect::<SmallMap<_, _, 3>>();
         assert!(!map.is_inline());
 
         let output = map.into_iter().collect::<Vec<_>>();
         assert_eq!(data, output);
+    }
+
+    #[test]
+    fn from_iterator_duplicate_keys() {
+        // input fits inline, should stay inline
+        let data = vec![(0, ()), (1, ()), (0, ())];
+        let map = SmallMap::<_, _, 3>::from_iter(data);
+
+        assert_eq!(2, map.len());
+        assert_eq!(vec![0, 1], map.keys().copied().collect::<Vec<_>>());
+        assert!(map.is_inline());
+
+        // input doesn't fit inline, but because of duplicates it should move inline
+        let data = vec![(0, ()), (1, ()), (0, ()), (1, ())];
+        let map = SmallMap::<_, _, 3>::from_iter(data);
+
+        assert_eq!(2, map.len());
+        assert_eq!(vec![0, 1], map.keys().copied().collect::<Vec<_>>());
+        assert!(map.is_inline());
     }
 
     #[test]
@@ -1488,12 +1664,12 @@ mod test {
         expected = "Cannot instantiate SmallMap with no inline capacity, use positive capacity or use IndexMap instead"
     )]
     fn new_fails_on_zero_capacity() {
-        SmallMap::<usize, usize, 0>::new();
+        let _unused = SmallMap::<usize, usize, 0>::new();
     }
 
     #[test]
     fn binary_search_test() {
-        fn find_key(k: i32, target: i32) -> Ordering {
+        const fn find_key(k: i32, target: i32) -> Ordering {
             match k {
                 x if x == target => Ordering::Equal,
                 x if x < target => Ordering::Less,
