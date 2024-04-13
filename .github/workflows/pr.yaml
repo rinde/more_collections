@@ -7,9 +7,9 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
-      - uses: arduino/setup-protoc@v1
+      - uses: taiki-e/install-action@v2
         with:
-          version: '3.x'
+          tool: just
       - uses: actions-rs/toolchain@v1.0.7
         with:
           override: true
@@ -17,14 +17,14 @@ jobs:
       - uses: Swatinem/rust-cache@v1
         with:
           sharedKey: debug-build
-      - run: make test
+      - run: just test
   lint:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
-      - uses: arduino/setup-protoc@v1
+      - uses: taiki-e/install-action@v2
         with:
-          version: '3.x'
+          tool: just
       - run: |
           echo "RUST_TOOLCHAIN_NIGHTLY=$(cat ./rust-toolchain-nightly)" >> $GITHUB_ENV
       - uses: actions-rs/toolchain@v1.0.7
@@ -37,4 +37,4 @@ jobs:
       - uses: Swatinem/rust-cache@v1
         with:
           sharedKey: debug-build-nightly
-      - run: make lint
+      - run: just lint "strict"
