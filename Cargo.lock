@@ -347,7 +347,7 @@ dependencies = [
 
 [[package]]
 name = "more_collections"
-version = "0.13.5"
+version = "0.13.6"
 dependencies = [
  "criterion",
  "indexmap",
