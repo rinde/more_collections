@@ -169,9 +169,9 @@ where
     /// Computational complexity:
     ///  - inline: O(n)
     ///  - heap: O(1)
-    pub fn get_index_of<Q: ?Sized>(&self, key: &Q) -> Option<usize>
+    pub fn get_index_of<Q>(&self, key: &Q) -> Option<usize>
     where
-        Q: Hash + Equivalent<T>,
+        Q: Hash + Equivalent<T> + ?Sized,
     {
         self.data.get_index_of(key)
     }
@@ -184,9 +184,9 @@ where
     /// instead.
     ///
     /// Computes in **O(1)** time (average).
-    pub fn remove<Q: ?Sized>(&mut self, key: &Q) -> bool
+    pub fn remove<Q>(&mut self, key: &Q) -> bool
     where
-        Q: Hash + Equivalent<T>,
+        Q: Hash + Equivalent<T> + ?Sized,
     {
         self.data.remove(key).is_some()
     }
@@ -263,9 +263,9 @@ where
     /// Computational complexity:
     ///  - inline: O(n)
     ///  - heap: O(1)
-    pub fn contains<Q: ?Sized>(&self, value: &Q) -> bool
+    pub fn contains<Q>(&self, value: &Q) -> bool
     where
-        Q: Hash + Equivalent<T>,
+        Q: Hash + Equivalent<T> + ?Sized,
     {
         self.data.contains_key(value)
     }
