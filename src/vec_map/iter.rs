@@ -326,12 +326,13 @@ where
 
 #[cfg(test)]
 mod test {
+    use crate::vec_map::test::MyKey;
     use crate::vecmap;
     use crate::VecMap;
 
     #[test]
     fn test_iter() {
-        let map = vecmap! { 9u16 => "nine", 17 => "seventeen", 2 => "two"};
+        let map = vecmap! { 9 => "nine", 17 => "seventeen", 2 => "two"};
 
         // forward
         let mut iter = map.iter();
@@ -364,7 +365,7 @@ mod test {
 
     #[test]
     fn test_iter_mut() {
-        let mut map = vecmap! { 9u16 => "nine", 17 => "seventeen", 2 => "two"};
+        let mut map = vecmap! { 9 => "nine", 17 => "seventeen", 2 => "two"};
 
         // forward
         let mut iter = map.iter_mut();
@@ -403,7 +404,7 @@ mod test {
 
     #[test]
     fn test_into_iter() {
-        let map = vecmap! { 9u16 => "nine", 17 => "seventeen", 2 => "two"};
+        let map = vecmap! { 9 => "nine", 17 => "seventeen", 2 => "two"};
 
         // forward
         let mut iter = map.into_iter();
@@ -416,7 +417,7 @@ mod test {
         assert_eq!(0, iter.len());
         assert_eq!(None, iter.next());
 
-        let map = vecmap! { 9u16 => "nine", 17 => "seventeen", 2 => "two"};
+        let map = vecmap! { 9 => "nine", 17 => "seventeen", 2 => "two"};
         // back, forward, back
         let mut iter = map.into_iter();
         assert_eq!(3, iter.len());
@@ -437,7 +438,7 @@ mod test {
 
     #[test]
     fn test_keys() {
-        let map = vecmap! { 9u16 => "nine", 17 => "seventeen", 2 => "two"};
+        let map = vecmap! { 9 => "nine", 17 => "seventeen", 2 => "two"};
 
         // forward
         let mut iter = map.keys();
@@ -470,7 +471,7 @@ mod test {
 
     #[test]
     fn test_values() {
-        let map = vecmap! { 9u16 => "nine", 17 => "seventeen", 2 => "two"};
+        let map = vecmap! { MyKey(9) => "nine", MyKey(17) => "seventeen", MyKey(2) => "two"};
 
         // forward
         let mut iter = map.values();

@@ -13,14 +13,29 @@ pub use crate::vec_map::iter::*;
 /// A key that can be used in a map without needing a hasher.
 ///
 /// There needs to be a 1:1 correspondence between `IndexKey` and it's index.
-/// Typically this is used with a newtype. Default implementations exist for all
-/// unsigned integer types.
+/// Typically this is used with a newtype. A blanket implementation exists for
+/// types that implement `From<usize>`, `Into<usize>`, and `Copy`. By using a
+/// crate such as [derive_more](https://docs.rs/derive_more/latest/derive_more/)
+/// these traits can be derived.
 pub trait IndexKey: Copy {
     /// Returns the unique index that this key is associated with.
     fn as_index(&self) -> usize;
 
     /// Converts the index back to the key.
     fn from_index(index: usize) -> Self;
+}
+
+impl<T> IndexKey for T
+where
+    T: From<usize> + Into<usize> + Copy,
+{
+    fn as_index(&self) -> usize {
+        (*self).into()
+    }
+
+    fn from_index(index: usize) -> Self {
+        index.into()
+    }
 }
 
 /// A [`Vec`]-backed map.
@@ -493,33 +508,15 @@ macro_rules! vecmap {
     };
 }
 
-#[doc(hidden)]
-#[macro_export]
-macro_rules! impl_indexable{
-    ( $( $Int: ty )+ ) => {
-        $(
-            impl IndexKey for $Int {
-                #[inline]
-                #[allow(clippy::cast_possible_truncation)]
-                fn as_index(&self) -> usize {
-                    *self as usize
-                }
-
-                #[inline]
-                #[allow(clippy::cast_possible_truncation)]
-                fn from_index(index:usize) -> $Int {
-                    index as $Int
-                }
-            }
-        )+
-    }
-}
-
-impl_indexable!(u8 u16 u32 u64 u128 usize);
-
 #[cfg(test)]
 mod test {
+    use derive_more::From;
+    use derive_more::Into;
+
     use super::*;
+
+    #[derive(Into, From, Copy, Clone, Debug)]
+    pub(in crate::vec_map) struct MyKey(pub(crate) usize);
 
     #[test]
     fn test_with_capacity() {
@@ -637,19 +634,19 @@ mod test {
         let mut map = VecMap::new();
 
         // non existing
-        let return_value = map.entry(2u8).or_insert("hello");
+        let return_value = map.entry(MyKey(2)).or_insert("hello");
         assert_eq!("hello", *return_value);
-        assert_eq!(vecmap! { 2 => "hello" }, map);
+        assert_eq!(vecmap! { MyKey(2) => "hello" }, map);
 
         // already existing
-        let return_value = map.entry(2).or_insert("bye");
+        let return_value = map.entry(MyKey(2)).or_insert("bye");
         assert_eq!("hello", *return_value);
-        assert_eq!(vecmap! { 2 => "hello" }, map);
+        assert_eq!(vecmap! { MyKey(2) => "hello" }, map);
 
         // overwrite through reference
-        let result = map.entry(2).or_insert("this is ignored");
+        let result = map.entry(MyKey(2)).or_insert("this is ignored");
         *result = "bye";
-        assert_eq!(vecmap! { 2 => "bye" }, map);
+        assert_eq!(vecmap! { MyKey(2) => "bye" }, map);
     }
 
     #[test]
@@ -657,19 +654,19 @@ mod test {
         let mut map = VecMap::new();
 
         // non existing
-        let return_value = map.entry(2u16).or_insert_with(|| "hello");
+        let return_value = map.entry(MyKey(2)).or_insert_with(|| "hello");
         assert_eq!("hello", *return_value);
-        assert_eq!(vecmap! { 2 => "hello" }, map);
+        assert_eq!(vecmap! { MyKey(2) => "hello" }, map);
 
         // already existing
-        let return_value = map.entry(2).or_insert_with(|| "bye");
+        let return_value = map.entry(MyKey(2)).or_insert_with(|| "bye");
         assert_eq!("hello", *return_value);
-        assert_eq!(vecmap! { 2 => "hello" }, map);
+        assert_eq!(vecmap! { MyKey(2) => "hello" }, map);
 
         // overwrite through reference
-        let result = map.entry(2).or_insert_with(|| "this is ignored");
+        let result = map.entry(MyKey(2)).or_insert_with(|| "this is ignored");
         *result = "bye";
-        assert_eq!(vecmap! { 2 => "bye" }, map);
+        assert_eq!(vecmap! { MyKey(2) => "bye" }, map);
     }
 
     #[test]
@@ -677,20 +674,20 @@ mod test {
         let mut map = VecMap::new();
 
         // non existing
-        let return_value = map.entry(2u32).or_default();
+        let return_value = map.entry(MyKey(2)).or_default();
         assert_eq!("", *return_value);
-        assert_eq!(vecmap! { 2 => "" }, map);
+        assert_eq!(vecmap! { MyKey(2) => "" }, map);
 
         // already existing
-        map.insert(4, "hello");
-        let return_value = map.entry(4).or_default();
+        map.insert(MyKey(4), "hello");
+        let return_value = map.entry(MyKey(4)).or_default();
         assert_eq!("hello", *return_value);
-        assert_eq!(vecmap! { 2 => "", 4 => "hello" }, map);
+        assert_eq!(vecmap! { MyKey(2) => "", MyKey(4) => "hello" }, map);
 
         // overwrite through reference
-        let result = map.entry(4).or_default();
+        let result = map.entry(MyKey(4)).or_default();
         *result = "bye";
-        assert_eq!(vecmap! {2 => "", 4 => "bye"}, map);
+        assert_eq!(vecmap! {MyKey(2) => "", MyKey(4) => "bye"}, map);
     }
 
     #[test]
@@ -711,31 +708,31 @@ mod test {
 
     #[test]
     fn test_get() {
-        let map = vecmap! { 9u128 => "nine", 17 => "seventeen", 2 => "two"};
-        assert_eq!(Some(&"nine"), map.get(9));
-        assert_eq!(None, map.get(10));
-        assert_eq!(None, map.get(10000));
+        let map = vecmap! { MyKey(9) => "nine", MyKey(17) => "seventeen", MyKey(2) => "two"};
+        assert_eq!(Some(&"nine"), map.get(MyKey(9)));
+        assert_eq!(None, map.get(MyKey(10)));
+        assert_eq!(None, map.get(MyKey(10000)));
     }
 
     #[test]
     fn test_get_mut() {
-        let mut map = vecmap! { 9u16 => "nine", 17 => "seventeen", 2 => "two"};
-        assert_eq!(Some(&mut "nine"), map.get_mut(9));
-        *map.get_mut(9).unwrap() = "negen";
-        assert_eq!(Some(&"negen"), map.get(9));
+        let mut map = vecmap! { MyKey(9) => "nine", MyKey(17) => "seventeen", MyKey(2) => "two"};
+        assert_eq!(Some(&mut "nine"), map.get_mut(MyKey(9)));
+        *map.get_mut(MyKey(9)).unwrap() = "negen";
+        assert_eq!(Some(&"negen"), map.get(MyKey(9)));
 
-        assert_eq!(None, map.get_mut(10));
-        assert_eq!(None, map.get_mut(10000));
+        assert_eq!(None, map.get_mut(MyKey(10)));
+        assert_eq!(None, map.get_mut(MyKey(10000)));
     }
 
     #[test]
     fn test_len_and_is_empty() {
-        let numbers = [3u64, 9, 0, 15, 24, 2, 17, 7, 4];
+        let numbers = [3, 9, 0, 15, 24, 2, 17, 7, 4];
         let mut map = vecmap! {};
         assert_eq!(0, map.len());
         assert!(map.is_empty());
         for (i, num) in numbers.into_iter().enumerate() {
-            map.insert(num, format!("number {num}"));
+            map.insert(MyKey(num), format!("number {num}"));
             assert_eq!(i + 1, map.len());
             assert!(!map.is_empty());
         }
@@ -743,14 +740,14 @@ mod test {
 
     #[test]
     fn test_contains_key() {
-        let map = vecmap! { 9u128 => "nine", 17 => "seventeen", 2 => "two"};
+        let map = vecmap! { MyKey(9) => "nine", MyKey(17) => "seventeen", MyKey(2) => "two"};
 
-        assert!(!map.contains_key(3));
-        assert!(!map.contains_key(300));
+        assert!(!map.contains_key(MyKey(3)));
+        assert!(!map.contains_key(MyKey(300)));
 
-        assert!(map.contains_key(9));
-        assert!(map.contains_key(17));
-        assert!(map.contains_key(2));
+        assert!(map.contains_key(MyKey(9)));
+        assert!(map.contains_key(MyKey(17)));
+        assert!(map.contains_key(MyKey(2)));
     }
 
     #[test]
@@ -840,40 +837,45 @@ mod test {
 
     #[test]
     fn test_index_and_index_mut() {
-        let immutable_map = vecmap! { 8u16 => "august", 13 => "thirteen", 22 => "twentytwo"};
-        assert_eq!("august", immutable_map[8]);
-        assert_eq!("thirteen", immutable_map[13]);
-        assert_eq!("twentytwo", immutable_map[22]);
+        let immutable_map =
+            vecmap! { MyKey(8) => "august", MyKey(13) => "thirteen", MyKey(22) => "twentytwo"};
+        assert_eq!("august", immutable_map[MyKey(8)]);
+        assert_eq!("thirteen", immutable_map[MyKey(13)]);
+        assert_eq!("twentytwo", immutable_map[MyKey(22)]);
 
-        let mut map = vecmap! { 8u16 => "august", 13 => "thirteen", 22 => "twentytwo"};
-        assert_eq!("august", map[8]);
-        assert_eq!("thirteen", map[13]);
-        assert_eq!("twentytwo", map[22]);
+        let mut map =
+            vecmap! { MyKey(8) => "august", MyKey(13) => "thirteen", MyKey(22) => "twentytwo"};
+        assert_eq!("august", map[MyKey(8)]);
+        assert_eq!("thirteen", map[MyKey(13)]);
+        assert_eq!("twentytwo", map[MyKey(22)]);
 
-        map[8] = "eight";
-        assert_eq!("eight", map[8]);
+        map[MyKey(8)] = "eight";
+        assert_eq!("eight", map[MyKey(8)]);
     }
 
     #[test]
     #[should_panic(expected = "100 is out of bounds")]
     fn test_index_out_of_bounds_panics() {
-        let immutable_map = vecmap! { 8u16 => "august", 13 => "thirteen", 22 => "twentytwo"};
-        let _ = immutable_map[100];
+        let immutable_map =
+            vecmap! { MyKey(8) => "august", MyKey(13) => "thirteen", MyKey(22) => "twentytwo"};
+        let _ = immutable_map[MyKey(100)];
     }
 
     #[test]
     #[should_panic(expected = "There is no item at index 1")]
     fn test_index_non_existing_panics() {
-        let immutable_map = vecmap! { 8u16 => "august", 13 => "thirteen", 22 => "twentytwo"};
-        let _ = immutable_map[1];
+        let immutable_map =
+            vecmap! { MyKey(8) => "august", MyKey(13) => "thirteen", MyKey(22) => "twentytwo"};
+        let _ = immutable_map[MyKey(1)];
     }
 
     #[test]
     #[should_panic(expected = "100 is out of bounds")]
     #[allow(unused_must_use)]
     fn test_index_mut_out_of_bounds_panics() {
-        let mut map = vecmap! { 8u16 => "august", 13 => "thirteen", 22 => "twentytwo"};
-        let _ = &mut map[100];
+        let mut map =
+            vecmap! { MyKey(8) => "august", MyKey(13) => "thirteen", MyKey(22) => "twentytwo"};
+        let _ = &mut map[MyKey(100)];
     }
 
     #[test]
@@ -881,13 +883,15 @@ mod test {
     #[allow(unused_must_use)]
     fn test_index_mut_non_existing_panics() {
         // #[allow("unused-mut")]
-        let mut map = vecmap! { 8u16 => "august", 13 => "thirteen", 22 => "twentytwo"};
-        let _ = &mut map[1];
+        let mut map =
+            vecmap! { MyKey(8) => "august", MyKey(13) => "thirteen", MyKey(22) => "twentytwo"};
+        let _ = &mut map[MyKey(1)];
     }
 
     #[test]
     fn test_clear() {
-        let mut map = vecmap! { 8u16 => "august", 13 => "thirteen", 22 => "twentytwo"};
+        let mut map =
+            vecmap! { MyKey(8) => "august", MyKey(13) => "thirteen", MyKey(22) => "twentytwo"};
         assert_eq!(23, map.capacity());
         assert_eq!(3, map.len());
         map.clear();
@@ -897,7 +901,7 @@ mod test {
 
     #[test]
     fn test_reserve() {
-        let mut map: VecMap<u8, ()> = vecmap! {};
+        let mut map: VecMap<MyKey, ()> = vecmap! {};
         assert_eq!(0, map.capacity());
         assert!(map.is_empty());
 
@@ -912,11 +916,11 @@ mod test {
 
     #[test]
     fn test_extend() {
-        let mut map: VecMap<u8, ()> = vecmap! {};
+        let mut map: VecMap<MyKey, ()> = vecmap! {};
         assert_eq!(0, map.capacity());
         assert!(map.is_empty());
 
-        map.extend([(7, ()), (2, ())]);
+        map.extend([(MyKey(7), ()), (MyKey(2), ())]);
         assert_eq!(8, map.capacity());
         assert_eq!(2, map.len());
     }
@@ -926,12 +930,12 @@ mod test {
         let map1 = VecMap {
             data: vec![None, Some(1)],
             len: 1,
-            _marker: PhantomData::<u8>,
+            _marker: PhantomData::<MyKey>,
         };
         let map2 = VecMap {
             data: vec![None, Some(1), None, None],
             len: 1,
-            _marker: PhantomData::<u8>,
+            _marker: PhantomData::<MyKey>,
         };
         assert_eq!(map1, map2);
     }
