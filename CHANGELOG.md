@@ -6,8 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0](https://github.com/rinde/more_collections/compare/v0.13.6...v0.14.0) - 2024-06-14
+
 ### Changed
-- Breaking: `IndexSetMultimap.remove_*` and `IndexVecMultimap.remove_*` have been removed in favor of `*.shift_remove_*` and `*.swap_remove_*`
+- [**breaking**] add blanket impl for IndexKey instead of macro on all usigned ints ([#64](https://github.com/rinde/more_collections/pull/64))
+- [**breaking**] `IndexSetMultimap.remove_*` and `IndexVecMultimap.remove_*` have been removed in favor of `*.shift_remove_*` and `*.swap_remove_*` ([#63](https://github.com/rinde/more_collections/pull/63))
+
+### Other
+- Update rust to 1.79.0 ([#61](https://github.com/rinde/more_collections/pull/61))
 
 ## [0.13.6](https://github.com/rinde/more_collections/compare/v0.13.5...v0.13.6) - 2024-04-15
 
