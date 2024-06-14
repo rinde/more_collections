@@ -22,6 +22,199 @@ macro_rules! set_multimap_tests {
 macro_rules! index_multimap_tests {
     ($type:tt, $multimap_macro:tt, $values_macro:tt) => {
         #[test]
+        fn shift_remove_removes_key_when_needed() {
+            let data = vec![(0, "A1"), (0, "A2"), (0, "A3"), (1, "B1"), (2, "C1")];
+            let mut map = data.clone().into_iter().collect::<$type<_, _>>();
+            assert_eq!(
+                data.iter().map(|(x, y)| (x, y)).collect::<Vec<_>>(),
+                map.iter().collect::<Vec<_>>()
+            );
+            assert_eq!(5, map.len());
+            assert_eq!(3, map.keys_len());
+            assert!(!map.is_empty());
+
+            // key is not removed
+            assert_eq!(Some("A2"), map.shift_remove(&0, &"A2"));
+            assert!(!map.contains(&0, &"A2"));
+            assert_eq!(
+                vec![(0, "A1"), (0, "A3"), (1, "B1"), (2, "C1")],
+                map.clone().into_iter().collect::<Vec<_>>()
+            );
+            assert_eq!(4, map.len());
+            assert_eq!(3, map.keys_len());
+            assert!(!map.is_empty());
+
+            let values_for_0 = map.get(&0);
+            assert!(values_for_0.is_some());
+            assert_eq!(2, values_for_0.unwrap().len());
+            assert_eq!(
+                vec![&"A1", &"A3"],
+                values_for_0.unwrap().iter().collect::<Vec<_>>()
+            );
+
+            // key is removed
+            assert_eq!(Some("B1"), map.shift_remove(&1, &"B1"));
+            assert!(!map.contains(&1, &"B1"));
+            assert_eq!(
+                vec![(0, "A1"), (0, "A3"), (2, "C1")],
+                map.clone().into_iter().collect::<Vec<_>>()
+            );
+            assert_eq!(3, map.len());
+            assert_eq!(2, map.keys_len());
+            assert!(!map.is_empty());
+            assert_eq!(None, map.get(&1));
+        }
+
+        #[test]
+        fn swap_remove_removes_key_when_needed() {
+            let data = vec![
+                (0, "A1"),
+                (0, "A2"),
+                (0, "A3"),
+                (1, "B1"),
+                (2, "C1"),
+                (3, "D1"),
+            ];
+            let mut map = data.clone().into_iter().collect::<$type<_, _>>();
+            assert_eq!(
+                data.iter().map(|(x, y)| (x, y)).collect::<Vec<_>>(),
+                map.iter().collect::<Vec<_>>()
+            );
+            assert_eq!(6, map.len());
+            assert_eq!(4, map.keys_len());
+            assert!(!map.is_empty());
+
+            // key is not removed
+            assert_eq!(Some("A1"), map.swap_remove(&0, &"A1"));
+            assert!(!map.contains(&0, &"A1"));
+            assert_eq!(
+                vec![(0, "A3"), (0, "A2"), (1, "B1"), (2, "C1"), (3, "D1")],
+                map.clone().into_iter().collect::<Vec<_>>()
+            );
+            assert_eq!(5, map.len());
+            assert_eq!(4, map.keys_len());
+            assert!(!map.is_empty());
+
+            let values_for_0 = map.get(&0);
+            assert!(values_for_0.is_some());
+            assert_eq!(2, values_for_0.unwrap().len());
+            assert_eq!(
+                vec![&"A3", &"A2"],
+                values_for_0.unwrap().iter().collect::<Vec<_>>()
+            );
+
+            // key is removed
+            assert_eq!(Some("B1"), map.swap_remove(&1, &"B1"));
+            assert!(!map.contains(&1, &"B1"));
+            assert_eq!(
+                vec![(0, "A3"), (0, "A2"), (3, "D1"), (2, "C1")],
+                map.clone().into_iter().collect::<Vec<_>>()
+            );
+            assert_eq!(4, map.len());
+            assert_eq!(3, map.keys_len());
+            assert!(!map.is_empty());
+            assert_eq!(None, map.get(&1));
+        }
+
+        #[test]
+        fn shift_remove_key_returns_entire_value_collection_when_present() {
+            let mut map = vec![(0, "A1"), (0, "A2"), (1, "B1"), (2, "C1")]
+                .into_iter()
+                .collect::<$type<_, _>>();
+            assert_eq!(4, map.len());
+            assert_eq!(3, map.keys_len());
+
+            let expected = Some(maplit::hashset!["A1", "A2"]);
+            assert_eq!(
+                expected,
+                map.shift_remove_key(&0)
+                    .map(|r| r.into_iter().collect::<std::collections::HashSet<_>>())
+            );
+            assert_eq!(2, map.len());
+            assert_eq!(2, map.keys_len());
+            assert_eq!(
+                vec![(1, "B1"), (2, "C1")],
+                map.clone().into_iter().collect::<Vec<_>>()
+            );
+            assert_eq!(None, map.shift_remove_key(&0));
+        }
+
+        #[test]
+        fn swap_remove_key_returns_entire_value_collection_when_present() {
+            let mut map = vec![(0, "A1"), (0, "A2"), (1, "B1"), (2, "C1")]
+                .into_iter()
+                .collect::<$type<_, _>>();
+            assert_eq!(4, map.len());
+            assert_eq!(3, map.keys_len());
+
+            let expected = Some(maplit::hashset!["A1", "A2"]);
+            assert_eq!(
+                expected,
+                map.swap_remove_key(&0)
+                    .map(|r| r.into_iter().collect::<std::collections::HashSet<_>>())
+            );
+            assert_eq!(2, map.len());
+            assert_eq!(2, map.keys_len());
+            assert_eq!(
+                vec![(2, "C1"), (1, "B1")],
+                map.clone().into_iter().collect::<Vec<_>>()
+            );
+            assert_eq!(None, map.swap_remove_key(&0));
+        }
+
+        #[test]
+        fn shift_remove_key_entry_returns_entire_value_collection_when_present() {
+            let mut map = $multimap_macro! {
+                0 => {"A"},
+                1 => {"B"},
+                2 => {"C"}
+            };
+            let actual = map.shift_remove_key_entry(&0);
+            let expected = Some((0, $values_macro! { "A" }));
+            assert_eq!(expected, actual);
+            assert_eq!(
+                vec![(1, "B"), (2, "C")],
+                map.clone().into_iter().collect::<Vec<_>>()
+            );
+            assert_eq!(None, map.shift_remove_key_entry(&0));
+        }
+
+        #[test]
+        fn swap_remove_key_entry_returns_entire_value_collection_when_present() {
+            let mut map = $multimap_macro! {
+                0 => {"A"},
+                1 => {"B"},
+                2 => {"C"}
+            };
+            let actual = map.swap_remove_key_entry(&0);
+            let expected = Some((0, $values_macro! { "A" }));
+            assert_eq!(expected, actual);
+            assert_eq!(
+                vec![(2, "C"), (1, "B")],
+                map.clone().into_iter().collect::<Vec<_>>()
+            );
+            assert_eq!(None, map.swap_remove_key_entry(&0));
+        }
+
+        #[test]
+        fn shift_remove_is_noop_when_key_value_is_not_there() {
+            let data = vec![(0, "A1".to_string()), (0, "A2".to_string())];
+            let mut map = data.into_iter().collect::<$type<_, _>>();
+            assert_eq!(None, map.shift_remove(&0, &"A3".to_string()));
+            assert_eq!(2, map.len());
+            assert_eq!(1, map.keys_len());
+        }
+
+        #[test]
+        fn swap_remove_is_noop_when_key_value_is_not_there() {
+            let data = vec![(0, "A1".to_string()), (0, "A2".to_string())];
+            let mut map = data.into_iter().collect::<$type<_, _>>();
+            assert_eq!(None, map.swap_remove(&0, &"A3".to_string()));
+            assert_eq!(2, map.len());
+            assert_eq!(1, map.keys_len());
+        }
+
+        #[test]
         fn with_capacity_constructs_instance_with_correct_capacity() {
             let map7: $type<usize, usize> = $type::with_key_capacity(7);
             let map17: $type<usize, usize> = $type::with_key_capacity(35);
@@ -172,8 +365,83 @@ macro_rules! index_multimap_tests {
 }
 
 macro_rules! hash_multimap_tests {
-    ($type:tt, $multimap_macro:tt) => {
+    ($type:tt, $multimap_macro:tt, $values_macro:tt) => {
         use std::collections::HashSet;
+
+        #[test]
+        fn remove_removes_key_when_needed() {
+            let data = vec![(0, "A1".to_string()), (0, "A2".to_string())];
+            let mut map = data.into_iter().collect::<$type<_, _>>();
+            assert_eq!(2, map.len());
+            assert_eq!(1, map.keys_len());
+            assert!(!map.is_empty());
+
+            assert_eq!(Some("A2".to_string()), map.remove(&0, &"A2".to_string()));
+            assert!(!map.contains(&0, &"A2".to_string()));
+            assert_eq!(1, map.len());
+            assert_eq!(1, map.keys_len());
+            assert!(!map.is_empty());
+
+            let result = map.get(&0);
+            assert!(result.is_some());
+            assert_eq!(1, result.unwrap().len());
+            assert_eq!(
+                vec![&"A1".to_string()],
+                result.unwrap().iter().collect::<Vec<_>>()
+            );
+
+            assert_eq!(Some("A1".to_string()), map.remove(&0, &"A1".to_string()));
+            assert!(!map.contains(&0, &"A1".to_string()));
+            assert_eq!(0, map.len());
+            assert_eq!(0, map.keys_len());
+            assert!(map.is_empty());
+            assert_eq!(None, map.get(&0));
+        }
+
+        #[test]
+        fn remove_key_returns_entire_value_collection_when_present() {
+            let mut map = vec![(0, "A1".to_string()), (0, "A2".to_string())]
+                .into_iter()
+                .collect::<$type<_, _>>();
+            assert_eq!(2, map.len());
+            assert_eq!(1, map.keys_len());
+            assert!(!map.is_empty());
+
+            let expected = Some(maplit::hashset!["A1".to_string(), "A2".to_string()]);
+            assert_eq!(
+                expected,
+                map.remove_key(&0)
+                    .map(|r| r.into_iter().collect::<std::collections::HashSet<_>>())
+            );
+            assert_eq!(0, map.len());
+            assert_eq!(0, map.keys_len());
+            assert!(map.is_empty());
+            let empty: $type<usize, String> = $multimap_macro! {};
+            assert_eq!(empty, map);
+
+            assert_eq!(None, map.remove_key(&0));
+        }
+
+        #[test]
+        fn remove_key_entry_returns_entire_value_collection_when_present() {
+            let mut map = $multimap_macro! {
+                0 => {"A".to_string() }
+            };
+            let actual = map.remove_key_entry(&0);
+            let expected = Some((0, $values_macro! { "A".to_string() }));
+            assert_eq!(expected, actual);
+            assert!(map.is_empty());
+            assert_eq!(None, map.remove_key_entry(&0));
+        }
+
+        #[test]
+        fn remove_is_noop_when_key_value_is_not_there() {
+            let data = vec![(0, "A1".to_string()), (0, "A2".to_string())];
+            let mut map = data.into_iter().collect::<$type<_, _>>();
+            assert_eq!(None, map.remove(&0, &"A3".to_string()));
+            assert_eq!(2, map.len());
+            assert_eq!(1, map.keys_len());
+        }
 
         #[test]
         fn with_capacity_constructs_instance_with_correct_capacity() {
@@ -304,72 +572,6 @@ macro_rules! hash_multimap_tests {
 macro_rules! general_multimap_tests {
     ($type:tt, $multimap_macro:tt, $keys_macro:tt, $values_macro:tt) => {
         #[test]
-        fn remove_removes_key_when_needed() {
-            let data = vec![(0, "A1".to_string()), (0, "A2".to_string())];
-            let mut map = data.into_iter().collect::<$type<_, _>>();
-            assert_eq!(2, map.len());
-            assert_eq!(1, map.keys_len());
-            assert!(!map.is_empty());
-
-            assert_eq!(Some("A2".to_string()), map.remove(&0, &"A2".to_string()));
-            assert!(!map.contains(&0, &"A2".to_string()));
-            assert_eq!(1, map.len());
-            assert_eq!(1, map.keys_len());
-            assert!(!map.is_empty());
-
-            let result = map.get(&0);
-            assert!(result.is_some());
-            assert_eq!(1, result.unwrap().len());
-            assert_eq!(
-                vec![&"A1".to_string()],
-                result.unwrap().iter().collect::<Vec<_>>()
-            );
-
-            assert_eq!(Some("A1".to_string()), map.remove(&0, &"A1".to_string()));
-            assert!(!map.contains(&0, &"A1".to_string()));
-            assert_eq!(0, map.len());
-            assert_eq!(0, map.keys_len());
-            assert!(map.is_empty());
-            assert_eq!(None, map.get(&0));
-        }
-
-        #[test]
-        fn remove_key_returns_entire_value_collection_when_present() {
-            let mut map = vec![(0, "A1".to_string()), (0, "A2".to_string())]
-                .into_iter()
-                .collect::<$type<_, _>>();
-            assert_eq!(2, map.len());
-            assert_eq!(1, map.keys_len());
-            assert!(!map.is_empty());
-
-            let expected = Some(maplit::hashset!["A1".to_string(), "A2".to_string()]);
-            assert_eq!(
-                expected,
-                map.remove_key(&0)
-                    .map(|r| r.into_iter().collect::<std::collections::HashSet<_>>())
-            );
-            assert_eq!(0, map.len());
-            assert_eq!(0, map.keys_len());
-            assert!(map.is_empty());
-            let empty: $type<usize, String> = $multimap_macro! {};
-            assert_eq!(empty, map);
-
-            assert_eq!(None, map.remove_key(&0));
-        }
-
-        #[test]
-        fn remove_key_entry_returns_entire_value_collection_when_present() {
-            let mut map = $multimap_macro! {
-                0 => {"A".to_string() }
-            };
-            let actual = map.remove_key_entry(&0);
-            let expected = Some((0, $values_macro! { "A".to_string() }));
-            assert_eq!(expected, actual);
-            assert!(map.is_empty());
-            assert_eq!(None, map.remove_key_entry(&0));
-        }
-
-        #[test]
         fn retain_on_key_filter() {
             let mut map = $multimap_macro! {
                 0 => {1, 2, 3 },
@@ -414,15 +616,6 @@ macro_rules! general_multimap_tests {
                 7 => {3, 9}
             };
             assert_eq!(expected, map);
-        }
-
-        #[test]
-        fn remove_is_noop_when_key_value_is_not_there() {
-            let data = vec![(0, "A1".to_string()), (0, "A2".to_string())];
-            let mut map = data.into_iter().collect::<$type<_, _>>();
-            assert_eq!(None, map.remove(&0, &"A3".to_string()));
-            assert_eq!(2, map.len());
-            assert_eq!(1, map.keys_len());
         }
 
         #[test]
@@ -706,7 +899,7 @@ mod hash_set_multimap {
     use more_collections::HashSetMultimap;
 
     general_multimap_tests! {HashSetMultimap, hashsetmultimap, hashmap, hashset}
-    hash_multimap_tests! {HashSetMultimap, hashsetmultimap}
+    hash_multimap_tests! {HashSetMultimap, hashsetmultimap, hashset}
     set_multimap_tests! {HashSetMultimap}
 }
 
@@ -716,7 +909,7 @@ mod hash_vec_multimap {
     use more_collections::HashVecMultimap;
 
     general_multimap_tests! {HashVecMultimap, hashvecmultimap, hashmap, vec}
-    hash_multimap_tests! {HashVecMultimap, hashvecmultimap}
+    hash_multimap_tests! {HashVecMultimap, hashvecmultimap, vec}
 }
 
 mod index_set_multimap {

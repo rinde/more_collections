@@ -152,42 +152,6 @@ macro_rules! multimap_mutators_impl {
 
         $crate::insert!($values_class $values_ctx);
 
-        /// Remove the key and all associated values from the multimap.
-        ///
-        /// Returns values if at least one value is associated to `key`,
-        /// returns `None` otherwise.
-        #[inline]
-        pub fn remove_key<Q>(&mut self, key: &Q) -> Option<$values>
-        where
-        Q: ?Sized,
-            $($keys_ref)*
-        {
-            if let Some(values) = self.inner.remove(key) {
-                self.len -= values.len();
-                Some(values)
-            } else {
-                None
-            }
-        }
-
-        /// Removes the key and all associated values from the multimap.
-        ///
-        /// Returns the entry (key and all associated values) if at least one
-        /// value is associated to `key`, returns `None` otherwise.
-        #[inline]
-        pub fn remove_key_entry<Q>(&mut self, key: &Q) -> Option<(K, $values)>
-        where
-        Q: ?Sized,
-            $($keys_ref)*
-        {
-            if let Some((key, values)) = self.inner.remove_entry(key) {
-                self.len -= values.len();
-                Some((key, values))
-            } else {
-                None
-            }
-        }
-
         /// Retains only the elements specified by the predicate.
         ///
         /// In other words, remove all pairs `(k, v)` such that `f(&k, &v)`
@@ -212,28 +176,6 @@ macro_rules! multimap_mutators_impl {
         //////////////////////////////////////
         /// Multimap specific methods
         //////////////////////////////////////
-
-        /// Remove the entry from the multimap, and return it if it was present.
-        pub fn remove<Q, R>(&mut self, key: &Q, value: &R) -> Option<V>
-        where
-            Q: ?Sized,
-            R: ?Sized,
-            $($keys_ref)*,
-            $($values_ref)*,
-        {
-            if let Some(values) = self.inner.get_mut(key) {
-                let value = $crate::values_remove!($values_class, values, value);
-                if value.is_some() {
-                    if values.is_empty() {
-                        self.inner.remove(key);
-                    }
-                    self.len -= 1;
-                }
-                value
-            } else {
-                None
-            }
-        }
 
         /// Return `true` if an equivalent `key` and `value` combination exists in
         /// the multimap.
@@ -262,6 +204,200 @@ macro_rules! multimap_mutators_impl {
             self.inner
         }
     };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! multimap_remove_impl {
+    (unordered, $values:ty, $values_class:tt, ($($keys_ref:tt)*), ($($values_ref:tt)*)) => {
+        /// Remove the key and all associated values from the multimap.
+        ///
+        /// Returns values if at least one value is associated to `key`,
+        /// returns `None` otherwise.
+        #[inline]
+        pub fn remove_key<Q>(&mut self, key: &Q) -> Option<$values>
+        where
+            Q: ?Sized,
+            $($keys_ref)*
+        {
+            self.inner.remove(key).map(|values| {
+                self.len -= values.len();
+                values
+            })
+        }
+
+        /// Removes the key and all associated values from the multimap.
+        ///
+        /// Returns the entry (key and all associated values) if at least one
+        /// value is associated to `key`, returns `None` otherwise.
+        #[inline]
+        pub fn remove_key_entry<Q>(&mut self, key: &Q) -> Option<(K, $values)>
+        where
+            Q: ?Sized,
+            $($keys_ref)*
+        {
+            self.inner.remove_entry(key).map( |(key,values)| {
+                self.len -= values.len();
+                (key,values)
+            })
+        }
+
+        /// Remove the entry from the multimap, and return it if it was present.
+        pub fn remove<Q, R>(&mut self, key: &Q, value: &R) -> Option<V>
+        where
+            Q: ?Sized,
+            R: ?Sized,
+            $($keys_ref)*,
+            $($values_ref)*,
+        {
+            if let Some(values) = self.inner.get_mut(key) {
+                let value = $crate::values_remove!(unordered, $values_class, values, value);
+                if value.is_some() {
+                    if values.is_empty() {
+                        self.inner.remove(key);
+                    }
+                    self.len -= 1;
+                }
+                value
+            } else {
+                None
+            }
+        }
+
+    };
+    (ordered, $values:ty, $values_class:tt, ($($keys_ref:tt)*), ($($values_ref:tt)*)) => {
+        /// Remove the key and all associated values from the multimap.
+        ///
+        /// Like [`IndexMap::swap_remove`], the key is removed by swapping it
+        /// with the last element of the map and popping it off. **This
+        /// perturbs the position of what used to be the last element!**
+        ///
+        /// Returns values if at least one value is associated to `key`,
+        /// returns `None` otherwise.
+        #[inline]
+        pub fn swap_remove_key<Q>(&mut self, key: &Q) -> Option<$values>
+        where
+            Q: ?Sized,
+            $($keys_ref)*
+        {
+            self.inner.swap_remove(key).map(|values| {
+                self.len -= values.len();
+                values
+            })
+        }
+
+        /// Remove the key and all associated values from the multimap.
+        ///
+        /// Like [`IndexMap::shift_remove`], the key is removed by shifting all
+        /// of the elements that follow it, preserving their relative order.
+        /// **This perturbs the index of all of those elements!**
+        ///
+        /// Returns values if at least one value is associated to `key`,
+        /// returns `None` otherwise.
+        #[inline]
+        pub fn shift_remove_key<Q>(&mut self, key: &Q) -> Option<$values>
+        where
+            Q: ?Sized,
+            $($keys_ref)*
+        {
+            self.inner.shift_remove(key).map(|values| {
+                self.len -= values.len();
+                values
+            })
+        }
+
+        /// Removes the key and all associated values from the multimap.
+        ///
+        /// Like [`IndexMap::swap_remove`], the key is removed by swapping it
+        /// with the last element of the map and popping it off. **This
+        /// perturbs the position of what used to be the last element!**
+        ///
+        /// Returns the entry (key and all associated values) if at least one
+        /// value is associated to `key`, returns `None` otherwise.
+        #[inline]
+        pub fn swap_remove_key_entry<Q>(&mut self, key: &Q) -> Option<(K, $values)>
+        where
+            Q: ?Sized,
+            $($keys_ref)*
+        {
+            self.inner.swap_remove_entry(key).map( |(key,values)| {
+                self.len -= values.len();
+                (key,values)
+            })
+        }
+
+        /// Removes the key and all associated values from the multimap.
+        ///
+        /// Like [`IndexMap::shift_remove`], the key is removed by shifting all
+        /// of the elements that follow it, preserving their relative order.
+        /// **This perturbs the index of all of those elements!**
+        ///
+        /// Returns the entry (key and all associated values) if at least one
+        /// value is associated to `key`, returns `None` otherwise.
+        #[inline]
+        pub fn shift_remove_key_entry<Q>(&mut self, key: &Q) -> Option<(K, $values)>
+        where
+            Q: ?Sized,
+            $($keys_ref)*
+        {
+            self.inner.shift_remove_entry(key).map( |(key,values)| {
+                self.len -= values.len();
+                (key,values)
+            })
+        }
+
+        /// Remove the entry from the multimap, and return it if it was present.
+        ///
+        /// Like [`IndexMap::swap_remove`], the pair is removed by swapping it
+        /// with the last element of the map and popping it off. **This
+        /// perturbs the position of what used to be the last element!**
+        pub fn swap_remove<Q, R>(&mut self, key: &Q, value: &R) -> Option<V>
+        where
+            Q: ?Sized,
+            R: ?Sized,
+            $($keys_ref)*,
+            $($values_ref)*,
+        {
+            if let Some(values) = self.inner.get_mut(key) {
+                let value = $crate::values_remove!(ordered, swap, $values_class, values, value);
+                if value.is_some() {
+                    if values.is_empty() {
+                        self.inner.swap_remove(key);
+                    }
+                    self.len -= 1;
+                }
+                value
+            } else {
+                None
+            }
+        }
+
+        /// Remove the entry from the multimap, and return it if it was present.
+        ///
+        /// Like [`IndexMap::shift_remove`], the pair is removed by shifting all
+        /// of the elements that follow it, preserving their relative order.
+        /// **This perturbs the index of all of those elements!**
+        pub fn shift_remove<Q, R>(&mut self, key: &Q, value: &R) -> Option<V>
+        where
+            Q: ?Sized,
+            R: ?Sized,
+            $($keys_ref)*,
+            $($values_ref)*,
+        {
+            if let Some(values) = self.inner.get_mut(key) {
+                let value = $crate::values_remove!(ordered, shift, $values_class, values, value);
+                if value.is_some() {
+                    if values.is_empty() {
+                        self.inner.shift_remove(key);
+                    }
+                    self.len -= 1;
+                }
+                value
+            } else {
+                None
+            }
+        }
+    }
 }
 
 //////////////////////////////////////
@@ -490,17 +626,32 @@ macro_rules! values_contains {
 #[doc(hidden)]
 #[macro_export]
 macro_rules! values_remove {
-    (set, $values:ident, $value:ident) => {
-        $values.take($value)
+    // ordered keys, values set
+    (ordered, swap, set, $values:ident, $value:ident) => {
+        $values.swap_take($value)
     };
-
-    (vec_equivalent, $values:ident, $value:ident) => {
+    (ordered, shift, set, $values:ident, $value:ident) => {
+        $values.shift_take($value)
+    };
+    // ordered keys, values vec
+    (ordered, shift, vec_equivalent, $values:ident, $value:ident) => {
         $values
             .iter()
             .position(|x| $value.equivalent(x))
-            .map(|index| $values.remove(index))
+            .map(|index| $values.remove(index)) // Vec::remove() shifts
     };
-    (vec_equal, $values:ident, $value:ident) => {
+    (ordered, swap, vec_equivalent, $values:ident, $value:ident) => {
+        $values
+            .iter()
+            .position(|x| $value.equivalent(x))
+            .map(|index| $values.swap_remove(index))
+    };
+    // unordered keys, values set
+    (unordered, set, $values:ident, $value:ident) => {
+        $values.take($value)
+    };
+    // unordered keys, values vec
+    (unordered, vec_equal, $values:ident, $value:ident) => {
         $values
             .iter()
             .position(|x| $value == x.borrow())
