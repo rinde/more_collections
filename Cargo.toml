@@ -40,11 +40,12 @@ smallvec = { version = "1.13.2", features = [
 
 [dev-dependencies]
 criterion = { version = "0.5.1", features = ["html_reports"] }
+derive_more = "0.99.17"
 indexmap = { version = "2.1.0" }
+itertools = "0.12.1"
 maplit = { version = "1.0.2" }
 more_collections = { path = ".", features = ["all"] }
 rand = "0.8.5"
-itertools = "0.12.1"
 
 [[bench]]
 name = "vec_map"
