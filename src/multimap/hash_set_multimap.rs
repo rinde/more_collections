@@ -34,6 +34,13 @@ where
         (K: Borrow<Q>, Q: Hash + Eq),
         (V: Borrow<R>, R: Hash + Eq)
     }
+    multimap_remove_impl! {
+        unordered,
+        HashSet<V,S>,
+        set,
+        (K: Borrow<Q>, Q: Hash + Eq),
+        (V: Borrow<R>, R: Hash + Eq)
+    }
 }
 
 multimap_extend! {

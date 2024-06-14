@@ -33,6 +33,13 @@ where
         (K: Borrow<Q>, Q: Hash + Eq),
         (V: Borrow<R>, R: Eq)
     }
+    multimap_remove_impl! {
+        unordered,
+        Vec<V>,
+        vec_equal,
+        (K: Borrow<Q>, Q: Hash + Eq),
+        (V: Borrow<R>, R: Eq)
+    }
 }
 
 multimap_extend! {
