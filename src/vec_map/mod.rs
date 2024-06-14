@@ -500,11 +500,13 @@ macro_rules! impl_indexable{
         $(
             impl IndexKey for $Int {
                 #[inline]
+                #[allow(clippy::cast_possible_truncation)]
                 fn as_index(&self) -> usize {
                     *self as usize
                 }
 
                 #[inline]
+                #[allow(clippy::cast_possible_truncation)]
                 fn from_index(index:usize) -> $Int {
                     index as $Int
                 }

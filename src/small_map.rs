@@ -147,9 +147,9 @@ where
     /// Computational complexity:
     ///  - inline: O(n)
     ///  - heap: O(1)
-    pub fn get<Q: ?Sized>(&self, key: &Q) -> Option<&V>
+    pub fn get<Q>(&self, key: &Q) -> Option<&V>
     where
-        Q: Hash + Equivalent<K>,
+        Q: Hash + Equivalent<K> + ?Sized,
     {
         match &self.data {
             MapData::Inline(vec) => vec
@@ -166,9 +166,9 @@ where
     /// Computational complexity:
     ///  - inline: O(n)
     ///  - heap: O(1)
-    pub fn get_mut<Q: ?Sized>(&mut self, key: &Q) -> Option<&mut V>
+    pub fn get_mut<Q>(&mut self, key: &Q) -> Option<&mut V>
     where
-        Q: Hash + Equivalent<K>,
+        Q: Hash + Equivalent<K> + ?Sized,
     {
         match &mut self.data {
             MapData::Inline(vec) => vec
@@ -222,9 +222,9 @@ where
     /// Computational complexity:
     ///  - inline: O(n)
     ///  - heap: O(1)
-    pub fn get_index_of<Q: ?Sized>(&self, key: &Q) -> Option<usize>
+    pub fn get_index_of<Q>(&self, key: &Q) -> Option<usize>
     where
-        Q: Hash + Equivalent<K>,
+        Q: Hash + Equivalent<K> + ?Sized,
     {
         match &self.data {
             MapData::Inline(vec) => vec.iter().position(|(k, _v)| key.equivalent(k)),
@@ -251,9 +251,9 @@ where
     /// Computational complexity:
     ///  - inline: O(n)
     ///  - heap: O(1)
-    pub fn contains_key<Q: ?Sized>(&self, key: &Q) -> bool
+    pub fn contains_key<Q>(&self, key: &Q) -> bool
     where
-        Q: Hash + Equivalent<K>,
+        Q: Hash + Equivalent<K> + ?Sized,
     {
         self.get_index_of(key).is_some()
     }
@@ -288,9 +288,9 @@ where
     /// Computational complexity:
     ///  - inline: O(n)
     ///  - heap: O(1)
-    pub fn remove<Q: ?Sized>(&mut self, key: &Q) -> Option<V>
+    pub fn remove<Q>(&mut self, key: &Q) -> Option<V>
     where
-        Q: Hash + Equivalent<K>,
+        Q: Hash + Equivalent<K> + ?Sized,
     {
         self.swap_remove_full(key).map(|(_, _, v)| v)
     }
@@ -310,9 +310,9 @@ where
     /// Computational complexity:
     ///  - inline: O(n)
     ///  - heap: O(1)
-    pub fn swap_remove_full<Q: ?Sized>(&mut self, key: &Q) -> Option<(usize, K, V)>
+    pub fn swap_remove_full<Q>(&mut self, key: &Q) -> Option<(usize, K, V)>
     where
-        Q: Hash + Equivalent<K>,
+        Q: Hash + Equivalent<K> + ?Sized,
     {
         match &mut self.data {
             MapData::Inline(vec) => {

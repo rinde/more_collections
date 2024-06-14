@@ -120,8 +120,9 @@ macro_rules! multimap_mutators_impl {
 
         #[doc = concat!("Return a reference to the ", stringify!($values_class), " stored for `key`, if it is present, else `None`.")]
         #[inline]
-        pub fn get<Q: ?Sized>(&self, key: &Q) -> Option<&$values>
+        pub fn get<Q>(&self, key: &Q) -> Option<&$values>
         where
+            Q: ?Sized,
             $($keys_ref)*,
         {
             self.inner.get(key)
@@ -129,8 +130,9 @@ macro_rules! multimap_mutators_impl {
 
         /// Return references to the key-values pair stored for `key`, if it is
         /// present, else `None`.
-        pub fn get_key_values<Q: ?Sized>(&self, key: &Q) -> Option<(&K, &$values)>
+        pub fn get_key_values<Q>(&self, key: &Q) -> Option<(&K, &$values)>
         where
+            Q: ?Sized,
             $($keys_ref)*,
         {
             self.inner.get_key_value(key)
@@ -138,8 +140,9 @@ macro_rules! multimap_mutators_impl {
 
         /// Returns `true` if the map contains a value for the specified key.
         #[inline]
-        pub fn contains_key<Q: ?Sized>(&self, key: &Q) -> bool
+        pub fn contains_key<Q>(&self, key: &Q) -> bool
         where
+            Q: ?Sized,
             $($keys_ref)*,
         {
             self.get(key).is_some()
@@ -154,8 +157,9 @@ macro_rules! multimap_mutators_impl {
         /// Returns values if at least one value is associated to `key`,
         /// returns `None` otherwise.
         #[inline]
-        pub fn remove_key<Q: ?Sized>(&mut self, key: &Q) -> Option<$values>
+        pub fn remove_key<Q>(&mut self, key: &Q) -> Option<$values>
         where
+        Q: ?Sized,
             $($keys_ref)*
         {
             if let Some(values) = self.inner.remove(key) {
@@ -171,8 +175,9 @@ macro_rules! multimap_mutators_impl {
         /// Returns the entry (key and all associated values) if at least one
         /// value is associated to `key`, returns `None` otherwise.
         #[inline]
-        pub fn remove_key_entry<Q: ?Sized>(&mut self, key: &Q) -> Option<(K, $values)>
+        pub fn remove_key_entry<Q>(&mut self, key: &Q) -> Option<(K, $values)>
         where
+        Q: ?Sized,
             $($keys_ref)*
         {
             if let Some((key, values)) = self.inner.remove_entry(key) {
@@ -209,8 +214,10 @@ macro_rules! multimap_mutators_impl {
         //////////////////////////////////////
 
         /// Remove the entry from the multimap, and return it if it was present.
-        pub fn remove<Q: ?Sized, R: ?Sized>(&mut self, key: &Q, value: &R) -> Option<V>
+        pub fn remove<Q, R>(&mut self, key: &Q, value: &R) -> Option<V>
         where
+            Q: ?Sized,
+            R: ?Sized,
             $($keys_ref)*,
             $($values_ref)*,
         {
@@ -230,8 +237,10 @@ macro_rules! multimap_mutators_impl {
 
         /// Return `true` if an equivalent `key` and `value` combination exists in
         /// the multimap.
-        pub fn contains<Q: ?Sized, R: ?Sized>(&self, key: &Q, value: &R) -> bool
+        pub fn contains<Q, R>(&self, key: &Q, value: &R) -> bool
         where
+            Q: ?Sized,
+            R: ?Sized,
             $($keys_ref)*,
             $($values_ref)*,
         {
@@ -267,16 +276,18 @@ macro_rules! index_multimap_impl {
         insert_full!($values_class $values_ctx);
 
         /// Return item index, key, and values.
-        pub fn get_full<Q: ?Sized>(&self, key: &Q) -> Option<(usize, &K, &$values)>
+        pub fn get_full<Q>(&self, key: &Q) -> Option<(usize, &K, &$values)>
         where
+            Q: ?Sized,
             $($keys_ref)*,
         {
             self.inner.get_full(key)
         }
 
         /// Return key index if it exists in the map.
-        pub fn get_key_index<Q: ?Sized>(&self, key: &Q) -> Option<usize>
+        pub fn get_key_index<Q>(&self, key: &Q) -> Option<usize>
         where
+            Q: ?Sized,
             $($keys_ref)*,
         {
             if self.is_empty() {

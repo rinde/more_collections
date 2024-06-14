@@ -12,7 +12,15 @@ categories = ["data-structures"]
 include = ["LICENSE", "README.md", "**/*.rs", "Cargo.toml"]
 
 [features]
-all = ["hashsetmultimap", "hashvecmultimap", "indexsetmultimap", "indexvecmultimap", "smallset", "smallmap", "vecmap"]
+all = [
+    "hashsetmultimap",
+    "hashvecmultimap",
+    "indexsetmultimap",
+    "indexvecmultimap",
+    "smallset",
+    "smallmap",
+    "vecmap",
+]
 hashsetmultimap = ["maplit"]
 hashvecmultimap = []
 indexsetmultimap = ["indexmap"]
@@ -24,13 +32,17 @@ vecmap = []
 [dependencies]
 indexmap = { version = "2.1.0", optional = true }
 maplit = { version = "1.0.2", optional = true }
-smallvec = {version = "1.13.2", features = ["const_generics", "const_new", "union"], optional = true }
+smallvec = { version = "1.13.2", features = [
+    "const_generics",
+    "const_new",
+    "union",
+], optional = true }
 
 [dev-dependencies]
 criterion = { version = "0.5.1", features = ["html_reports"] }
 indexmap = { version = "2.1.0" }
 maplit = { version = "1.0.2" }
-more_collections = { path=".", features = ["all"]}
+more_collections = { path = ".", features = ["all"] }
 rand = "0.8.5"
 itertools = "0.12.1"
 
@@ -46,15 +58,17 @@ lto = true
 future-incompatible = "warn"
 let-underscore = "warn"
 nonstandard-style = "deny"
-unused = "warn"
+unused = { level = "warn", priority = -1 }
+refining_impl_trait = { level = "warn", priority = -1 }
 
 # specific lints that are allow by default
 macro_use_extern_crate = "warn"
 meta_variable_misuse = "warn"
 missing_debug_implementations = "warn"
 missing_copy_implementations = "warn"
-# missing_docs = "warn"
+missing_docs = "allow"                 # TODO
 unreachable_pub = "warn"
+unnameable_types = "warn"
 unsafe_code = "deny"
 unstable_features = "deny"
 unused_extern_crates = "warn"
@@ -63,6 +77,7 @@ unused_lifetimes = "warn"
 unused_macro_rules = "warn"
 unused_qualifications = "warn"
 dead_code = "warn"
+redundant_lifetimes = "warn"
 single_use_lifetimes = "warn"
 
 [lints.rustdoc]
@@ -70,12 +85,12 @@ broken_intra_doc_links = "deny"
 private_intra_doc_links = "allow"
 
 [lints.clippy]
-cargo = "warn"
-complexity = "warn"
-correctness = "deny"
-perf = "warn"
-style = "warn"
-suspicious = "deny"
+cargo = { level = "warn", priority = -1 }
+complexity = { level = "warn", priority = -1 }
+correctness = { level = "deny", priority = -1 }
+perf = { level = "warn", priority = -1 }
+style = { level = "warn", priority = -1 }
+suspicious = { level = "deny", priority = -1 }
 todo = "warn"
 
 missing_const_for_fn = "warn"
@@ -84,7 +99,7 @@ missing_const_for_fn = "warn"
 pedantic = { level = "warn", priority = -1 } # setting a lower priority for the group to allow individual overrides
 
 # Below are the pedantic lints that we currently do not opt in to including the reason why.
-missing_panics_doc = "allow"
+missing_panics_doc = "allow"      # TODO
 module_name_repetitions = "allow" # naming is already hard enough
 
 [package.metadata.docs.rs]
