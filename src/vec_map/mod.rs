@@ -54,7 +54,17 @@ where
 /// recommended to initialize `VecMap` with `with_capacity()`.
 ///
 /// Iteration order follows the natural ordering of [`IndexKey::as_index()`].
+///
+/// # Serialization and deserialization
+///
+/// An optional feature that can be unlocked with the `serde` feature. `VecMap`s
+/// are serialized and deserialized as `Vec<Option<V>>`.
 #[derive(Clone)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Deserialize),
+    serde(from = "Vec<Option<V>>")
+)]
 pub struct VecMap<K, V> {
     data: Vec<Option<V>>,
     len: usize,
@@ -450,6 +460,30 @@ impl<K: IndexKey, V: Clone> Extend<(K, V)> for VecMap<K, V> {
 impl<K: IndexKey + fmt::Debug, V: fmt::Debug> fmt::Debug for VecMap<K, V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_map().entries(self.iter()).finish()
+    }
+}
+
+impl<K, V> From<Vec<Option<V>>> for VecMap<K, V> {
+    fn from(value: Vec<Option<V>>) -> Self {
+        Self {
+            len: value.iter().filter(|x| x.is_some()).count(),
+            data: value,
+            _marker: PhantomData,
+        }
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<K, V> serde::Serialize for VecMap<K, V>
+where
+    K: IndexKey,
+    V: serde::Serialize,
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.collect_seq(self.data.iter())
     }
 }
 
@@ -938,5 +972,41 @@ mod test {
             _marker: PhantomData::<MyKey>,
         };
         assert_eq!(map1, map2);
+    }
+
+    #[cfg(feature = "serde")]
+    mod serde {
+        use super::*;
+
+        #[test]
+        fn test_serde() {
+            let input = vecmap! {MyKey(2)=> "hi", MyKey(4) => "four"};
+
+            let serialized_str = serde_json::to_string(&input).unwrap();
+            assert_eq!("[null,null,\"hi\",null,\"four\"]", serialized_str);
+
+            let deserialized =
+                serde_json::from_str::<VecMap<MyKey, &str>>(&serialized_str).unwrap();
+            assert_eq!(input, deserialized);
+            assert_eq!(2, deserialized.len());
+            assert_eq!(5, deserialized.capacity());
+
+            // trailing null is ignored
+            let deserialized =
+                serde_json::from_str::<VecMap<MyKey, &str>>("[\"test\",null]").unwrap();
+            assert_eq!(vecmap! {MyKey(0)=> "test"}, deserialized);
+            assert_eq!(1, deserialized.len());
+            assert_eq!(2, deserialized.capacity());
+
+            // empty
+            let input: VecMap<MyKey, &str> = VecMap::new();
+            let serialized_str = serde_json::to_string(&input).unwrap();
+            assert_eq!("[]", serialized_str);
+
+            let deserialized =
+                serde_json::from_str::<VecMap<MyKey, &str>>(&serialized_str).unwrap();
+            assert!(deserialized.is_empty());
+            assert_eq!(0, deserialized.capacity());
+        }
     }
 }
