@@ -275,6 +275,9 @@ fn test_cases() -> [TestCase; 5] {
 }
 
 fn benchmark_iter(c: &mut Criterion) {
+    struct Case {
+        data: Vec<(usize, ())>,
+    }
     let mut group = c.benchmark_group("iter");
     group
         .sample_size(100)
@@ -302,9 +305,6 @@ fn benchmark_iter(c: &mut Criterion) {
         // });
     }
 
-    struct Case {
-        data: Vec<(usize, ())>,
-    }
     let case = Case {
         data: Uniform::new(0, 10_000)
             .sample_iter(thread_rng())

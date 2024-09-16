@@ -63,7 +63,7 @@ impl<'a, K: IndexKey, V> Iterator for Iter<'a, K, V> {
     }
 }
 
-impl<'a, K: IndexKey, V> DoubleEndedIterator for Iter<'a, K, V> {
+impl<K: IndexKey, V> DoubleEndedIterator for Iter<'_, K, V> {
     fn next_back(&mut self) -> Option<Self::Item> {
         if self.len == 0 {
             return None;
@@ -80,13 +80,13 @@ impl<'a, K: IndexKey, V> DoubleEndedIterator for Iter<'a, K, V> {
     }
 }
 
-impl<'a, K: IndexKey, V> ExactSizeIterator for Iter<'a, K, V> {
+impl<K: IndexKey, V> ExactSizeIterator for Iter<'_, K, V> {
     fn len(&self) -> usize {
         self.len
     }
 }
 
-impl<'a, K: IndexKey, V> FusedIterator for Iter<'a, K, V> {}
+impl<K: IndexKey, V> FusedIterator for Iter<'_, K, V> {}
 
 impl<'a, K: IndexKey + fmt::Debug, V: fmt::Debug> fmt::Debug for Iter<'a, K, V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -125,7 +125,7 @@ impl<'a, K: IndexKey, V> Iterator for IterMut<'a, K, V> {
     }
 }
 
-impl<'a, K: IndexKey, V> DoubleEndedIterator for IterMut<'a, K, V> {
+impl<K: IndexKey, V> DoubleEndedIterator for IterMut<'_, K, V> {
     fn next_back(&mut self) -> Option<Self::Item> {
         if self.len == 0 {
             return None;
@@ -142,13 +142,13 @@ impl<'a, K: IndexKey, V> DoubleEndedIterator for IterMut<'a, K, V> {
     }
 }
 
-impl<'a, K: IndexKey, V> ExactSizeIterator for IterMut<'a, K, V> {
+impl<K: IndexKey, V> ExactSizeIterator for IterMut<'_, K, V> {
     fn len(&self) -> usize {
         self.len
     }
 }
 
-impl<'a, K: IndexKey, V> FusedIterator for IterMut<'a, K, V> {}
+impl<K: IndexKey, V> FusedIterator for IterMut<'_, K, V> {}
 
 /// An owned iterator that iterates over the key-value pairs following the key
 /// ordering.
@@ -208,7 +208,7 @@ pub struct Keys<'a, K, V> {
     pub(super) _marker: PhantomData<K>,
 }
 
-impl<'a, K: IndexKey, V> Iterator for Keys<'a, K, V> {
+impl<K: IndexKey, V> Iterator for Keys<'_, K, V> {
     type Item = K;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -224,7 +224,7 @@ impl<'a, K: IndexKey, V> Iterator for Keys<'a, K, V> {
     }
 }
 
-impl<'a, K: IndexKey, V> DoubleEndedIterator for Keys<'a, K, V> {
+impl<K: IndexKey, V> DoubleEndedIterator for Keys<'_, K, V> {
     fn next_back(&mut self) -> Option<Self::Item> {
         if self.len == 0 {
             return None;
@@ -241,13 +241,13 @@ impl<'a, K: IndexKey, V> DoubleEndedIterator for Keys<'a, K, V> {
     }
 }
 
-impl<'a, K: IndexKey, V> ExactSizeIterator for Keys<'a, K, V> {
+impl<K: IndexKey, V> ExactSizeIterator for Keys<'_, K, V> {
     fn len(&self) -> usize {
         self.len
     }
 }
 
-impl<'a, K: IndexKey, V> FusedIterator for Keys<'a, K, V> {}
+impl<K: IndexKey, V> FusedIterator for Keys<'_, K, V> {}
 
 impl<'a, K, V> fmt::Debug for Keys<'a, K, V>
 where
@@ -286,7 +286,7 @@ impl<'a, V> Iterator for Values<'a, V> {
     }
 }
 
-impl<'a, V> DoubleEndedIterator for Values<'a, V> {
+impl<V> DoubleEndedIterator for Values<'_, V> {
     fn next_back(&mut self) -> Option<Self::Item> {
         if self.len == 0 {
             return None;
@@ -302,13 +302,13 @@ impl<'a, V> DoubleEndedIterator for Values<'a, V> {
     }
 }
 
-impl<'a, V> ExactSizeIterator for Values<'a, V> {
+impl<V> ExactSizeIterator for Values<'_, V> {
     fn len(&self) -> usize {
         self.len
     }
 }
 
-impl<'a, V> FusedIterator for Values<'a, V> {}
+impl<V> FusedIterator for Values<'_, V> {}
 
 impl<'a, V> fmt::Debug for Values<'a, V>
 where
@@ -326,12 +326,13 @@ where
 
 #[cfg(test)]
 mod test {
+    use crate::vec_map::test::MyKey;
     use crate::vecmap;
     use crate::VecMap;
 
     #[test]
     fn test_iter() {
-        let map = vecmap! { 9u16 => "nine", 17 => "seventeen", 2 => "two"};
+        let map = vecmap! { 9 => "nine", 17 => "seventeen", 2 => "two"};
 
         // forward
         let mut iter = map.iter();
@@ -364,7 +365,7 @@ mod test {
 
     #[test]
     fn test_iter_mut() {
-        let mut map = vecmap! { 9u16 => "nine", 17 => "seventeen", 2 => "two"};
+        let mut map = vecmap! { 9 => "nine", 17 => "seventeen", 2 => "two"};
 
         // forward
         let mut iter = map.iter_mut();
@@ -403,7 +404,7 @@ mod test {
 
     #[test]
     fn test_into_iter() {
-        let map = vecmap! { 9u16 => "nine", 17 => "seventeen", 2 => "two"};
+        let map = vecmap! { 9 => "nine", 17 => "seventeen", 2 => "two"};
 
         // forward
         let mut iter = map.into_iter();
@@ -416,7 +417,7 @@ mod test {
         assert_eq!(0, iter.len());
         assert_eq!(None, iter.next());
 
-        let map = vecmap! { 9u16 => "nine", 17 => "seventeen", 2 => "two"};
+        let map = vecmap! { 9 => "nine", 17 => "seventeen", 2 => "two"};
         // back, forward, back
         let mut iter = map.into_iter();
         assert_eq!(3, iter.len());
@@ -437,7 +438,7 @@ mod test {
 
     #[test]
     fn test_keys() {
-        let map = vecmap! { 9u16 => "nine", 17 => "seventeen", 2 => "two"};
+        let map = vecmap! { 9 => "nine", 17 => "seventeen", 2 => "two"};
 
         // forward
         let mut iter = map.keys();
@@ -470,7 +471,7 @@ mod test {
 
     #[test]
     fn test_values() {
-        let map = vecmap! { 9u16 => "nine", 17 => "seventeen", 2 => "two"};
+        let map = vecmap! { MyKey(9) => "nine", MyKey(17) => "seventeen", MyKey(2) => "two"};
 
         // forward
         let mut iter = map.values();

@@ -131,8 +131,8 @@ Below is an overview of all methods and traits that are implemented for `VecMap`
 
 | Trait         | `VecMap` |
 | ------------- | -------- |
-| `Serialize`   |          |
-| `Deserialize` |          |
+| `Serialize`   | ✅       |
+| `Deserialize` | ✅       |
 
 ## Rayon support
 
@@ -156,7 +156,7 @@ Below is an overview of all methods and traits that are implemented for `VecMap`
 | `ParallelExtend<(K, V)>`                  |                              |
 | `ParallelExtend<(&'a K, &'a V)>`          |                              |
 
-### Iterators 
+### Iterators
 | Method / trait            | `IntoParIter` | `ParIter` | `ParIterMut` | `ParDrain` | `ParKeys` | `ParValues` | `ParValuesMut` |
 | ------------------------- | ------------- | --------- | ------------ | ---------- | --------- | ----------- | -------------- |
 | `Debug`                   |               |           |              |            |           |             |                |

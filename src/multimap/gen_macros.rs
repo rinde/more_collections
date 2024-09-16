@@ -6,6 +6,7 @@ macro_rules! multimap_base_impl {
         ///
         /// The multimap is initially created with a capacity of 0, so it will
         /// not allocate until it is first inserted into.
+        #[must_use]
         pub fn new() -> Self {
             Self {
                 inner: <$keys>::new(),
@@ -17,6 +18,7 @@ macro_rules! multimap_base_impl {
         ///
         /// The multimap will be able to hold at least `capacity` keys without
         /// reallocating. If `capacity` is 0, the multimap will not allocate.
+        #[must_use]
         pub fn with_key_capacity(capacity: usize) -> Self {
             Self {
                 inner: <$keys>::with_capacity(capacity),
@@ -62,12 +64,12 @@ macro_rules! multimap_base2_impl {
         /// Note that the number of elements in the multimap may not be the
         /// same as the number of keys in the multimap. See
         /// [`Self::keys_len()`].
-        pub fn len(&self) -> usize {
+        pub const fn len(&self) -> usize {
             self.len
         }
 
         /// Returns `true` if the multimap contains no elements.
-        pub fn is_empty(&self) -> bool {
+        pub const fn is_empty(&self) -> bool {
             self.len == 0
         }
 
@@ -118,8 +120,9 @@ macro_rules! multimap_mutators_impl {
 
         #[doc = concat!("Return a reference to the ", stringify!($values_class), " stored for `key`, if it is present, else `None`.")]
         #[inline]
-        pub fn get<Q: ?Sized>(&self, key: &Q) -> Option<&$values>
+        pub fn get<Q>(&self, key: &Q) -> Option<&$values>
         where
+            Q: ?Sized,
             $($keys_ref)*,
         {
             self.inner.get(key)
@@ -127,8 +130,9 @@ macro_rules! multimap_mutators_impl {
 
         /// Return references to the key-values pair stored for `key`, if it is
         /// present, else `None`.
-        pub fn get_key_values<Q: ?Sized>(&self, key: &Q) -> Option<(&K, &$values)>
+        pub fn get_key_values<Q>(&self, key: &Q) -> Option<(&K, &$values)>
         where
+            Q: ?Sized,
             $($keys_ref)*,
         {
             self.inner.get_key_value(key)
@@ -136,8 +140,9 @@ macro_rules! multimap_mutators_impl {
 
         /// Returns `true` if the map contains a value for the specified key.
         #[inline]
-        pub fn contains_key<Q: ?Sized>(&self, key: &Q) -> bool
+        pub fn contains_key<Q>(&self, key: &Q) -> bool
         where
+            Q: ?Sized,
             $($keys_ref)*,
         {
             self.get(key).is_some()
@@ -146,40 +151,6 @@ macro_rules! multimap_mutators_impl {
         // TODO add get_mut() --> only if it is possible to keep internal `len` consistent
 
         $crate::insert!($values_class $values_ctx);
-
-        /// Remove the key and all associated values from the multimap.
-        ///
-        /// Returns values if at least one value is associated to `key`,
-        /// returns `None` otherwise.
-        #[inline]
-        pub fn remove_key<Q: ?Sized>(&mut self, key: &Q) -> Option<$values>
-        where
-            $($keys_ref)*
-        {
-            if let Some(values) = self.inner.remove(key) {
-                self.len -= values.len();
-                Some(values)
-            } else {
-                None
-            }
-        }
-
-        /// Removes the key and all associated values from the multimap.
-        ///
-        /// Returns the entry (key and all associated values) if at least one
-        /// value is associated to `key`, returns `None` otherwise.
-        #[inline]
-        pub fn remove_key_entry<Q: ?Sized>(&mut self, key: &Q) -> Option<(K, $values)>
-        where
-            $($keys_ref)*
-        {
-            if let Some((key, values)) = self.inner.remove_entry(key) {
-                self.len -= values.len();
-                Some((key, values))
-            } else {
-                None
-            }
-        }
 
         /// Retains only the elements specified by the predicate.
         ///
@@ -206,14 +177,81 @@ macro_rules! multimap_mutators_impl {
         /// Multimap specific methods
         //////////////////////////////////////
 
-        /// Remove the entry from the multimap, and return it if it was present.
-        pub fn remove<Q: ?Sized, R: ?Sized>(&mut self, key: &Q, value: &R) -> Option<V>
+        /// Return `true` if an equivalent `key` and `value` combination exists in
+        /// the multimap.
+        pub fn contains<Q, R>(&self, key: &Q, value: &R) -> bool
         where
+            Q: ?Sized,
+            R: ?Sized,
+            $($keys_ref)*,
+            $($values_ref)*,
+        {
+            if let Some(values) = self.inner.get(key) {
+                $crate::values_contains!($values_class, values, value)
+            } else {
+                false
+            }
+        }
+
+        /// Return a borrow of the underlying map.
+        pub const fn as_map(&self) -> &$keys {
+            &self.inner
+        }
+
+        /// Return the underlying map, the multimap cannot be used after
+        /// calling this.
+        pub fn into_map(self) -> $keys {
+            self.inner
+        }
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! multimap_remove_impl {
+    (unordered, $values:ty, $values_class:tt, ($($keys_ref:tt)*), ($($values_ref:tt)*)) => {
+        /// Remove the key and all associated values from the multimap.
+        ///
+        /// Returns values if at least one value is associated to `key`,
+        /// returns `None` otherwise.
+        #[inline]
+        pub fn remove_key<Q>(&mut self, key: &Q) -> Option<$values>
+        where
+            Q: ?Sized,
+            $($keys_ref)*
+        {
+            self.inner.remove(key).map(|values| {
+                self.len -= values.len();
+                values
+            })
+        }
+
+        /// Removes the key and all associated values from the multimap.
+        ///
+        /// Returns the entry (key and all associated values) if at least one
+        /// value is associated to `key`, returns `None` otherwise.
+        #[inline]
+        pub fn remove_key_entry<Q>(&mut self, key: &Q) -> Option<(K, $values)>
+        where
+            Q: ?Sized,
+            $($keys_ref)*
+        {
+            self.inner.remove_entry(key).map( |(key,values)| {
+                self.len -= values.len();
+                (key,values)
+            })
+        }
+
+        /// Remove the entry from the multimap, and return it if it was present.
+        pub fn remove<Q, R>(&mut self, key: &Q, value: &R) -> Option<V>
+        where
+            Q: ?Sized,
+            R: ?Sized,
             $($keys_ref)*,
             $($values_ref)*,
         {
             if let Some(values) = self.inner.get_mut(key) {
-                let value = $crate::values_remove!($values_class, values, value);
+                let value = $crate::values_remove!(unordered, $values_class, values, value);
                 if value.is_some() {
                     if values.is_empty() {
                         self.inner.remove(key);
@@ -226,31 +264,140 @@ macro_rules! multimap_mutators_impl {
             }
         }
 
-        /// Return `true` if an equivalent `key` and `value` combination exists in
-        /// the multimap.
-        pub fn contains<Q: ?Sized, R: ?Sized>(&self, key: &Q, value: &R) -> bool
+    };
+    (ordered, $values:ty, $values_class:tt, ($($keys_ref:tt)*), ($($values_ref:tt)*)) => {
+        /// Remove the key and all associated values from the multimap.
+        ///
+        /// Like [`IndexMap::swap_remove`], the key is removed by swapping it
+        /// with the last element of the map and popping it off. **This
+        /// perturbs the position of what used to be the last element!**
+        ///
+        /// Returns values if at least one value is associated to `key`,
+        /// returns `None` otherwise.
+        #[inline]
+        pub fn swap_remove_key<Q>(&mut self, key: &Q) -> Option<$values>
         where
+            Q: ?Sized,
+            $($keys_ref)*
+        {
+            self.inner.swap_remove(key).map(|values| {
+                self.len -= values.len();
+                values
+            })
+        }
+
+        /// Remove the key and all associated values from the multimap.
+        ///
+        /// Like [`IndexMap::shift_remove`], the key is removed by shifting all
+        /// of the elements that follow it, preserving their relative order.
+        /// **This perturbs the index of all of those elements!**
+        ///
+        /// Returns values if at least one value is associated to `key`,
+        /// returns `None` otherwise.
+        #[inline]
+        pub fn shift_remove_key<Q>(&mut self, key: &Q) -> Option<$values>
+        where
+            Q: ?Sized,
+            $($keys_ref)*
+        {
+            self.inner.shift_remove(key).map(|values| {
+                self.len -= values.len();
+                values
+            })
+        }
+
+        /// Removes the key and all associated values from the multimap.
+        ///
+        /// Like [`IndexMap::swap_remove`], the key is removed by swapping it
+        /// with the last element of the map and popping it off. **This
+        /// perturbs the position of what used to be the last element!**
+        ///
+        /// Returns the entry (key and all associated values) if at least one
+        /// value is associated to `key`, returns `None` otherwise.
+        #[inline]
+        pub fn swap_remove_key_entry<Q>(&mut self, key: &Q) -> Option<(K, $values)>
+        where
+            Q: ?Sized,
+            $($keys_ref)*
+        {
+            self.inner.swap_remove_entry(key).map( |(key,values)| {
+                self.len -= values.len();
+                (key,values)
+            })
+        }
+
+        /// Removes the key and all associated values from the multimap.
+        ///
+        /// Like [`IndexMap::shift_remove`], the key is removed by shifting all
+        /// of the elements that follow it, preserving their relative order.
+        /// **This perturbs the index of all of those elements!**
+        ///
+        /// Returns the entry (key and all associated values) if at least one
+        /// value is associated to `key`, returns `None` otherwise.
+        #[inline]
+        pub fn shift_remove_key_entry<Q>(&mut self, key: &Q) -> Option<(K, $values)>
+        where
+            Q: ?Sized,
+            $($keys_ref)*
+        {
+            self.inner.shift_remove_entry(key).map( |(key,values)| {
+                self.len -= values.len();
+                (key,values)
+            })
+        }
+
+        /// Remove the entry from the multimap, and return it if it was present.
+        ///
+        /// Like [`IndexMap::swap_remove`], the pair is removed by swapping it
+        /// with the last element of the map and popping it off. **This
+        /// perturbs the position of what used to be the last element!**
+        pub fn swap_remove<Q, R>(&mut self, key: &Q, value: &R) -> Option<V>
+        where
+            Q: ?Sized,
+            R: ?Sized,
             $($keys_ref)*,
             $($values_ref)*,
         {
-            if let Some(values) = self.inner.get(key) {
-                $crate::values_contains!($values_class, values, value)
+            if let Some(values) = self.inner.get_mut(key) {
+                let value = $crate::values_remove!(ordered, swap, $values_class, values, value);
+                if value.is_some() {
+                    if values.is_empty() {
+                        self.inner.swap_remove(key);
+                    }
+                    self.len -= 1;
+                }
+                value
             } else {
-                false
+                None
             }
         }
 
-        /// Return a borrow of the underlying map.
-        pub fn as_map(&self) -> &$keys {
-            &self.inner
+        /// Remove the entry from the multimap, and return it if it was present.
+        ///
+        /// Like [`IndexMap::shift_remove`], the pair is removed by shifting all
+        /// of the elements that follow it, preserving their relative order.
+        /// **This perturbs the index of all of those elements!**
+        pub fn shift_remove<Q, R>(&mut self, key: &Q, value: &R) -> Option<V>
+        where
+            Q: ?Sized,
+            R: ?Sized,
+            $($keys_ref)*,
+            $($values_ref)*,
+        {
+            if let Some(values) = self.inner.get_mut(key) {
+                let value = $crate::values_remove!(ordered, shift, $values_class, values, value);
+                if value.is_some() {
+                    if values.is_empty() {
+                        self.inner.shift_remove(key);
+                    }
+                    self.len -= 1;
+                }
+                value
+            } else {
+                None
+            }
         }
-
-        /// Return the underlying map, the multimap cannot be used after
-        /// calling this.
-        pub fn into_map(self) -> $keys {
-            self.inner
-        }
-    };
+    }
 }
 
 //////////////////////////////////////
@@ -265,16 +412,18 @@ macro_rules! index_multimap_impl {
         insert_full!($values_class $values_ctx);
 
         /// Return item index, key, and values.
-        pub fn get_full<Q: ?Sized>(&self, key: &Q) -> Option<(usize, &K, &$values)>
+        pub fn get_full<Q>(&self, key: &Q) -> Option<(usize, &K, &$values)>
         where
+            Q: ?Sized,
             $($keys_ref)*,
         {
             self.inner.get_full(key)
         }
 
         /// Return key index if it exists in the map.
-        pub fn get_key_index<Q: ?Sized>(&self, key: &Q) -> Option<usize>
+        pub fn get_key_index<Q>(&self, key: &Q) -> Option<usize>
         where
+            Q: ?Sized,
             $($keys_ref)*,
         {
             if self.is_empty() {
@@ -477,17 +626,32 @@ macro_rules! values_contains {
 #[doc(hidden)]
 #[macro_export]
 macro_rules! values_remove {
-    (set, $values:ident, $value:ident) => {
-        $values.take($value)
+    // ordered keys, values set
+    (ordered, swap, set, $values:ident, $value:ident) => {
+        $values.swap_take($value)
     };
-
-    (vec_equivalent, $values:ident, $value:ident) => {
+    (ordered, shift, set, $values:ident, $value:ident) => {
+        $values.shift_take($value)
+    };
+    // ordered keys, values vec
+    (ordered, shift, vec_equivalent, $values:ident, $value:ident) => {
         $values
             .iter()
             .position(|x| $value.equivalent(x))
-            .map(|index| $values.remove(index))
+            .map(|index| $values.remove(index)) // Vec::remove() shifts
     };
-    (vec_equal, $values:ident, $value:ident) => {
+    (ordered, swap, vec_equivalent, $values:ident, $value:ident) => {
+        $values
+            .iter()
+            .position(|x| $value.equivalent(x))
+            .map(|index| $values.swap_remove(index))
+    };
+    // unordered keys, values set
+    (unordered, set, $values:ident, $value:ident) => {
+        $values.take($value)
+    };
+    // unordered keys, values vec
+    (unordered, vec_equal, $values:ident, $value:ident) => {
         $values
             .iter()
             .position(|x| $value == x.borrow())
@@ -526,7 +690,7 @@ macro_rules! multimap_extend {
             }
         }
 
-        impl<$($generic_ids)*> std::iter::FromIterator<(K, V)> for $type<$($generic_ids)*>
+        impl<$($generic_ids)*> FromIterator<(K, V)> for $type<$($generic_ids)*>
         where
             $($keys)*,
             $($values)*,
@@ -624,7 +788,6 @@ macro_rules! impl_iter {
         /// An iterator over the entries of a multimap.
         ///
         /// This struct is created by the `iter` method on multimap.
-        #[derive(Clone)]
         pub struct Iter<'a, $($generic_ids)*> where K: 'a, V: 'a{
             outer: $outer_iter,
             inner: Option<(&'a K, $inner_iter)>,
@@ -657,18 +820,38 @@ macro_rules! impl_iter {
             }
         }
 
-        impl<'a, $($generic_ids)*> ExactSizeIterator for Iter<'a, $($generic_ids)*> {
+        impl<$($generic_ids)*> ExactSizeIterator for Iter<'_, $($generic_ids)*> {
             fn len(&self) -> usize {
                 self.len
             }
         }
 
-        impl<'a, $($generic_ids)*> std::iter::FusedIterator for Iter<'a, $($generic_ids)*> {}
+        impl<$($generic_ids)*> std::iter::FusedIterator for Iter<'_, $($generic_ids)*> {}
+
+        // FIXME(#26925) Remove in favor of `#[derive(Clone)]`
+        impl<$($generic_ids)*> Clone for Iter<'_, $($generic_ids)*> {
+            fn clone(&self) -> Self {
+                Iter {
+                    outer: self.outer.clone(),
+                    inner: self.inner.clone(),
+                    len: self.len,
+                }
+            }
+        }
+
+        impl<$($generic_ids)*> std::fmt::Debug for Iter<'_, $($generic_ids)*>
+        where
+            K: std::fmt::Debug,
+            V: std::fmt::Debug,
+        {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.debug_list().entries(self.clone()).finish()
+            }
+        }
 
         /// An iterator over the values of a multimap.
         ///
         /// This `struct` is created by the `values` method on multimap.
-        #[derive(Clone)]
         pub struct Values<'a, $($generic_ids)*>{
             inner: Iter<'a, $($generic_ids)*>,
         }
@@ -682,13 +865,31 @@ macro_rules! impl_iter {
             }
         }
 
-        impl<'a, $($generic_ids)*> ExactSizeIterator for Values<'a, $($generic_ids)*> {
+        impl<$($generic_ids)*> ExactSizeIterator for Values<'_, $($generic_ids)*> {
             fn len(&self) -> usize {
                 self.inner.len()
             }
         }
 
-        impl<'a, $($generic_ids)*> std::iter::FusedIterator for Values<'a, $($generic_ids)*> {}
+        impl<$($generic_ids)*> std::iter::FusedIterator for Values<'_, $($generic_ids)*> {}
+
+        // FIXME(#26925) Remove in favor of `#[derive(Clone)]`
+        impl<$($generic_ids)*> Clone for Values<'_, $($generic_ids)*> {
+            fn clone(&self) -> Self {
+                Values {
+                    inner: self.inner.clone(),
+                }
+            }
+        }
+
+        impl<$($generic_ids)*> std::fmt::Debug for Values<'_, $($generic_ids)*>
+        where
+            V: std::fmt::Debug,
+        {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.debug_list().entries(self.clone()).finish()
+            }
+        }
 
         impl<K, V, S> $type<K, V, S> {
             /// Return an iterator over the key-value pairs of the multimap.
@@ -709,6 +910,14 @@ macro_rules! impl_iter {
                 }
             }
         }
+
+        impl<'a, K, V, S> IntoIterator for &'a $type<K, V, S> {
+            type IntoIter = Iter<'a, $($generic_ids)*>;
+            type Item = (&'a K, &'a V);
+            fn into_iter(self) -> Self::IntoIter {
+                self.iter()
+            }
+        }
     }
 }
 
@@ -719,7 +928,6 @@ macro_rules! impl_keys {
         /// An iterator over the keys of a multimap.
         ///
         /// This `struct` is created by the `keys` method on multimap.
-        #[derive(Clone)]
         pub struct Keys<'a, $($generic_ids)*> {
             inner: $inner_iter,
         }
@@ -732,13 +940,31 @@ macro_rules! impl_keys {
             }
         }
 
-        impl<'a, $($generic_ids)*> ExactSizeIterator for Keys<'a, $($generic_ids)*> {
+        impl<$($generic_ids)*> ExactSizeIterator for Keys<'_, $($generic_ids)*> {
             fn len(&self) -> usize {
                 self.inner.len()
             }
         }
 
-        impl<'a, $($generic_ids)*> std::iter::FusedIterator for Keys<'a, $($generic_ids)*> {}
+        impl<$($generic_ids)*> std::iter::FusedIterator for Keys<'_, $($generic_ids)*> {}
+
+        // FIXME(#26925) Remove in favor of `#[derive(Clone)]`
+        impl<$($generic_ids)*> Clone for Keys<'_, $($generic_ids)*> {
+            fn clone(&self) -> Self {
+                Keys {
+                    inner: self.inner.clone(),
+                }
+            }
+        }
+
+        impl<$($generic_ids)*> std::fmt::Debug for Keys<'_, $($generic_ids)*>
+        where
+            K: std::fmt::Debug,
+        {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.debug_list().entries(self.clone()).finish()
+            }
+        }
 
         impl<K, V, S> $type<K, V, S> {
             /// Return an iterator over the keys of the multimap.
@@ -756,6 +982,7 @@ macro_rules! impl_keys {
 macro_rules! impl_into_iterator {
     ($type:tt, ($($generic_ids:tt)*), $outer_iter:ty, $inner_iter:ty) => {
         /// An owning iterator over the entries of a multimap.
+        #[derive(Debug)]
         pub struct IntoIter<$($generic_ids)*> {
             outer: $outer_iter,
             inner: Option<(K, $inner_iter)>,
@@ -827,6 +1054,7 @@ macro_rules! impl_into_iterator {
         /// An owning iterator over the values of a multimap.
         ///
         /// This `struct` is created by the `into_values` method on multimap.
+        #[derive(Debug)]
         pub struct IntoValues<$($generic_ids)*> {
             outer: $outer_iter,
             inner: Option<$inner_iter>,
@@ -888,6 +1116,7 @@ macro_rules! impl_into_keys {
         /// An owning iterator over the keys of a multimap.
         ///
         /// This `struct` is created by the `into_keys` method on multimap.
+        #[derive(Debug)]
         pub struct IntoKeys<$($generic_ids)*> {
             inner: $inner_iter,
         }

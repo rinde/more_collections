@@ -35,6 +35,13 @@ where
         (Q: Hash + Equivalent<K>),
         (R: Equivalent<V>)
     }
+    multimap_remove_impl! {
+        ordered,
+        Vec<V>,
+        vec_equivalent,
+        (Q: Hash + Equivalent<K>),
+        (R: Equivalent<V>)
+    }
 
     index_multimap_impl! {
         IndexMap<K, Vec<V>, S>,
