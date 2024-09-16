@@ -96,6 +96,7 @@ impl<K: IndexKey, V> VecMap<K, V> {
 
     /// Initializes [`VecMap`] with capacity to hold exactly `n` elements in the
     /// index range of `0..n`.
+    #[must_use]
     pub fn with_capacity(n: usize) -> Self {
         let mut data = Vec::with_capacity(n);
         data.resize_with(n, || None);
