@@ -71,38 +71,6 @@ pub struct VecMap<K, V> {
     _marker: PhantomData<K>,
 }
 
-impl<K: IndexKey, V: Clone> VecMap<K, V> {
-    /// Initializes [`VecMap`] with capacity to hold exactly `n` elements in the
-    /// index range of `0..n`.
-    pub fn with_capacity(n: usize) -> Self {
-        Self {
-            data: vec![None; n],
-            len: 0,
-            _marker: PhantomData,
-        }
-    }
-
-    /// Initializes [`VecMap`] with `n` occurences of `elem`.
-    pub fn from_elem(elem: V, n: usize) -> Self {
-        Self {
-            data: vec![Some(elem); n],
-            len: n,
-            _marker: PhantomData,
-        }
-    }
-
-    /// Clears all data from the [`VecMap`] without changing the capacity.
-    pub fn clear(&mut self) {
-        self.len = 0;
-        self.data = vec![None; self.capacity()];
-    }
-
-    /// Reserve capacity for `additional` key-value pairs.
-    pub fn reserve(&mut self, additional: usize) {
-        self.data.extend(vec![None; additional]);
-    }
-}
-
 impl<K: IndexKey, V> VecMap<K, V> {
     /// Initializes an empty [`VecMap`].
     ///
@@ -124,6 +92,44 @@ impl<K: IndexKey, V> VecMap<K, V> {
     #[must_use]
     pub fn capacity(&self) -> usize {
         self.data.len()
+    }
+
+    /// Initializes [`VecMap`] with capacity to hold exactly `n` elements in the
+    /// index range of `0..n`.
+    #[must_use]
+    pub fn with_capacity(n: usize) -> Self {
+        let mut data = Vec::with_capacity(n);
+        data.resize_with(n, || None);
+        Self {
+            data,
+            len: 0,
+            _marker: PhantomData,
+        }
+    }
+
+    /// Initializes [`VecMap`] with `n` occurences of `elem`.
+    pub fn from_elem(elem: V, n: usize) -> Self
+    where
+        V: Clone,
+    {
+        Self {
+            data: vec![Some(elem); n],
+            len: n,
+            _marker: PhantomData,
+        }
+    }
+
+    /// Clears all data from the [`VecMap`] without changing the capacity.
+    pub fn clear(&mut self) {
+        self.len = 0;
+        let capacity = self.data.len();
+        self.data.clear();
+        self.data.resize_with(capacity, || None);
+    }
+
+    /// Reserve capacity for `additional` key-value pairs.
+    pub fn reserve(&mut self, additional: usize) {
+        self.data.resize_with(self.data.len() + additional, || None);
     }
 
     /// Inserts a key-value pair into the map.
@@ -434,7 +440,7 @@ impl<K: IndexKey + fmt::Debug, V: fmt::Debug> fmt::Debug for Entry<'_, K, V> {
     }
 }
 
-impl<K: IndexKey, V: Clone> FromIterator<(K, V)> for VecMap<K, V> {
+impl<K: IndexKey, V> FromIterator<(K, V)> for VecMap<K, V> {
     fn from_iter<I: IntoIterator<Item = (K, V)>>(iter: I) -> Self {
         let iter = iter.into_iter();
         let (lower_bound, _) = iter.size_hint();
@@ -447,7 +453,7 @@ impl<K: IndexKey, V: Clone> FromIterator<(K, V)> for VecMap<K, V> {
     }
 }
 
-impl<K: IndexKey, V: Clone> Extend<(K, V)> for VecMap<K, V> {
+impl<K: IndexKey, V> Extend<(K, V)> for VecMap<K, V> {
     fn extend<T: IntoIterator<Item = (K, V)>>(&mut self, iter: T) {
         // extend does not attempt to reserve additional space because the space needed
         // is dependent on the keys that are added
