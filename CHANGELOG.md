@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.2](https://github.com/rinde/more_collections/compare/v0.14.1...v0.14.2) - 2024-10-03
+
+### Other
+
+- update rust to 1.81.0 and fix lints ([#72](https://github.com/rinde/more_collections/pull/72))
+
 ## [0.14.1](https://github.com/rinde/more_collections/compare/v0.14.0...v0.14.1) - 2024-09-16
 
 ### Added

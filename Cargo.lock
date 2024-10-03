@@ -346,7 +346,7 @@ dependencies = [
 
 [[package]]
 name = "more_collections"
-version = "0.14.1"
+version = "0.14.2"
 dependencies = [
  "criterion",
  "derive_more",
