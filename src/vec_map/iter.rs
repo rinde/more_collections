@@ -279,9 +279,8 @@ impl<'a, V> Iterator for Values<'a, V> {
         if self.len == 0 {
             return None;
         }
-        self.inner.find_map(|value| value.as_ref()).map(|v| {
+        self.inner.find_map(|value| value.as_ref()).inspect(|_| {
             self.len -= 1;
-            v
         })
     }
 }
@@ -295,9 +294,8 @@ impl<V> DoubleEndedIterator for Values<'_, V> {
             .by_ref()
             .rev()
             .find_map(|value| value.as_ref())
-            .map(|v| {
+            .inspect(|_| {
                 self.len -= 1;
-                v
             })
     }
 }

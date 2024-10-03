@@ -186,7 +186,7 @@ where
         match &self.data {
             MapData::Inline(vec) => {
                 if index < self.len() {
-                    #[allow(clippy::map_identity)] // false positive
+                    // #[expect(clippy::map_identity)] // false positive
                     Some(&vec[index]).map(|(k, v)| (k, v))
                 } else {
                     None
@@ -212,7 +212,7 @@ where
                     None
                 }
             }
-            #[allow(clippy::map_identity)] // false positive
+            #[expect(clippy::map_identity, reason = "false positive")]
             MapData::Heap(map) => map.get_index_mut(index).map(|(k, v)| (k, v)),
         }
     }
@@ -533,7 +533,6 @@ impl<'a, K, V> Iterator for Iter<'a, K, V> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self {
-            #[allow(clippy::map_identity)] // false positive
             Iter::Inline(iter) => iter.next().map(|(k, v)| (k, v)),
             Iter::Heap(iter) => iter.next(),
         }
@@ -552,7 +551,6 @@ impl<K, V> ExactSizeIterator for Iter<'_, K, V> {
 impl<K, V> DoubleEndedIterator for Iter<'_, K, V> {
     fn next_back(&mut self) -> Option<Self::Item> {
         match self {
-            #[allow(clippy::map_identity)] // false positive
             Iter::Inline(iter) => iter.next_back().map(|(k, v)| (k, v)),
             Iter::Heap(iter) => iter.next_back(),
         }
@@ -687,7 +685,7 @@ impl<K, V, const C: usize> Iterator for IntoIter<K, V, C> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self {
-            #[allow(clippy::map_identity)] // false positive
+            #[expect(clippy::map_identity, reason = "false positive")]
             IntoIter::Inline(iter) => iter.next().map(|(k, v)| (k, v)),
             IntoIter::Heap(iter) => iter.next(),
         }
@@ -747,7 +745,10 @@ where
     S: BuildHasher,
 {
     /// Modifies the entry if it is occupied. Otherwise this is a no-op.
-    #[allow(clippy::return_self_not_must_use)] // no need to use Entry after this operation
+    #[expect(
+        clippy::return_self_not_must_use,
+        reason = "no need to use Entry after this operation"
+    )]
     pub fn and_modify<F>(self, f: F) -> Self
     where
         F: FnOnce(&mut V),
@@ -844,7 +845,7 @@ macro_rules! smallmap {
     (@one $x:expr) => (1usize);
     ($($key:expr => $value:expr),*$(,)*) => ({
         let count = 0usize $(+ $crate::smallmap!(@one $key))*;
-        #[allow(unused_mut)]
+        #[allow(unused_mut, reason = "false positive")]
         let mut map = $crate::SmallMap::new();
         if count <= map.inline_capacity() {
             $(map.insert($key, $value);)*
@@ -960,7 +961,7 @@ mod test {
     }
 
     #[test]
-    #[allow(clippy::too_many_lines)] // fine for tests
+    #[expect(clippy::too_many_lines, reason = "fine for tests")]
     fn remove_tests() {
         struct TestCase {
             name: &'static str,
@@ -1128,7 +1129,7 @@ mod test {
     }
 
     #[test]
-    #[allow(clippy::too_many_lines)] // fine for tests
+    #[expect(clippy::too_many_lines, reason = "fine for tests")]
     fn insert_and_insert_full_tests() {
         // Test cases:
         // | Key/Value           | Memory       | Insertion position |
