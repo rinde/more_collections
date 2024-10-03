@@ -10,13 +10,15 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: just
-      - uses: actions-rs/toolchain@v1.0.7
+      - run: |
+          echo "RUST_TOOLCHAIN=$(sed -nr 's/channel = "(.*)"/\1/p' ./rust-toolchain.toml)" >> $GITHUB_ENV
+      - uses: dtolnay/rust-toolchain@master
         with:
-          override: true
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
         with:
-          sharedKey: debug-build
+          shared-key: debug-build
       - run: just test
   lint:
     runs-on: ubuntu-20.04
@@ -26,15 +28,17 @@ jobs:
         with:
           tool: just
       - run: |
+          echo "RUST_TOOLCHAIN=$(sed -nr 's/channel = "(.*)"/\1/p' ./rust-toolchain.toml)" >> $GITHUB_ENV
           echo "RUST_TOOLCHAIN_NIGHTLY=$(cat ./rust-toolchain-nightly)" >> $GITHUB_ENV
-      - uses: actions-rs/toolchain@v1.0.7
+      - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ env.RUST_TOOLCHAIN_NIGHTLY }}
           components: rustfmt
-      - uses: actions-rs/toolchain@v1.0.7
+      - uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
         with:
-          sharedKey: debug-build-nightly
+          shared-key: debug-build-nightly
       - run: just lint "strict"

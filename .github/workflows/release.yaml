@@ -18,8 +18,11 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1.0.7
+      - run: |
+          echo "RUST_TOOLCHAIN=$(sed -nr 's/channel = "(.*)"/\1/p' ./rust-toolchain.toml)" >> $GITHUB_ENV
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
       - name: Run release-plz
         uses: MarcoIeni/release-plz-action@v0.5
         env:
