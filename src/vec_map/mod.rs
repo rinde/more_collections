@@ -416,7 +416,10 @@ impl<'a, K: IndexKey, V> Entry<'a, K, V> {
     }
 
     /// Modifies the entry if it is occupied.
-    #[allow(clippy::return_self_not_must_use)] // no need to use entry after this
+    #[expect(
+        clippy::return_self_not_must_use,
+        reason = "no need to use entry after this operation"
+    )]
     pub fn and_modify<F>(self, f: F) -> Self
     where
         F: FnOnce(&mut V),
@@ -540,8 +543,7 @@ macro_rules! vecmap {
             let _cap = $crate::vecmap!(@count $($key),*);
             let mut _map = $crate::vec_map::VecMap::with_capacity(_cap);
             $(
-                #[allow(let_underscore_drop)]
-                let _ = _map.insert($key, $value);
+                _map.insert($key, $value);
             )*
             _map
         }
@@ -911,7 +913,6 @@ mod test {
 
     #[test]
     #[should_panic(expected = "100 is out of bounds")]
-    #[allow(unused_must_use)]
     fn test_index_mut_out_of_bounds_panics() {
         let mut map =
             vecmap! { MyKey(8) => "august", MyKey(13) => "thirteen", MyKey(22) => "twentytwo"};
@@ -920,9 +921,7 @@ mod test {
 
     #[test]
     #[should_panic(expected = "There is no item at index 1")]
-    #[allow(unused_must_use)]
     fn test_index_mut_non_existing_panics() {
-        // #[allow("unused-mut")]
         let mut map =
             vecmap! { MyKey(8) => "august", MyKey(13) => "thirteen", MyKey(22) => "twentytwo"};
         let _ = &mut map[MyKey(1)];

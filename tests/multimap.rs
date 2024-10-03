@@ -1,5 +1,4 @@
 #![cfg(test)]
-#![allow(unused_qualifications)]
 
 macro_rules! set_multimap_tests {
     ($type:tt) => {
