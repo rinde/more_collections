@@ -1,8 +1,15 @@
 set quiet
 
-rust_nightly_version := `cat rust-toolchain-nightly`
+rust_version         := `sed -nr 's/channel = "(.*)"/\1/p' rust-toolchain.toml`
+rust_nightly_version := `sed -nr 's/channel = "(.*)"/\1/p' rust-toolchain-nightly.toml`
 
 @default: fmt lint test
+
+rust-version:
+    echo '{{rust_version}}'
+
+rust-nightly-version:
+    echo '{{rust_nightly_version}}'
 
 fmt:
     cargo '+{{rust_nightly_version}}' fmt --all
