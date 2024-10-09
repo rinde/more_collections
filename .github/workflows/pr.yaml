@@ -11,7 +11,7 @@ jobs:
         with:
           tool: just
       - run: |
-          echo "RUST_TOOLCHAIN=$(sed -nr 's/channel = "(.*)"/\1/p' ./rust-toolchain.toml)" >> $GITHUB_ENV
+          echo "RUST_TOOLCHAIN=$(just rust-version)" >> $GITHUB_ENV
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
@@ -28,8 +28,8 @@ jobs:
         with:
           tool: just
       - run: |
-          echo "RUST_TOOLCHAIN=$(sed -nr 's/channel = "(.*)"/\1/p' ./rust-toolchain.toml)" >> $GITHUB_ENV
-          echo "RUST_TOOLCHAIN_NIGHTLY=$(cat ./rust-toolchain-nightly)" >> $GITHUB_ENV
+          echo "RUST_TOOLCHAIN=$(just rust-version)" >> $GITHUB_ENV
+          echo "RUST_TOOLCHAIN_NIGHTLY=$(just rust-nightly-version)" >> $GITHUB_ENV
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ env.RUST_TOOLCHAIN_NIGHTLY }}
