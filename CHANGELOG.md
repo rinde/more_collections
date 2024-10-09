@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.2](https://github.com/rinde/more_collections/compare/v0.14.1...v0.14.2) - 2024-10-09
+
+### Other
+
+- Bump the cargo-dependencies group with 5 updates ([#80](https://github.com/rinde/more_collections/pull/80))
+
 ## [0.14.1](https://github.com/rinde/more_collections/compare/v0.14.0...v0.14.1) - 2024-09-16
 
 ### Added
