@@ -42,7 +42,7 @@ smallvec = { version = "1.13.2", optional = true, features = [
 
 [dev-dependencies]
 criterion = { version = "0.5.1", features = ["html_reports"] }
-derive_more = "0.99.17"
+derive_more = "1.0.0"
 indexmap = { version = "2.1.0" }
 itertools = "0.12.1"
 maplit = { version = "1.0.2" }
