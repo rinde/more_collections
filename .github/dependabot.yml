@@ -3,7 +3,7 @@ updates:
 - package-ecosystem: cargo
   directory: "/"
   schedule:
-    interval: monthly
+    interval: weekly
     day: friday
     time: "09:00"
   groups:
@@ -11,13 +11,14 @@ updates:
       patterns:
         - "*"
   open-pull-requests-limit: 99
-- package-ecosystem: "github-actions"
+- package-ecosystem: github-actions
   directory: "/"
   schedule:
-    interval: "monthly"
+    interval: weekly
     day: friday
     time: "09:00"
   groups:
     github-actions-dependencies:
       patterns:
         - "*"
+  open-pull-requests-limit: 99
