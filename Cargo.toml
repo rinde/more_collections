@@ -33,7 +33,7 @@ vecmap = []
 [dependencies]
 indexmap = { version = "^2.6", optional = true }
 maplit = { version = "1.0.2", optional = true }
-serde = { version = "^1.0.213", optional = true, features = ["derive"] }
+serde = { version = "^1.0.214", optional = true, features = ["derive"] }
 smallvec = { version = "1.13.2", optional = true, features = [
     "const_generics",
     "const_new",
