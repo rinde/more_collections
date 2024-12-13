@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.4](https://github.com/rinde/more_collections/compare/v0.14.3...v0.14.4) - 2024-12-13
+
+### Other
+
+- bump serde from 1.0.215 to 1.0.216 in the cargo group (#96)
+- bump indexmap from 2.6.0 to 2.7.0 in the cargo group (#94)
+
 ## [0.14.3](https://github.com/rinde/more_collections/compare/v0.14.2...v0.14.3) - 2024-11-22
 
 ### Other
