@@ -2,6 +2,7 @@
 edition = "2021"
 name = "more_collections"
 version = "0.14.3"
+rust-version = "1.60.0"
 authors = ["Rinde van Lon <rindevanlon@gmail.com>"]
 description = "Additional collections not found in std::collections"
 repository = "https://github.com/rinde/more_collections/"
