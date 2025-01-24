@@ -44,7 +44,7 @@ smallvec = { version = "1.13.2", optional = true, features = [
 [dev-dependencies]
 criterion = { version = "0.5.1", features = ["html_reports"] }
 derive_more = { version = "1.0.0", features = ["from", "into"] }
-indexmap = { version = "2.7.0" }
+indexmap = { version = "2.7.1" }
 itertools = "0.14.0"
 maplit = { version = "1.0.2" }
 more_collections = { path = ".", features = ["all"] }
