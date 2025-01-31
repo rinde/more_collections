@@ -11,9 +11,9 @@ use criterion::Criterion;
 use indexmap::IndexMap;
 use itertools::Itertools;
 use more_collections::VecMap;
-use rand::distributions::Distribution;
-use rand::distributions::Uniform;
-use rand::thread_rng;
+use rand::distr::Distribution;
+use rand::distr::Uniform;
+use rand::rng;
 
 fn benchmark_insert(c: &mut Criterion) {
     let mut group = c.benchmark_group("insert");
@@ -256,7 +256,8 @@ fn test_cases() -> [TestCase; 5] {
         TestCase {
             name: "big_sparse",
             data: Uniform::new(0, 10_000)
-                .sample_iter(thread_rng())
+                .unwrap()
+                .sample_iter(rng())
                 .unique()
                 .take(50)
                 .map(|i| (i, "hello".to_string()))
@@ -265,7 +266,8 @@ fn test_cases() -> [TestCase; 5] {
         TestCase {
             name: "big_dense",
             data: Uniform::new(0, 10_000)
-                .sample_iter(thread_rng())
+                .unwrap()
+                .sample_iter(rng())
                 .unique()
                 .take(9800)
                 .map(|i| (i, "hello".to_string()))
@@ -307,7 +309,8 @@ fn benchmark_iter(c: &mut Criterion) {
 
     let case = Case {
         data: Uniform::new(0, 10_000)
-            .sample_iter(thread_rng())
+            .unwrap()
+            .sample_iter(rng())
             .unique()
             .take(9800)
             .map(|i| (i, ()))
