@@ -106,7 +106,6 @@ pedantic = { level = "warn", priority = -1 } # setting a lower priority for the 
 
 # Below are the pedantic lints that we currently do not opt in to including the reason why.
 missing_panics_doc = "allow"      # TODO
-module_name_repetitions = "allow" # naming is already hard enough
 
 [package.metadata.docs.rs]
 all-features = true

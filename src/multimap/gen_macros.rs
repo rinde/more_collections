@@ -469,9 +469,9 @@ macro_rules! index_multimap_impl {
 // TODO add shift_remove_index()
 // TODO add swap_indices()
 
-//////////////////////////////////////
-/// *Set values specific methods
-//////////////////////////////////////
+// ////////////////////////////////////
+// / *Set values specific methods
+// ////////////////////////////////////
 
 // TODO add difference()
 // TODO add symmetric_difference()
@@ -481,9 +481,9 @@ macro_rules! index_multimap_impl {
 // TODO add is_subset()
 // TODO add is_superset()
 
-//////////////////////////////////////
-/// Vec / IndexSet values specific methods
-//////////////////////////////////////
+// ////////////////////////////////////
+// / Vec / IndexSet values specific methods
+// ////////////////////////////////////
 
 // TODO add sort_values()
 // TODO add sort_values_by()
