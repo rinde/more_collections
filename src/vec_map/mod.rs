@@ -216,7 +216,7 @@ impl<K: IndexKey, V> VecMap<K, V> {
             if self.data[index].is_some() {
                 return Entry::Occupied(self.data[index].as_mut().unwrap());
             }
-            return Entry::Vacant(key, self);
+            Entry::Vacant(key, self)
         }
     }
 
