@@ -6,6 +6,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.4](https://github.com/rinde/more_collections/compare/v0.14.3...v0.14.4) - 2025-02-07
+
+### Added
+
+- specify msrv (#100)
+
+### Other
+
+- bump derive_more from 1.0.0 to 2.0.1 in the cargo group (#106)
+- bump serde_json from 1.0.137 to 1.0.138 in the cargo group across 1 directory (#105)
+- update `rand` to 0.9.0 (#104)
+- update Rust to 1.84.0 (#103)
+- bump the cargo group with 2 updates (#101)
+- bump the cargo group with 2 updates (#98)
+- bump serde from 1.0.215 to 1.0.216 in the cargo group (#96)
+- bump indexmap from 2.6.0 to 2.7.0 in the cargo group (#94)
+
 ## [0.14.3](https://github.com/rinde/more_collections/compare/v0.14.2...v0.14.3) - 2024-11-22
 
 ### Other
