@@ -671,7 +671,7 @@ macro_rules! multimap_extend {
         {
             fn extend<I: IntoIterator<Item = (K, V)>>(&mut self, iterable: I) {
                 let iter = iterable.into_iter();
-                let reserve = (iter.size_hint().0 + 1) / 2;
+                let reserve = iter.size_hint().0.div_ceil(2);
                 self.reserve(reserve);
                 iter.for_each(move |(k, v)| {
                     self.insert(k, v);
