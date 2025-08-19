@@ -1,4 +1,35 @@
 # Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [0.14.4](https://github.com/rinde/more_collections/compare/v0.14.3...v0.14.4) - 2025-08-15
+
+### Added
+
+- specify msrv ([#100](https://github.com/rinde/more_collections/pull/100))
+
+### Other
+
+- bump the cargo group with 2 updates ([#118](https://github.com/rinde/more_collections/pull/118))
+- bump the cargo group with 2 updates ([#117](https://github.com/rinde/more_collections/pull/117))
+- bump the cargo group across 1 directory with 4 updates ([#114](https://github.com/rinde/more_collections/pull/114))
+- update Rust to 1.88.0 ([#116](https://github.com/rinde/more_collections/pull/116))
+- bump the cargo group across 1 directory with 4 updates ([#110](https://github.com/rinde/more_collections/pull/110))
+- bump the cargo group with 3 updates ([#107](https://github.com/rinde/more_collections/pull/107))
+- bump derive_more from 1.0.0 to 2.0.1 in the cargo group ([#106](https://github.com/rinde/more_collections/pull/106))
+- bump serde_json from 1.0.137 to 1.0.138 in the cargo group across 1 directory ([#105](https://github.com/rinde/more_collections/pull/105))
+- update `rand` to 0.9.0 ([#104](https://github.com/rinde/more_collections/pull/104))
+- update Rust to 1.84.0 ([#103](https://github.com/rinde/more_collections/pull/103))
+- bump the cargo group with 2 updates ([#101](https://github.com/rinde/more_collections/pull/101))
+- bump the cargo group with 2 updates ([#98](https://github.com/rinde/more_collections/pull/98))
+- bump serde from 1.0.215 to 1.0.216 in the cargo group ([#96](https://github.com/rinde/more_collections/pull/96))
+- bump indexmap from 2.6.0 to 2.7.0 in the cargo group ([#94](https://github.com/rinde/more_collections/pull/94))
+# Changelog
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
