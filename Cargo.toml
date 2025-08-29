@@ -32,7 +32,7 @@ smallset = ["indexmap", "smallvec", "smallmap"]
 vecmap = []
 
 [dependencies]
-indexmap = { version = "^2.10", optional = true }
+indexmap = { version = "^2.11", optional = true }
 maplit = { version = "1.0.2", optional = true }
 serde = { version = "^1.0.219", optional = true, features = ["derive"] }
 smallvec = { version = "1.15.1", optional = true, features = [
@@ -44,7 +44,7 @@ smallvec = { version = "1.15.1", optional = true, features = [
 [dev-dependencies]
 criterion = { version = "0.7.0", features = ["html_reports"] }
 derive_more = { version = "2.0.1", features = ["from", "into"] }
-indexmap = { version = "2.10.0" }
+indexmap = { version = "2.11.0" }
 itertools = "0.14.0"
 maplit = { version = "1.0.2" }
 more_collections = { path = ".", features = ["all"] }
